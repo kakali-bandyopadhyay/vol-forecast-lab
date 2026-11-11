@@ -9,8 +9,9 @@ variance beyond HAR (with GARCH, a persistence baseline and a small MLP as compa
 (2) how implied variance compares with the forecast (estimated ex-ante spread) and with what
 followed (ex-post premium); (3) whether scheduled CPI and FOMC days carry extra variance, overnight
 or in the session — delivered as a reproducible pipeline with experiment tracking, data versioning,
-drift monitoring, Docker, CI, an Airflow DAG, a local Kubernetes deployment, and a tool-calling
-agent that only reports computed numbers.
+drift monitoring, Docker, CI, an Airflow DAG, a local Kubernetes deployment, an unstructured-data
+pipeline (FOMC statements and minutes → Parquet → vector index), and a tool-calling agent that only
+reports computed numbers and cited text.
 **Labels:** public data; research prototype; not investment advice. Not a trading system.
 
 **Authorship rule.** The author hand-writes the core: RV proxies, targets, splitter, HAR/HAR-X,
@@ -21,7 +22,9 @@ wrapper, README formatting), reviewed line by line. Each step says which applies
 
 **Build order (vertical slice first).** Lock data and pre-registration → persistence/HAR/HAR-X
 with evaluation → GARCH and the event study → MLP and agent → MLOps, Airflow and Kubernetes →
-write-up. JAX is a stretch item after everything else. Hours are ESTIMATES (~35 h core).
+write-up. Step 10b (unstructured-data pipeline) comes after the MLP and before the agent.
+Step 10c (Kafka, AWS serverless data lake, Spark, OpenSearch, Redis) follows 10b.
+JAX is a stretch item after everything else. Hours are ESTIMATES (~52 h core).
 
 ---
 
@@ -81,6 +84,9 @@ vol-forecast-lab/
   data/raw/  data/snapshots/                 # git-ignored
   src/volab/ data.py  calendar.py  rv.py  targets.py  splits.py  losses.py  stats_tests.py
              models/{baselines,har,garch,mlp}.py  spread.py  events.py  drift.py
+             text/{fetch_docs,extract,chunk,index,dq}.py
+  docker-compose.qdrant.yml  docker-compose.platform.yml   # profiles: kafka, search, cache
+  infra/terraform/   lambda/extract/   spark/
   agent/ graph.py  tools.py  schemas.py  eval_questions.yaml  run_eval.py
   api/app.py   dags/vol_pipeline.py   k8s/   docker-compose.airflow.yml
   scripts/ fetch_data.py  audit_snapshot.py  run_all.py
@@ -196,10 +202,91 @@ validation-only selection, annual re-train, results reported whatever they show.
 MLP loses to M0.
 **Committed.** _hash_
 
+## Step 10b — Unstructured-data pipeline: FOMC statements and minutes (6 h)
+
+**What.** A small production-style pipeline from public Federal Reserve documents to a searchable
+vector index, keyed by `data/events/fomc.csv`.
+
+```mermaid
+flowchart LR
+  F[fomc.csv dates] --> A[Fetch statement HTML<br/>+ minutes PDF]
+  A --> R[(Raw files + SHA-256<br/>in snapshot manifest)]
+  R --> X[Extract + clean text<br/>vote record as fields]
+  X --> D[(documents.parquet)]
+  D --> C[Chunk by paragraph]
+  C --> K[(chunks.parquet)]
+  K --> E[Embed + idempotent upsert<br/>Qdrant hybrid]
+  E --> S[search / get_statement API]
+  S --> G[Agent tool with citations]
+  D --> Q[Data-quality checks]
+```
+
+| Stage | Detail | Who |
+|---|---|---|
+| Fetch | One statement page and one minutes PDF per scheduled date; rate-limited, user-agent set; raw files cached in the snapshot with hashes; incremental (new dates only) | AI plumbing |
+| Extract | HTML → statement text; PDF → text with PyMuPDF, headers/footers stripped, page numbers kept; unicode/whitespace normalised; voting record split into fields (for, against, dissent reasons) | Author |
+| Store | `documents.parquet`: doc_id, event_date, doc_type, url, sha256, text, n_chars, page_count, extractor_version, extracted_at — fixed pyarrow schema | Author |
+| Chunk | Paragraph-based, ~300-token cap; `chunks.parquet`: chunk_id, doc_id, ord, page, text, n_tokens | Author |
+| Embed + index | OpenAI small embedding model; Qdrant (Docker) with dense + keyword (hybrid) retrieval and payload filters (date, doc_type); upsert keyed by chunk_id + content hash | Author: upsert logic. AI: Qdrant compose file |
+| Serve | `search(query, date_from, date_to, doc_type, k)`, `get_statement(date)` on the FastAPI app; agent tool returns text with URL + chunk_id citations | AI: routes. Author: agent tool |
+| Evaluate | 15 retrieval questions with answers and supporting chunks labelled **before** the first run; recall@5 and MRR, reported per doc type | Author |
+| Orchestrate | Airflow tasks `fetch_docs → extract → chunk → embed_index`, incremental and safe to re-run; added to the Step 13 DAG | Author |
+| Data quality | Exactly one statement per scheduled date; minutes present for every meeting with released minutes; empty/short texts flagged; hash change → re-extract and re-index | Author |
+
+**Why.** Text extraction, document parsing, Parquet storage, vector search, idempotent incremental
+loads and retrieval evaluation — the unstructured-data side of the pipeline, end to end.
+**Scope boundary.** Engineering only: no sentiment scores, text features or signals. Statements are
+used for retrieval and explanation beside the event-study results, never as model inputs.
+**Tests.** Extraction on two committed fixture pages (US Government works, public domain) and one
+fixture PDF; chunk boundaries; two consecutive runs leave the same point count; date filters never
+return out-of-range chunks; parquet schema test.
+**Result.** Docs _n_ statements / _n_ minutes; chunks _n_; recall@5 _x_; MRR _x_; DQ flags _n_.
+**Committed.** _hash_
+
+## Step 10c — Platform slice: Kafka, AWS serverless data lake, Spark, OpenSearch, Redis (11 h)
+
+**What.** The Step 10b document pipeline re-platformed onto the stack a production data platform
+uses. Same documents, same outputs, so every new component can be checked against Step 10b.
+
+```mermaid
+flowchart LR
+  P[fetch_docs] -->|new-doc event| K[(Kafka topic docs.raw)]
+  K --> U[uploader consumer] --> S1[S3 raw zone]
+  S1 -->|S3 event| LM[Lambda: extract text]
+  LM --> S2[S3 clean zone<br/>Parquet, partitioned year/doc_type]
+  S2 --> GL[Glue Data Catalog] --> AT[Athena SQL]
+  S2 --> SP[PySpark: compaction + stats]
+  S2 --> IX[indexer consumer]
+  IX --> OS[(OpenSearch BM25)]
+  IX --> QD[(Qdrant vectors)]
+  OS & QD --> API[FastAPI hybrid search<br/>reciprocal rank fusion]
+  API <--> RD[(Redis cache + rate limit)]
+  AF[Airflow] -.orchestrates.-> P & SP & IX
+```
+
+| Part | Detail | Who | Hours |
+|---|---|---|---|
+| 10c-1 Kafka (local, KRaft, Docker) | Topics `docs.raw`, `docs.clean`; producer in `fetch_docs`; consumers `uploader` and `indexer` with consumer groups; at-least-once delivery, idempotent handling by doc hash; dead-letter topic for failures | Author: producer/consumer logic, idempotency. AI: compose file | 2 |
+| 10c-2 AWS serverless data lake | Terraform: S3 bucket with `raw/`, `clean/`, `curated/` prefixes (versioning, encryption, block public access, lifecycle), Lambda (Python) on S3 put → extract text → partitioned Parquet in `clean/`, Glue database + table, Athena workgroup with a result bucket and bytes-scanned limit; least-privilege IAM role; CloudWatch logs; budget alert set first; `terraform destroy` documented and tested | Author: Lambda handler, Athena queries, IAM policy review. AI: Terraform skeleton, reviewed line by line | 4.5 |
+| 10c-3 PySpark (local) | Read `clean/` Parquet, compact small files, compute per-year/doc-type statistics, write `curated/`; schema enforced; result matches the pandas version | Author | 1.5 |
+| 10c-4 OpenSearch (local, Docker) | Index with an explicit mapping (text, keyword, date); BM25 search with date/doc-type filters; hybrid with Qdrant via reciprocal rank fusion; Step 10b retrieval eval rerun: BM25 only / vectors only / fused, reported side by side | Author | 2 |
+| 10c-5 Redis (local, Docker) | Cache for `search` responses (key = normalised query + filters hash, TTL), hit/miss counters exposed on `/metrics`; token-bucket rate limiter on the API | Author | 1 |
+
+**Tests.** Kafka: replaying the same message twice indexes once. Lambda: handler unit-tested with a
+fixture S3 event (no AWS in CI). Terraform: `terraform validate` and `fmt -check` in CI. Spark vs
+pandas statistics equal. OpenSearch: date filter respected; mapping applied. Redis: second identical
+query is a cache hit; rate limiter rejects over the limit.
+**Cost guardrails.** Budget alert before `terraform apply`; Athena bytes-scanned limit; S3 lifecycle;
+everything destroyed after the evidence run, with the destroy output saved in FINDINGS.
+**Result.** Kafka messages processed _n_ / duplicates suppressed _n_; Lambda runs _n_ / errors _n_;
+Athena query cost _$x_; recall@5 BM25 / vector / fused _x / x / x_; cache hit rate _x_.
+**Committed.** _hash_
+
 ## Step 11 — Research agent: LangGraph + LangSmith (4 h)
 
 **What.** Tools read only `results/*.parquet`: `get_forecast(as_of, model)`, `compare_models(start,
-end, metric)`, `event_effect(event, component)`. Pydantic answer schema: as-of date, horizon,
+end, metric)`, `event_effect(event, component)`, and `search_fomc(query, date_from, date_to)` from
+Step 10b (cited chunks). Pydantic answer schema: as-of date, horizon,
 forecast, implied variance, spread, limitations, `source_rows[]`. Verifier node rejects any number
 not present in a tool output. Refuses advice and out-of-range dates. LangSmith tracing; model
 pinned in `.env`; per-run cost cap in code.
@@ -222,7 +309,8 @@ a pipeline smoke run on the synthetic fixture.
 
 **What.**
 - **Airflow** (official Docker Compose, pinned): `dags/vol_pipeline.py` with
-  `audit_snapshot → build_rv → refit_models → evaluate → q2_events → drift_report`, calling
+  `audit_snapshot → build_rv → refit_models → evaluate → q2_events → drift_report`, plus the
+  Step 10b branch `fetch_docs → extract → chunk → embed_index`, calling
   `run_all.py` stages. Fixture by default; `use_snapshot` param for local data. Retries = 1; a failed
   audit stops every downstream task.
 - **Kubernetes** (`kind`): image from the Step 12 Dockerfile loaded into kind; `k8s/` manifests for a
@@ -231,7 +319,7 @@ a pipeline smoke run on the synthetic fixture.
   drift report; a `ConfigMap` for paths and thresholds. No secrets in manifests.
 - CI adds a DAG import test and `kubectl apply --dry-run=client` on the manifests.
 **Who.** Author: DAG graph and failure rules, manifests, tests. AI-drafted: Compose file, FastAPI wrapper.
-**Tests.** DAG has exactly six tasks in order; failed audit → downstream `upstream_failed`;
+**Tests.** DAG has the six analysis tasks in order and the four document tasks in order; failed audit → downstream `upstream_failed`;
 `/health` returns 200 in kind; `kubectl create job --from=cronjob/...` writes a drift report.
 **Boundary (README).** Local orchestration and a local cluster; not a production deployment.
 **Committed.** _hash_

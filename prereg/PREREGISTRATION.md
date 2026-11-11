@@ -69,6 +69,10 @@ its result is reported whatever it is.
 | FOMC scheduled statement dates | federalreserve.gov meeting calendars | date, time ET, source URL | Yes (`data/events/fomc.csv`) |
 | CPI release dates | BLS release schedules | date, time ET, source URL | Yes (`data/events/cpi.csv`) |
 | Trading calendar | _exchange-calendars, version_ | sessions, early closes | Version pinned |
+| FOMC statements (HTML) and minutes (PDF) | federalreserve.gov | text, URL, hash | Fixtures only; raw files in snapshot |
+
+FOMC documents feed the retrieval pipeline only (build Step 10b). They are **not** inputs to any
+model, test or estimate in §4–§7.
 
 All times are US/Eastern. Data vintage = snapshot date above.
 
@@ -274,6 +278,8 @@ This study measures the session, not the announcement window.
 3. No claim about intraday-sampled realised variance or announcement windows.
 4. No claim beyond SPY and the stated window.
 5. No causal claim about what CPI or FOMC content does — only timing of realised variance.
+6. No text-derived signal, sentiment score or feature. FOMC documents are retrieved and cited for
+   explanation only.
 
 ---
 
