@@ -1,15 +1,14 @@
 # Pre-registration — `vol-forecast-lab`
 
-**Frozen:** _YYYY-MM-DD_ (fill at freeze)
-**Snapshot:** `_snapshot-id_`
-**Price panel SHA-256:** `_hash_`
-**VIX file SHA-256:** `_hash_`
-**Event calendar SHA-256:** `_hash_` (fomc.csv + cpi.csv)
+**Frozen:** 2026-11-12 (tag `v0.1-prereg`)
+**Snapshot:** `20261112T071104Z`
+**Price panel SHA-256:** `3aa9920d1f0202850de3bdb5eebcb6662cc06f7a0982109a59de3d00ee54bded` (spy.csv)
+**VIX file SHA-256:** `325e7d361a452cfeb94152f6d39ee4db28a8c0838357936b329137b61a063fc2` (vix_cboe.csv)
+**Event calendar SHA-256:** `fomc.csv` `98ca7ddbb17ba49c2494039fd04e1c7b406df426477fd52d1a622d69523b8917`,
+`cpi.csv` `67791e87ce1862eae2bf90353708d00b5f71172abb7e9d7bb11b5e6ec39fc928`
+**Derived panel SHA-256:** `e5b8a91420e396696d6ae0ee821232e04f5111bc31ab82637ac5b965c367fe41`
+(`panel.parquet` — derived, not a version of record: its bytes move with the pyarrow version, 26.0.1)
 **Status:** written and committed **before any model has been fitted and before any out-of-sample forecast or event estimate has been computed.**
-
-> Template note — delete this box at freeze. Every `_italic placeholder_` must be replaced with a
-> value or "N/A – reason". Nothing in §3–§10 may change after the tag `v0.1-prereg` without a
-> dated entry in `DEVIATIONS.md`.
 
 ---
 
@@ -23,14 +22,14 @@ cost the claim.
 Limits declared up front:
 
 1. **Daily data only.** Realised variance is estimated from daily open/high/low/close. The proxy is
-   noisy; §5 uses losses that rank forecasts correctly under a noisy, conditionally unbiased proxy
-   (Patton, 2011). It does not remove the noise.
+noisy; §5 uses losses that rank forecasts correctly under a noisy, conditionally unbiased proxy
+(Patton, 2011). It does not remove the noise.
 2. **SPY as a proxy for the S&P 500 index.** VIX is derived from SPX options; SPY is used because
-   licensed daily index OHLC is not available at zero cost. Tracking differences are inside the series.
+licensed daily index OHLC is not available at zero cost. Tracking differences are inside the series.
 3. **No options-chain data.** The implied input is the VIX index level. No surface, skew, term
-   structure, pricing model or options P&L.
+structure, pricing model or options P&L.
 4. **A research tool, not a trading system.** No spread or premium is turned into a rich/cheap
-   verdict, signal or recommendation. Public data; research prototype; not investment advice.
+verdict, signal or recommendation. Public data; research prototype; not investment advice.
 
 ---
 
@@ -48,11 +47,11 @@ identical dates and targets (§5.5).
 - **Q1c:** small MLP (challenger) vs HAR-X on QLIKE.
 - **Q1d:** HAR vs GARCH(1,1); HAR vs the persistence baseline.
 - **Q2 (measurement, §6):** how VIX-implied variance compares with (a) the HAR forecast — the
-  **estimated ex-ante spread** — and (b) the realised variance that followed — the **ex-post premium**.
+**estimated ex-ante spread** — and (b) the realised variance that followed — the **ex-post premium**.
 - **Q3 (event study, §7):** are scheduled CPI and FOMC days associated with additional variance
-  after controlling for recent volatility, and in which component — overnight or regular session?
+after controlling for recent volatility, and in which component — overnight or regular session?
 
-No outcome is predicted for Q1–Q1d. The MLP's architecture and tuning rule are fixed in §4.3 and
+No outcome is predicted for Q1–Q1d. The MLP’s architecture and tuning rule are fixed in §4.3 and
 its result is reported whatever it is.
 
 ---
@@ -62,13 +61,13 @@ its result is reported whatever it is.
 ### 2.1 Sources
 
 | Input | Source | Fields | Committed? |
-|---|---|---|---|
-| SPY daily prices | _Tiingo EOD_ | adjOpen, adjHigh, adjLow, adjClose | No (manifest + hash only) |
-| VIX daily | _Cboe VIX history CSV_ | open, high, low, close | No (manifest + hash only) |
-| VIX cross-check | _FRED VIXCLS_ | close | No (result committed) |
+| --- | --- | --- | --- |
+| SPY daily prices | *Tiingo EOD* | adjOpen, adjHigh, adjLow, adjClose | No (manifest + hash only) |
+| VIX daily | *Cboe VIX history CSV* | open, high, low, close | No (manifest + hash only) |
+| VIX cross-check | *FRED VIXCLS* | close | No (result committed) |
 | FOMC scheduled statement dates | federalreserve.gov meeting calendars | date, time ET, source URL | Yes (`data/events/fomc.csv`) |
 | CPI release dates | BLS release schedules | date, time ET, source URL | Yes (`data/events/cpi.csv`) |
-| Trading calendar | _exchange-calendars, version_ | sessions, early closes | Version pinned |
+| Trading calendar | exchange-calendars 4.13.2 | sessions, early closes | Version pinned |
 | FOMC statements (HTML) and minutes (PDF) | federalreserve.gov | text, URL, hash | Fixtures only; raw files in snapshot |
 
 FOMC documents feed the retrieval pipeline only (build Step 10b). They are **not** inputs to any
@@ -83,15 +82,15 @@ First session 2010-01-04, last session 2026-11-11. Sessions: 4,241.
 ### 2.3 Alignment and missing data
 
 - SPY and VIX are joined on observation date. **VIX is never forward-filled.** A date missing
-  either series is excluded from every analysis that needs both; excluded dates are listed in
-  `data/audit.json`.
+either series is excluded from every analysis that needs both; excluded dates are listed in
+`data/audit.json`.
 - Adjusted fields only. Within-day ratios are unaffected by the adjustment factor. Overnight
-  returns use adjOpen_t / adjClose_{t−1}. No absolute adjusted level is used.
+returns use adjOpen_t / adjClose_{t−1}. No absolute adjusted level is used.
 
 ### 2.4 Audit results (filled before freeze)
 
 | Check | Rule | Result |
-|---|---|---|
+| --- | --- | --- |
 | Missing sessions vs calendar | listed | 0 |
 | OHLC consistency | L ≤ min(O,C), H ≥ max(O,C) | 0 violations |
 | Zero-range days | logged, kept | 0 |
@@ -112,12 +111,12 @@ Source: `data/audit.json`, snapshot `20261112T071104Z`, reproducible with
 ### 3.1 Daily realised-variance proxies (daily variance of log returns, decimal)
 
 - Overnight: r_on,t = ln(O_t / C_{t−1}); regular session: r_oc,t = ln(C_t / O_t);
-  close-to-close: r_t = r_on,t + r_oc,t.
+close-to-close: r_t = r_on,t + r_oc,t.
 - Garman–Klass (session): GK_t = ½·[ln(H_t/L_t)]² − (2 ln 2 − 1)·r_oc,t².
 - **Primary proxy:** RV_t = r_on,t² + GK_t (covers the overnight gap and the session range).
 - **Robustness proxies:** close-to-close r_t²; r_on,t² + Parkinson_t.
-- Note: r_t² = r_on² + r_oc² + 2·r_on·r_oc. The cross term is reported (mean and share of
-  r_t² variance, training window) and never dropped silently.
+- Note: r_t² = r_on² + r_oc² + 2·r_on·r_oc. The cross term is never dropped silently. Over the
+training window its mean is 5.026025e-06, which is 5.0% of **mean** r_t².
 
 ### 3.2 Target (matched to the VIX horizon)
 
@@ -133,12 +132,13 @@ same scale as RV_t^{30}. The ~15-minute gap between the VIX and SPY closes is st
 
 ### 3.4 Positivity rule (all models)
 
-Every forecast passed to QLIKE is max(F, F_min), F_min = 1st percentile of RV_t^{30} in the
-initial training window. The number of floored forecasts is reported per model.
+Every forecast passed to QLIKE is max(F, F_min), with **F_min = 3.722081e-04**: the 1st
+percentile of RV_t^{30} over the initial training window, 2010-01-04 → 2015-12-31 (n = 1,510
+dates with a complete target). The number of floored forecasts is reported per model.
 
 ### 3.5 Regimes (for reporting only)
 
-VIX terciles with thresholds fixed from the initial training window: low / mid / high. Calendar
+VIX terciles with thresholds fixed from the initial training window: low < 14.89 ≤ mid < 18.57 ≤ high. Calendar
 sub-periods: 2020, 2021–2023, 2024–end; and the test period with and without 2020-02-15 → 2020-04-30.
 
 ---
@@ -146,18 +146,18 @@ sub-periods: 2020, 2021–2023, 2024–end; and the test period with and without
 ## 4. Models (fixed list — no additions without a deviation entry)
 
 | ID | Model | Inputs at t | Estimation |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | M0 | Persistence baseline | per-session mean RV over the previous 21 sessions | none |
 | M1 | HAR (Corsi, 2009), levels | RV_d, RV_w (5-session mean), RV_m (22-session mean) | OLS, hand-coded |
 | M2 | HAR-X | M1 inputs + IV_t / N_t (per-session implied variance) | OLS, hand-coded |
-| M3 | GARCH(1,1), normal QMLE | daily close-to-close returns (%) | `arch` _version_; N_t-step variances summed |
-| M4 | MLP (challenger) | log of M2's four inputs, standardised on training rows | PyTorch _version_; §4.3 |
+| M3 | GARCH(1,1), normal QMLE | daily close-to-close returns (%) | `arch` 8.0.0; N_t-step variances summed |
+| M4 | MLP (challenger) | log of M2’s four inputs, standardised on training rows | PyTorch 2.x, pinned when M4 is built (not installed at freeze); §4.3 |
 | R1 | VIX-implied (reference only) | IV_t | none; used in §6, not ranked against models |
 
 ### 4.3 MLP architecture and tuning rule
 
 Grid: hidden units {8, 16, 32}; layers {1, 2}; weight decay {0, 1e-4, 1e-3}; Adam, lr 1e-3;
-early stopping patience 20 epochs on the last 20% of each training window; seeds {_s1, s2, s3_}.
+early stopping patience 20 epochs on the last 20% of each training window; seeds {0, 1, 2}.
 Output = log per-session variance; back-transformed with the training-residual variance correction.
 **Selection:** lowest mean QLIKE on the validation period (§5.1) across seeds. Reported forecast =
 mean of the three seeds. The grid is not extended after freeze.
@@ -169,16 +169,15 @@ mean of the three seeds. The grid is not extended after freeze.
 ### 5.1 Splits
 
 | Period | Dates | Use |
-|---|---|---|
+| --- | --- | --- |
 | Initial training | first session → 2015-12-31 | first fit; fixes F_min and regime thresholds |
 | Validation | 2016-01-01 → 2019-12-31 | MLP selection only |
 | **Test** | **2020-01-01 → last session with a complete target** | **all reported comparisons; untouched before freeze** |
 
 ### 5.2 Re-estimation
 
-Expanding window. M1–M3 re-estimated every 21 sessions; M4 re-trained once per calendar year with
-the frozen configuration. The last training target must end before the forecast date
-(gap = the target's 30-calendar-day span).
+Expanding window. M1–M3 re-estimated every 21 sessions; M4 re-trained once per calendar year with the frozen configuration. The last training target must end before the forecast date
+(gap = the target’s 30-calendar-day span).
 
 ### 5.3 Losses
 
@@ -191,16 +190,17 @@ Mincer–Zarnowitz per model: RV_t^{30} = a + b·F_t + e; joint test a = 0, b = 
 ### 5.5 Tests
 
 - **Q1 (headline): Clark–West** for nested MSE comparison, M2 (HAR-X) vs M1 (HAR):
-  f_t = e_{1,t}² − [e_{2,t}² − (F_{1,t} − F_{2,t})²]; one-sided (H_A: HAR-X better), α = 0.05,
-  Newey–West HAC t-stat.
+f_t = e_{1,t}² − [e_{2,t}² − (F_{1,t} − F_{2,t})²]; one-sided (H_A: HAR-X better), α = 0.05,
+Newey–West HAC t-stat.
 - **Secondary (Diebold–Mariano on QLIKE, two-sided):** Q1b M2 vs M1; Q1c M4 vs M2; Q1d M1 vs M3,
-  M1 vs M0. **Holm** across this family at α = 0.05.
+M1 vs M0. **Holm** across this family at α = 0.05.
 - HAC lag for overlapping targets: max(21, ⌊4(T/100)^{2/9}⌋).
 
 ### 5.6 Effective sample — stated before results
 
-Test forecasts ≈ _n_; non-overlapping 30-day windows ≈ _n/21_. Small differences may not be
-detectable; a non-rejection is reported as "not detected", never as "no difference".
+Test forecasts ≈ 1,703: test-period dates carrying a complete target, 2020-01-02 → 2026-10-12,
+so non-overlapping 30-day windows ≈ 81. Small differences may not be detectable; a non-rejection
+is reported as “not detected”, never as “no difference”.
 
 ---
 
@@ -236,7 +236,7 @@ session that first prices each action — by release date, with an action announ
 mapped to the next session:
 
 | Control date | Basis |
-|---|---|
+| --- | --- |
 | 2010-05-10 | Sunday 2010-05-09 action; first priced Monday |
 | 2019-10-11 | decided 2019-10-04, released 2019-10-11 |
 | 2020-03-03 | released in session |
@@ -297,7 +297,7 @@ This study measures the session, not the announcement window.
 ## 8. Pre-committed readings
 
 | Outcome | Reading |
-|---|---|
+| --- | --- |
 | Q1: Clark–West rejects | VIX-implied variance adds out-of-sample information beyond lagged RV at the 30-day horizon. Report the size and regime breakdown. |
 | Q1: no rejection | Incremental information not detected at this sample size; report the interval on the loss difference. |
 | Q1b disagrees with Q1 | Report both; MSE and QLIKE weight errors differently — state which periods drive the gap. |
@@ -314,7 +314,7 @@ This study measures the session, not the announcement window.
 ## 9. Leakage and integrity checks (must pass before any result is reported)
 
 1. Planted-leak test: add RV_{t+1} to the M1 inputs; test QLIKE must fall sharply. Proves the
-   evaluation can detect leakage. The real specification is never altered.
+evaluation can detect leakage. The real specification is never altered.
 2. Every input timestamp ≤ forecast timestamp — unit-tested.
 3. No training target overlaps the forecast date — unit-tested.
 4. Shuffled-target MLP must lose to M0.
@@ -330,7 +330,7 @@ This study measures the session, not the announcement window.
 4. No claim beyond SPY and the stated window.
 5. No causal claim about what CPI or FOMC content does — only timing of realised variance.
 6. No text-derived signal, sentiment score or feature. FOMC documents are retrieved and cited for
-   explanation only.
+explanation only.
 
 ---
 
@@ -347,14 +347,14 @@ This study measures the session, not the announcement window.
 ## 12. Repository integrity
 
 - This file is committed and tagged **`v0.1-prereg`** before any model is fitted. The tag is never
-  moved, amended or force-pushed. _Optional: OSF registration — DOI_.
+moved, amended or force-pushed. Not registered on OSF — no DOI.
 - Snapshot pulled once, hashed, never regenerated. `data/raw/` is git-ignored; the manifest and
-  audit results are committed. No vendor data is committed. CI runs on a synthetic fixture.
+audit results are committed. No vendor data is committed. CI runs on a synthetic fixture.
 - Code committed with this file: fetch, audit, calendar and RV-definition modules only.
 
 ---
 
 ## 13. Sign-off
 
-Design frozen: _YYYY-MM-DD_.
+Design frozen: 2026-11-12.
 No model has been fitted and no out-of-sample forecast or event estimate computed at the time of writing.
