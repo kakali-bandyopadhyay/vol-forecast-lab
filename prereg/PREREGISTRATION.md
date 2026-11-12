@@ -282,9 +282,10 @@ cut that drops the 10 dual days.
 ### 7.4 VIX change on event days
 
 ΔVIX_t = α + β_CPI·CPI_t + β_FOMC·FOMC_t + β_EMG·EMG_t + λ·VIX_{t−1} + ρ·ΔVIX_{t−1} +
-ε_t, HAC (lag 5) — compared with a level-matched baseline, not with zero. Both event regressions
-carry the same controls, so a single crisis day cannot dominate ΔVIX on its own; β_EMG sits
-outside the Holm family here too.
+δ·weekday dummies + ε_t, HAC (lag 5) — compared with a level-matched baseline, not with zero.
+Both event regressions carry the same event and emergency indicators, so the five emergency-action
+sessions do not load onto the baseline. The §7.4 coefficients are secondary to the variance results
+and, together with β_EMG, sit outside the Holm family.
 
 ### 7.5 Stated limit
 
