@@ -70,3 +70,13 @@ def load_vix_fred(snapshot_id: str) -> pd.DataFrame:
     frame = pd.read_csv(path)
     date_column = next((column for column in frame.columns if column.strip().lower() in {"observation_date", "date"}), frame.columns[0])
     return _date_index(frame, date_column)
+
+
+def load_panel_metadata(panel_dir: str | Path | None = None) -> dict[str, Any]:
+    """Read the frozen panel manifest — the single source for §3.4 F_min and the §3.5 terciles.
+
+    The panel itself is derived and git-ignored, and its bytes move with the pyarrow version, so
+    model code must take these constants from here rather than from a second hard-coded copy.
+    """
+    directory = Path(panel_dir) if panel_dir is not None else REPO_ROOT / "data" / "panel"
+    return json.loads((directory / "panel_manifest.json").read_text(encoding="utf-8"))

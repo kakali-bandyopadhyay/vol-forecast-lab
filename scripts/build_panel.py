@@ -185,8 +185,16 @@ def main() -> int:
 
     digest = sha256_of(panel_path)
     (out_dir / "panel.sha256").write_text(f"{digest}  panel.parquet\n", encoding="utf-8")
+
+    # §3.4 F_min and the §3.5 terciles are computed here and recorded in the manifest, so model
+    # code reads them from the frozen panel instead of carrying a second hard-coded copy.
+    stats = training_statistics(panel)
     (out_dir / "panel_manifest.json").write_text(
-        json.dumps({**metadata, "sha256": digest}, indent=2) + "\n", encoding="utf-8"
+        json.dumps(
+            {**metadata, "training": {**stats, "end": TRAINING_END.isoformat()}, "sha256": digest},
+            indent=2,
+        ) + "\n",
+        encoding="utf-8",
     )
 
     # --- coverage counts (full sample; no performance statistic) -------------
@@ -210,7 +218,6 @@ def main() -> int:
     print()
 
     # --- training-window statistics only (§3.4, §3.5, §3.1) ------------------
-    stats = training_statistics(panel)
     print(f"training window        {metadata['first_session']} .. {TRAINING_END.isoformat()}")
     print(f"  rows                 {stats['rows']} ({stats['rows_with_target']} with a target)")
     print(f"  F_min (1st pct)      {stats['f_min']:.6e}")
