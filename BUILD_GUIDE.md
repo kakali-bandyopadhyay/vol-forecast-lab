@@ -17,7 +17,9 @@ reports computed numbers and cited text.
 **Authorship rule.** The author hand-writes the core: RV proxies, targets, splitter, HAR/HAR-X,
 losses and tests (Clark–West, Diebold–Mariano, Mincer–Zarnowitz), event regressions, the MLP,
 the agent graph and verifier, the DAG task graph, the Kubernetes manifests, drift metrics and every
-test. AI assistance is limited to plumbing (data fetch, Docker/Compose files, CI workflow, FastAPI
+test of author-written code. Tests of AI-written plumbing (fetch, compose, API routing, Terraform
+naming) may be AI-written; they are reviewed line by line and listed under Issues and fixes.
+AI assistance is limited to plumbing (data fetch, Docker/Compose files, CI workflow, FastAPI
 wrapper, README formatting), reviewed line by line. Each step says which applies.
 
 **Build order (vertical slice first).** Lock data and pre-registration → persistence/HAR/HAR-X
@@ -155,7 +157,9 @@ tag. Optional OSF registration.
 training target ends before the forecast date.
 **Who.** Author.
 **Tests.** No training target overlaps a forecast date; windows never shrink; first forecast =
-first session ≥ test start; validation rows never used to fit M1–M3 parameters used in test.
+first session ≥ test start; validation folds stay inside 2016-01-01 → 2019-12-31, and validation is
+used only to select M4 — M1–M3 are fixed-form, with nothing tuned on it. (Test-period training sets
+do include 2016–19 rows: that is the expanding window of §5.2, not leakage.)
 **Committed.** _hash_
 
 ## Step 6 — Vertical slice: M0, HAR, HAR-X (2 h)
@@ -361,7 +365,7 @@ advance.
 
 | # | Issue | Cause | Fix | Commit |
 |---|---|---|---|---|
-| 1 | | | | |
+| 1 | Codex P3 wrote 9 plumbing tests (test_fetch_docs ×5, test_compose, test_api ×2, test_terraform_names) | P3 brief item 10 asked for them; brief not checked against the authorship rule before running | Kept; reviewed line by line by the author; authorship rule clarified 2026-11-12 | _P3 commit hash_ |
 
 ## Lessons
 
