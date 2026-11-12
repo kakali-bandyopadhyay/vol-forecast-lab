@@ -78,7 +78,7 @@ All times are US/Eastern. Data vintage = snapshot date above.
 
 ### 2.2 Window
 
-_First session_ (2010-01-04 or later) to _last session in snapshot_. Sessions: _n_.
+First session 2010-01-04, last session 2026-11-11. Sessions: 4,241.
 
 ### 2.3 Alignment and missing data
 
@@ -92,13 +92,18 @@ _First session_ (2010-01-04 or later) to _last session in snapshot_. Sessions: _
 
 | Check | Rule | Result |
 |---|---|---|
-| Missing sessions vs calendar | listed | _n_ |
-| OHLC consistency | L ≤ min(O,C), H ≥ max(O,C) | _n violations_ |
-| Zero-range days | logged, kept | _n_ |
-| VIX Cboe vs FRED close | abs diff ≤ 0.01 | _n mismatches_ |
-| Ex-dividend spot check | adjusted overnight ratio ≈ raw gap net of dividend | _n / n pass_ |
-| Event rows checked against source page | every row | _n / n_ |
-| Early-close sessions | flagged | _n_ |
+| Missing sessions vs calendar | listed | 0 |
+| OHLC consistency | L ≤ min(O,C), H ≥ max(O,C) | 0 violations |
+| Zero-range days | logged, kept | 0 |
+| VIX Cboe vs FRED close | abs diff ≤ 0.01 | 0 mismatches on 4,240 shared sessions (max 0.000000) |
+| Ex-dividend spot check | adjusted overnight ratio ≈ raw gap net of dividend | 67/67 (worst 2.67 bp) |
+| Event rows checked against source page | every row | 10/10 spot-check, external review (DeepSeek, 11 Nov), briefs/vfl-event-calendar-audit_2026-11-11.md |
+| Early-close sessions | flagged | 34 |
+| VIX rows on non-session dates | listed, excluded by the session join | 33, all from 2022-05-30; US market holidays, none repeats the prior close (not forward-fills) |
+| Excluded dates (§2.3) | listed in `data/audit.json` | 0 |
+
+Source: `data/audit.json`, snapshot `20261112T071104Z`, reproducible with
+`scripts/audit_snapshot.py`.
 
 ---
 
@@ -213,8 +218,39 @@ detectable; a non-rejection is reported as "not detected", never as "no differen
 ### 7.1 Events and conventions
 
 Scheduled CPI releases (08:30 ET, before the open) and scheduled FOMC statements (released during
-the regular session). Unscheduled actions excluded and listed. A day with both events carries both
-indicators and is listed; no day is dropped for overlap.
+the regular session). A day with both events carries both indicators and is listed; no day is
+dropped for overlap.
+
+**Sample.** Every session from 2010-01-04 to the last session in the snapshot: 134 FOMC days,
+200 CPI days, and 10 days carrying both. This is the full history, not the untouched test period
+of §5.1, which governs the forecast comparison only. The event study is descriptive and in-sample;
+no reading of it is a forecast. Robustness: re-run on 2020-01-01 onward.
+
+**Non-session events.** An event whose `event_date` is not an XNYS session is excluded by rule
+(`in_event_sample = false`); `effective_session` is retained for transparency but never used to
+reassign the event. Two CPI releases fall on Good Friday, 2017-04-14 and 2020-04-10, so the CPI
+event sample is 200 of 202 rows.
+
+**Unscheduled actions.** Excluded as events; entered only as an emergency control, set on the
+session that first prices each action — by release date, with an action announced on a non-session
+mapped to the next session:
+
+| Control date | Basis |
+|---|---|
+| 2010-05-10 | Sunday 2010-05-09 action; first priced Monday |
+| 2019-10-11 | decided 2019-10-04, released 2019-10-11 |
+| 2020-03-03 | released in session |
+| 2020-03-16 | Sunday 2020-03-15 action; first priced Monday |
+| 2020-03-23 | notation vote with a released statement |
+
+Not used, with reason: 2010-10-15 and 2014-03-04, no released statement recorded; 2020-03-17,
+scheduled meeting cancelled, nothing announced; 2020-03-19, 2020-03-31, 2020-08-27 and
+2025-08-22, notation votes with no released statement recorded in `unscheduled.csv`.
+
+The control is there because Feb–Apr 2020 is a high-leverage block for the γ coefficients in a log
+specification, and because unmetered crisis days inflate the residual variance that sets every HAC
+standard error. It is not there to absorb anything from β_FOMC: no scheduled FOMC date falls in
+March 2020, so those actions never enter the FOMC indicator.
 
 ### 7.2 Signed hypotheses
 
@@ -225,16 +261,30 @@ Opposite-component coefficients are reported as secondary.
 ### 7.3 Specification
 
 For component k ∈ {overnight r_on², regular-session r_oc²}:
-log(x_{k,t} + c_k) = α + β_CPI·CPI_t + β_FOMC·FOMC_t + γ₁·log RV_d,t−1 + γ₂·log RV_w,t−1 +
-γ₃·log RV_m,t−1 + δ·weekday dummies + ε_t, with c_k = 1% of the training-window median of x_k.
+log(x_{k,t} + c_k) = α + β_CPI·CPI_t + β_FOMC·FOMC_t + β_EMG·EMG_t + γ₁·log RV_d,t−1 +
+γ₂·log RV_w,t−1 + γ₃·log RV_m,t−1 + δ·weekday dummies + ε_t,
+with c_k = 1% of the full-sample median of x_k.
+
+The model has no CPI×FOMC interaction; β_CPI and β_FOMC are estimated almost entirely from
+single-event days, and on the 10 dual days their effects are assumed additive in logs — that is,
+multiplicative in levels. Additivity is an assumption of the specification, not a finding, and the
+dual-day cut below shows how much it matters.
+
 Newey–West HAC (lag 5). One-sided tests for H-CPI and H-FOMC; Holm across the four event
-coefficients. Report event counts, coefficients, 95% CIs and implied multiplicative effects.
-Robustness: GK in place of r_oc²; excluding 2020-02-15 → 2020-04-30.
+coefficients. β_EMG is a nuisance control and sits outside the Holm family. Report event counts,
+coefficients, 95% CIs, implied multiplicative effects, and the weekday coefficients as a
+diagnostic of how large a general Wednesday effect is.
+
+Robustness: GK in place of r_oc²; excluding 2020-02-15 → 2020-04-30, which is complementary to the
+emergency control — one drops the block, the other meters it; the model without weekday dummies; a
+cut that drops the 10 dual days.
 
 ### 7.4 VIX change on event days
 
-ΔVIX_t = α + β_CPI·CPI_t + β_FOMC·FOMC_t + λ·VIX_{t−1} + ρ·ΔVIX_{t−1} + ε_t, HAC (lag 5) —
-compared with a level-matched baseline, not with zero.
+ΔVIX_t = α + β_CPI·CPI_t + β_FOMC·FOMC_t + β_EMG·EMG_t + λ·VIX_{t−1} + ρ·ΔVIX_{t−1} +
+ε_t, HAC (lag 5) — compared with a level-matched baseline, not with zero. Both event regressions
+carry the same controls, so a single crisis day cannot dominate ΔVIX on its own; β_EMG sits
+outside the Holm family here too.
 
 ### 7.5 Stated limit
 

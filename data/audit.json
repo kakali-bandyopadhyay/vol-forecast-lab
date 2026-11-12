@@ -19,7 +19,7 @@
     "ex_div_pass": "67/67",
     "event_rows": {
       "fomc": "134/134",
-      "cpi": "200/202"
+      "cpi": "200/200"
     },
     "early_close_sessions": 34,
     "excluded_dates": 0
@@ -665,7 +665,7 @@
         "file": "data/events/fomc.csv",
         "rows_in_file": 134,
         "rows_in_event_sample": 134,
-        "in_sample_flag_column": null,
+        "in_sample_flag_column": "in_event_sample",
         "unparseable_dates": [],
         "non_session_dates": [],
         "missing_or_invalid_url": [],
@@ -679,18 +679,18 @@
         "role": "event_set",
         "file": "data/events/cpi.csv",
         "rows_in_file": 202,
-        "rows_in_event_sample": 202,
-        "in_sample_flag_column": null,
+        "rows_in_event_sample": 200,
+        "in_sample_flag_column": "in_event_sample",
         "unparseable_dates": [],
-        "non_session_dates": [
+        "non_session_dates": [],
+        "missing_or_invalid_url": [],
+        "all_sessions": true,
+        "all_urls_present": true,
+        "rows_outside_event_sample": 2,
+        "outside_sample_dates": [
           "2017-04-14",
           "2020-04-10"
-        ],
-        "missing_or_invalid_url": [],
-        "all_sessions": false,
-        "all_urls_present": true,
-        "rows_outside_event_sample": 0,
-        "outside_sample_dates": []
+        ]
       },
       "unscheduled": {
         "rule": "every row of the event sample is a session and carries an http(s) source URL",
