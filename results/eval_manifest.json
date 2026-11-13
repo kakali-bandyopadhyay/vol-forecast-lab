@@ -1,0 +1,25 @@
+{
+  "panel_sha256": "e5b8a91420e396696d6ae0ee821232e04f5111bc31ab82637ac5b965c367fe41",
+  "f_min": 0.00037220814973032,
+  "n_folds": 82,
+  "n_forecasts": 1703,
+  "first_forecast": "2020-01-02",
+  "last_forecast": "2026-10-12",
+  "hac_lag": 21,
+  "floored_counts": {
+    "M0": 0,
+    "M1": 0,
+    "M2": 1,
+    "R1": 0
+  },
+  "planted_leak_qlike_drop": 0.1054319186059707,
+  "clark_west_mean_difference": 4.871916885285848e-06,
+  "clark_west_interval_95": [
+    -1.259377477774336e-06,
+    1.1003211248346032e-05
+  ],
+  "clark_west_interval_note": "mean f_t and mean +/- 1.96 HAC standard errors; f_t > 0 favours M2",
+  "code_commit": "7775f9d9029ab3c9225c3c633af068c7faedde3e",
+  "dm_convention": "d = loss(first) - loss(second); negative favours the first model",
+  "holm_family": "deferred until all four \u00a75.5 tests exist; DM p-values are raw"
+}
