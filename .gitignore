@@ -9,3 +9,8 @@ mlruns/
 .pytest_cache/
 logs/
 data/panel/
+results/tests_before.parquet
+.terraform/
+*.tfstate
+*.tfstate.*
+*.zip

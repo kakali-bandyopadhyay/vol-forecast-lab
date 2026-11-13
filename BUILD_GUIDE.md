@@ -160,7 +160,7 @@ training target ends before the forecast date.
 first session ≥ test start; validation folds stay inside 2016-01-01 → 2019-12-31, and validation is
 used only to select M4 — M1–M3 are fixed-form, with nothing tuned on it. (Test-period training sets
 do include 2016–19 rows: that is the expanding window of §5.2, not leakage.)
-**Committed.** _hash_
+**Committed.** `c13de96`
 
 ## Step 6 — Vertical slice: M0, HAR, HAR-X (2 h)
 
@@ -169,7 +169,7 @@ IV_t/N_t); per-session forecasts × N_t; positivity rule §3.4 with floor counts
 **Who.** Author.
 **Tests.** HAR recovers β = [0.1, 0.4, 0.3, 0.2] to 1e-8 on noise-free synthetic data; IV for
 VIX = 20 equals 0.00328767; HAR-X with a zero IV coefficient reproduces HAR exactly.
-**Committed.** _hash_
+**Committed.** `3522c47`
 
 ## Step 7 — Evaluation (3 h)
 
