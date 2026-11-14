@@ -236,6 +236,8 @@ class FoldFit:
     epochs: np.ndarray
     cap_flags: np.ndarray
     usable: np.ndarray
+    y_mean: float
+    y_std: float
 
 
 def usable_rows(X, y_log, train_idx) -> np.ndarray:
@@ -261,6 +263,12 @@ def fit_fold(X, y_log, train_idx, cfg: dict) -> FoldFit:
     scaler = Scaler().fit(values, fit_rows, cutoff_pos=int(stop_rows[0]))
     scaled = scaler.transform(values)
 
+    y_mean = float(target[fit_rows].mean())
+    y_std = float(target[fit_rows].std(ddof=0))
+    if not np.isfinite(y_std) or y_std <= 0.0:
+        raise ValueError("log target has zero variance on the fit block")
+    z = (target - y_mean) / y_std
+
     models = []
     s2 = []
     epochs = []
@@ -268,14 +276,14 @@ def fit_fold(X, y_log, train_idx, cfg: dict) -> FoldFit:
     for seed in SEEDS:
         model, best_epoch, hit_cap = train(
             scaled[fit_rows],
-            target[fit_rows],
+            z[fit_rows],
             scaled[stop_rows],
-            target[stop_rows],
+            z[stop_rows],
             cfg,
             seed,
         )
         with torch.no_grad():
-            fitted = model(_tensor(scaled[usable])).numpy().reshape(-1)
+            fitted = model(_tensor(scaled[usable])).numpy().reshape(-1) * y_std + y_mean
         residual = target[usable] - fitted
         models.append(model)
         s2.append(float(np.mean(residual ** 2)))
@@ -289,6 +297,8 @@ def fit_fold(X, y_log, train_idx, cfg: dict) -> FoldFit:
         epochs=np.asarray(epochs, dtype=int),
         cap_flags=np.asarray(cap_flags, dtype=bool),
         usable=usable,
+        y_mean=y_mean,
+        y_std=y_std,
     )
 
 
@@ -316,7 +326,7 @@ def forecast_fold(fold_fit: FoldFit, X, forecast_idx) -> tuple[np.ndarray, np.nd
     for model, s2 in zip(fold_fit.models, fold_fit.s2):
         model.eval()
         with torch.no_grad():
-            logged = model(_tensor(scaled)).numpy().reshape(-1)
+            logged = model(_tensor(scaled)).numpy().reshape(-1) * fold_fit.y_std + fold_fit.y_mean
         per_seed.append(back_transform(logged, s2))
     levels = np.vstack(per_seed)
     return levels.mean(axis=0), levels

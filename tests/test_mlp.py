@@ -130,6 +130,8 @@ def test_back_transform_and_level_scale_seed_mean():
         epochs=np.zeros(3, dtype=int),
         cap_flags=np.zeros(3, dtype=bool),
         usable=np.arange(5),
+        y_mean=0.0,
+        y_std=1.0,
     )
     mean, per_seed = mlp.forecast_fold(folded, X, np.arange(5))
 
@@ -161,6 +163,17 @@ def test_early_stopping_restores_the_best_epoch():
             ).item()
         )
     assert stop_mse == pytest.approx(min(history), rel=1e-12, abs=1e-15)
+
+
+def test_fit_fold_recovers_a_far_from_zero_target_level():
+    rng = np.random.default_rng(7)
+    X = rng.normal(size=(600, 4))
+    y = -9.5 + 0.3 * X[:, 0] + rng.normal(scale=0.1, size=600)
+    fitted = mlp.fit_fold(X, y, np.arange(500), {"hidden": 8, "layers": 1, "weight_decay": 0.0})
+    mean, _ = mlp.forecast_fold(fitted, X, np.arange(500, 600))
+    assert fitted.y_mean == pytest.approx(y[:400].mean())
+    assert 0.9 < np.median(mean / np.exp(y[500:600])) < 1.1
+    assert np.all(fitted.s2 < 0.05)
 
 
 # --- grid and inputs -------------------------------------------------------
