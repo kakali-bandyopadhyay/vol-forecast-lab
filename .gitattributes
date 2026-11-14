@@ -3,3 +3,5 @@
 *.jpg binary
 *.pdf binary
 *.parquet binary
+# Fixtures are byte copies of snapshot files (hashes in the docs manifest): never convert line endings
+fixtures/fomc/** -text

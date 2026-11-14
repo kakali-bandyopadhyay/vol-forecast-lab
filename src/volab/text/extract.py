@@ -11,9 +11,15 @@ from typing import Any
 import pymupdf
 from bs4 import BeautifulSoup
 
-EXTRACTOR_VERSION = "1.0"
+EXTRACTOR_VERSION = "1.1"
 
 _TERMINAL = re.compile(r"[.:;?]$")
+# A block ending in a lowercase letter or comma is mid-sentence (page/column break), unless it is a
+# kept heading; the next block continues it even when it starts with a capital ("Federal" / "Reserve").
+_UNFINISHED = re.compile(r"[a-z,]$")
+# Never a continuation: figure notes, sources, footnotes/table rows (leading digit).
+_NOT_CONTINUATION = re.compile(r"^(?:NOTE|Note|Source)s?:|^\d")
+_RETURN_LINK = re.compile(r"\s*Return to text\s*$")
 _PAGE_NUMBER = re.compile(r"^(?:page\s+)?\d+$", re.IGNORECASE)
 _UNDERSCORES = re.compile(r"^_{5,}$")
 _DATE_LINE = re.compile(r"^[A-Z][a-z]+ \d{1,2}(?:[–-]\d{1,2})?, \d{4}$")
@@ -164,6 +170,7 @@ def _extract_statement(
     texts: list[str] = []
     for paragraph in article.find_all("p"):
         text = _normalise(paragraph.get_text(" ", strip=True))
+        text = _RETURN_LINK.sub("", text).strip()  # footnote back-link text, not content
         if text and not _statement_drop(text):
             texts.append(text)
     if not texts:
@@ -188,7 +195,7 @@ def _header_line(text: str) -> bool:
     return bool(
         _UNDERSCORES.fullmatch(text)
         or _PAGE_NUMBER.fullmatch(text)
-        or lowered in {"federal open market committee", "minutes of the federal open market committee"}
+        or lowered in {"federal open market committee", "minutes of the federal open market committee", "minutes of the"}
         or _MINUTES_TITLE.fullmatch(text)
         or _DATE_LINE.fullmatch(text)
         or _RUNNING_HEADER.fullmatch(text)
@@ -211,7 +218,7 @@ def _ordered_blocks(page) -> list[Any]:
     def column(block) -> int:
         return 0 if float(block[0]) < width / 2.0 else 1
 
-    return sorted(
+    ordered = sorted(
         blocks,
         key=lambda block: (
             band(block),
@@ -220,6 +227,61 @@ def _ordered_blocks(page) -> list[Any]:
             float(block[0]),
         ),
     )
+    return _merge_line_blocks(ordered, _block_font_sizes(page))
+
+
+def _single_line(block) -> bool:
+    return "\n" not in str(block[4]).strip()
+
+
+def _bbox_key(x0: float, y0: float) -> tuple[int, int]:
+    return (round(float(x0)), round(float(y0)))
+
+
+def _block_font_sizes(page) -> dict[tuple[int, int], float]:
+    """Largest span font size per text block, keyed by its rounded top-left corner.
+
+    Keyed by position, not block number: "dict" output can contain blocks that "blocks"
+    output omits, so the two numberings drift apart (seen on 2025-12-10 page 2).
+    """
+    sizes: dict[tuple[int, int], float] = {}
+    for block in page.get_text("dict")["blocks"]:
+        spans = [span for line in block.get("lines", []) for span in line["spans"] if span["text"].strip()]
+        if spans:
+            sizes[_bbox_key(block["bbox"][0], block["bbox"][1])] = max(float(span["size"]) for span in spans)
+    return sizes
+
+
+def _merge_line_blocks(blocks: list[Any], sizes: dict[tuple[int, int], float] | None = None) -> list[Any]:
+    """Rebuild paragraphs on PDFs that emit one block per line (2024+ minutes layout).
+
+    A single-line block joins the block above it when the block above also ends in a
+    single-line block, the left edges align (±20 pt, first-line indent) and the vertical
+    gap is under 0.8 × the line height. Paragraph breaks on these PDFs are ≥ 1 line
+    height, so they are kept; multi-line blocks (pre-2024 layout) are never merged.
+    Both lines must share a font size (±0.5 pt): headings on these PDFs are set at 14 pt
+    against 10 pt body text, so a heading is never glued onto the paragraph around it.
+    """
+    sizes = sizes or {}
+    merged: list[list[Any]] = []
+    for block in blocks:
+        if merged:
+            previous = merged[-1]
+            line_height = float(block[3]) - float(block[1])
+            gap = float(block[1]) - float(previous[3])
+            if (
+                previous[7]
+                and _single_line(block)
+                and abs(sizes.get(_bbox_key(block[0], block[1]), 0.0) - float(previous[8])) <= 0.5
+                and abs(float(block[0]) - float(previous[0])) <= 20.0
+                and -1.0 <= gap < 0.8 * line_height
+            ):
+                previous[0] = min(float(previous[0]), float(block[0]))
+                previous[3] = float(block[3])
+                previous[4] = str(previous[4]).rstrip("\n") + "\n" + str(block[4])
+                continue
+        merged.append([*block[:7], _single_line(block), sizes.get(_bbox_key(block[0], block[1]), 0.0)])
+    return [tuple(item[:7]) for item in merged]
 
 
 def _title_like(text: str) -> bool:
@@ -285,6 +347,26 @@ def _noise_block(text: str) -> bool:
     return alphabetic / len(tokens) < 0.5
 
 
+_ATTENDANCE_MARKERS = re.compile(r"\b(?:Board of Governors|Federal Reserve Bank|Division of|Board)\b")
+_ATTENDED_NOTE = re.compile(r"^\d+\s+Attended\b")
+
+
+def _attendance_list_block(text: str) -> bool:
+    """Drop attendance lists and their footnotes on any page (2024+ minutes end with them).
+
+    A list block is name-heavy (≥ 60 % capitalised words, ≥ 8 words) and names Board or
+    Reserve Bank units. Vote records ("Voting for/against …") are always kept.
+    """
+    if _ATTENDED_NOTE.match(text):
+        return True
+    if text.startswith("Voting"):
+        return False
+    words = re.findall(r"[A-Za-z][A-Za-z'’\-]*", text)
+    if len(words) < 8 or not _ATTENDANCE_MARKERS.search(text):
+        return False
+    return sum(1 for word in words if word[0].isupper()) / len(words) >= 0.6
+
+
 def _attendee_block(text: str, page_number: int) -> bool:
     """Drop the page 1–2 attendee lists and footnote blocks."""
     if page_number > 2:
@@ -306,7 +388,13 @@ def _join_raw(raw: list[tuple[int, str]]) -> list[dict[str, Any]]:
     for page_number, text in raw:
         if paragraphs:
             previous = paragraphs[-1]
-            if not _TERMINAL.search(previous["text"]) and text[:1].islower():
+            unfinished = (
+                bool(_UNFINISHED.search(previous["text"]))
+                and not _title_like(previous["text"])
+                and not _NOT_CONTINUATION.match(text)
+                and not _title_like(text)
+            )
+            if not _TERMINAL.search(previous["text"]) and (text[:1].islower() or unfinished):
                 if previous["text"].endswith("-"):
                     previous["text"] = previous["text"][:-1] + text
                 else:
@@ -372,7 +460,7 @@ def _extract_minutes(source_path: Path) -> tuple[str, list[dict[str, Any]], int,
                 else:
                     blocks_dropped += 1
                 continue
-            if _attendee_block(text, page_number) or _noise_block(text):
+            if _attendee_block(text, page_number) or _attendance_list_block(text) or _noise_block(text):
                 blocks_dropped += 1
                 continue
             raw.append((page_number, text))

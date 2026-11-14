@@ -132,12 +132,12 @@ def test_dq_uses_vote_tally_and_checks_the_dissent_count(tmp_path: Path):
         {"doc_id": "statement-20260729", "event_date": date(2026, 7, 29),
          "doc_type": "statement", "url": "u", "sha256": "s", "text": "x" * 600,
          "n_chars": 600, "page_count": None, "votes_for": [], "votes_against": ["A", "B"],
-         "dissent_text": "who", "vote_tally": "9-3", "extractor_version": "1.0",
+         "dissent_text": "who", "vote_tally": "9-3", "extractor_version": extract.EXTRACTOR_VERSION,
          "extracted_at": datetime(2026, 11, 15, tzinfo=timezone.utc)},
         {"doc_id": "statement-20260916", "event_date": date(2026, 9, 16),
          "doc_type": "statement", "url": "u2", "sha256": "s2", "text": "x" * 600,
          "n_chars": 600, "page_count": None, "votes_for": [], "votes_against": ["A", "B", "C"],
-         "dissent_text": "who", "vote_tally": "9-3", "extractor_version": "1.0",
+         "dissent_text": "who", "vote_tally": "9-3", "extractor_version": extract.EXTRACTOR_VERSION,
          "extracted_at": datetime(2026, 11, 15, tzinfo=timezone.utc)},
     ])
     documents_path = tmp_path / "documents.parquet"
@@ -315,7 +315,7 @@ def _documents_frame() -> pd.DataFrame:
         "dissent_text": "who preferred",
         "vote_tally": None,
         "blocks_dropped": 0,
-        "extractor_version": "1.0",
+        "extractor_version": extract.EXTRACTOR_VERSION,
         "extracted_at": datetime(2026, 11, 15, tzinfo=timezone.utc),
     }])
 
@@ -483,3 +483,79 @@ def test_index_guard_rejects_untracked_or_dirty_eval_file(monkeypatch):
         pipeline, "_git", lambda args: SimpleNamespace(returncode=0, stdout="")
     )
     pipeline.require_committed("data/text/eval_questions.csv")
+
+
+# --- extractor 1.1: line-per-block PDFs (2024+ minutes) — Claude fix, BUILD_GUIDE Issues ---
+
+def _line(x0, y0, text, number, height=11.0, x1=500.0):
+    """A PyMuPDF-style single-line text block tuple."""
+    return (x0, y0, x1, y0 + height, text + "\n", number, 0)
+
+
+def test_line_blocks_merge_into_a_paragraph_but_not_across_font_sizes():
+    """Same-size lines with a small gap merge; a larger heading line and a paragraph gap do not."""
+    blocks = [
+        _line(90, 100, "A joint meeting of the Committee and the Board of Governors of the Federal", 0),
+        _line(90, 117, "Reserve System was held in the offices of the Board.", 1),
+        _line(90, 140, "Developments in Financial Markets and Open Market Operations", 2, height=14.0),
+        _line(90, 171, "The manager turned first to an overview of market developments.", 3),
+        _line(90, 200, "A new paragraph starts after a gap of more than one line.", 4),
+    ]
+    sizes = {extract._bbox_key(b[0], b[1]): (14.0 if b[5] == 2 else 10.0) for b in blocks}
+    merged = extract._merge_line_blocks(blocks, sizes)
+    texts = [block[4] for block in merged]
+    assert len(merged) == 4
+    assert "of the Federal\nReserve System" in texts[0]
+    assert texts[1].startswith("Developments in Financial Markets")
+    assert texts[2].startswith("The manager") and texts[3].startswith("A new paragraph")
+
+
+def test_multi_line_blocks_are_never_merged():
+    """Pre-2024 PDFs already give paragraph blocks; those stay as they are."""
+    blocks = [
+        (50, 100, 300, 140, "line one\nline two\n", 0, 0),
+        (50, 142, 300, 182, "line three\nline four\n", 1, 0),
+    ]
+    assert len(extract._merge_line_blocks(blocks, {})) == 2
+
+
+def test_unfinished_block_joins_a_capitalised_continuation_but_not_notes_or_headings():
+    """'…of the Federal' + 'Reserve…' joins; figure notes, footnotes and headings do not."""
+    start = "A joint meeting of the Committee was held in the offices of the Board of Governors of the Federal"
+    joined = extract._join_raw([(1, start), (2, "Reserve System met as planned.")])
+    assert [p["text"] for p in joined] == [start + " Reserve System met as planned."]
+    assert joined[0]["page"] == 1
+    for nxt in ("Note: Definitions of variables are in the general note.", "1 Four members attended.", "Core PCE inflation"):
+        caption = "Figure 2. Medians, central tendencies, and ranges of projections for the unemployment rate over the longer run"
+        assert len(extract._join_raw([(1, caption), (1, nxt)])) == 2
+    heading = extract._join_raw([(1, "Staff Review of the Economic Situation"), (1, "The information reviewed showed growth.")])
+    assert len(heading) == 2
+
+
+def test_attendance_lists_are_dropped_on_any_page_but_vote_records_are_kept():
+    """2024+ minutes put the attendance list at the end; vote records must survive."""
+    attendance = ("Eugenio P. Pinto, Special Adviser to the Board, Division of Board Members, Board "
+                  "Odelle Quisumbing, Assistant to the Secretary, Office of the Secretary, Board")
+    vote = ("Voting for this action: Jerome H. Powell, John C. Williams, Michael S. Barr, Michelle W. "
+            "Bowman, Susan M. Collins, Lisa D. Cook, Board")
+    assert extract._attendance_list_block(attendance)
+    assert extract._attendance_list_block("5 Attended Tuesday’s session only.")
+    assert not extract._attendance_list_block(vote)
+    assert not extract._attendance_list_block(LONG_PROSE + " The Board of Governors agreed.")
+
+
+def test_statement_footnote_back_link_is_removed(tmp_path: Path):
+    """'Return to text' is link text, not content."""
+    html = ('<html><body><div id="article"><p>The Committee decided to maintain the target range '
+            'for the federal funds rate at 0 to 1/4 percent and will keep reinvesting principal.</p>'
+            '<p>1. The Open Market Desk will issue a technical note. Return to text</p></div></body></html>')
+    path = tmp_path / "statement.html"
+    path.write_text(html, encoding="utf-8")
+    record = extract_document(path, event_date="20100810", doc_type="statement", url="u", sha256="s")
+    assert "Return to text" not in record["text"]
+    assert record["text"].endswith("technical note.")
+
+
+def test_extractor_version_is_1_1():
+    """Raised for the line-merge change so every stored document is re-extracted."""
+    assert extract.EXTRACTOR_VERSION == "1.1"
