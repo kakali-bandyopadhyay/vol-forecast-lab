@@ -1,0 +1,31 @@
+{
+  "panel_sha256": "e5b8a91420e396696d6ae0ee821232e04f5111bc31ab82637ac5b965c367fe41",
+  "code_commit": "5168a0b00b3f114b8250a8353a92703f46ef2986",
+  "window_rule_note": "DEVIATIONS A (commit 92f9631): 30-day results drop t in the window or with a target session in it; Q3 and \u00a77.4 drop window sessions; Q3 Holm is applied within the primary and ex-window runs.",
+  "window": {
+    "start": "2020-02-15",
+    "end": "2020-04-30",
+    "removed_forecasts": 71,
+    "ex_window_forecasts": 1632
+  },
+  "c_k": {
+    "on": 8.09216307583155e-08,
+    "oc": 1.506567730280952e-07,
+    "gk": 3.0234958749606505e-07
+  },
+  "counts": {
+    "forecasts": 1703,
+    "ex_window_forecasts": 1632,
+    "q3_n_obs": 4219,
+    "cpi": 199,
+    "fomc": 133,
+    "dual": 10,
+    "emg": 5
+  },
+  "hac_lags": {
+    "q2": 21,
+    "q2_ex_window": 21,
+    "q3": 5,
+    "q3_vix": 5
+  }
+}
