@@ -60,11 +60,16 @@ def test_statement_fixtures_extract_body_and_votes():
 
 
 def test_two_column_minutes_keep_left_column_before_right():
+    """Page 3: a left-column paragraph lower on the page (y≈317) precedes a right-column one at the top (y≈71).
+
+    Markers are body prose: the attendee/alternate lines used before extractor 1.1 are now dropped.
+    """
     text = _extract("minutes-20200129.pdf", "minutes", "20200129")["text"]
 
-    assert text.index("Patrick Harker, President") < text.index(
+    assert text.index("By unanimous vote, the following officers of the Committee were selected") < text.index(
         "By unanimous vote, the Committee selected Lorie"
     )
+    assert "Patrick Harker, President" not in text  # alternate-members list is an attendance list
 
 
 def test_join_raw_joins_a_split_paragraph_without_a_space_after_hyphen():
