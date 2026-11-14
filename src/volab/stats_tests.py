@@ -72,6 +72,60 @@ def nw_mean_test(d, lag: int) -> tuple[float, float]:
     return float(statistic), pvalue
 
 
+def ols_hac(y, X, lag: int) -> dict[str, np.ndarray]:
+    """OLS with a Newey–West HAC sandwich, for any number of regressors.
+
+    This is the k-column form of the Mincer–Zarnowitz estimator below, with the same four
+    conventions: Bartlett weights 1 − j/(L+1), autocovariances divided by T, no small-sample
+    correction, and normal p-values from the t ratio. `X` must include its own constant column;
+    the caller owns the design, as in the event study.
+
+    Returns `beta`, `se` and `t` as arrays aligned with `X.columns`. A rank-deficient design
+    raises rather than returning a minimum-norm solution that looks like a fit.
+    """
+    response = np.asarray(y, dtype=float)
+    design = np.asarray(X, dtype=float)
+    if response.ndim != 1:
+        raise ValueError(f"y must be one-dimensional, got shape {response.shape}")
+    if design.ndim != 2:
+        raise ValueError(f"X must be two-dimensional, got shape {design.shape}")
+    if design.shape[0] != response.size:
+        raise ValueError(
+            f"X has {design.shape[0]} rows but y has {response.size} observations"
+        )
+    if response.size < 2:
+        raise ValueError("need at least two observations")
+    if not np.isfinite(response).all() or not np.isfinite(design).all():
+        raise ValueError("y and X must be finite")
+
+    beta, _residuals, rank, _singular = np.linalg.lstsq(design, response, rcond=None)
+    if rank < design.shape[1]:
+        raise ValueError(
+            f"design matrix is rank deficient: rank {rank} < {design.shape[1]} columns"
+        )
+    residuals = response - design @ beta
+
+    gram_inverse = np.linalg.inv(design.T @ design)
+    effective_lag = int(min(lag, response.size - 1))
+    if effective_lag < 0:
+        raise ValueError("lag must be non-negative")
+
+    scaled = design * residuals[:, None]
+    meat = np.zeros((design.shape[1], design.shape[1]))
+    for j in range(effective_lag + 1):
+        weight = 1.0 - j / (effective_lag + 1.0)
+        if j == 0:
+            meat += weight * (scaled.T @ scaled)
+        else:
+            meat += weight * (scaled[j:].T @ scaled[:-j] + scaled[:-j].T @ scaled[j:])
+
+    covariance = gram_inverse @ meat @ gram_inverse
+    se = np.sqrt(np.diag(covariance))
+    with np.errstate(divide="ignore", invalid="ignore"):
+        t = beta / se
+    return {"beta": beta, "se": se, "t": t}
+
+
 def clark_west(rv, f1, f2, lag: int) -> tuple[float, float]:
     """Clark–West (2007) for nested models. Model 2 must nest model 1.
 
