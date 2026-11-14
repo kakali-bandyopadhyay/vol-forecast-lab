@@ -1,0 +1,16 @@
+qid,question,gold_doc_type,gold_chunk_ids,answer
+q01,"Why did Thomas Hoenig dissent at the January 2010 FOMC meeting?",statement,statement-20100127-0003,economic and financial conditions had changed sufficiently
+q02,"Why did James Bullard dissent at the June 2013 FOMC meeting?",statement,statement-20130619-0003,signal more strongly its willingness to defend its inflation goal
+q03,"What did Narayana Kocherlakota cite as a concern when he dissented in October 2014?",statement,statement-20141029-0003,continued sluggishness in the inflation outlook
+q04,"What did Jeffrey Lacker prefer at the September 2015 FOMC meeting?",statement,statement-20150917-0003,preferred to raise the target range for the federal funds rate by 25 basis points
+q05,"What did Esther George and Eric Rosengren prefer at the July 2019 FOMC meeting?",statement,statement-20190731-0001,preferred at this meeting to maintain the target range
+q06,"How did the April 2020 statement describe the coronavirus outbreak's impact?",statement,statement-20200429-0000,tremendous human and economic hardship
+q07,"What did the Committee anticipate about future rate moves in March 2022?",statement,statement-20220316-0000,ongoing increases in the target range
+q08,"How large a rate increase did the dissenters prefer in July 2026?",statement,statement-20260729-0000,1/4 percentage point
+q09,"How much Treasury debt did the 2011 maturity extension program plan to purchase?",minutes,minutes-20110921-0030;minutes-20110921-0035;minutes-20110921-0037,$400 billion
+q10,"What change did some participants think could reduce the stigma of using swap lines in December 2011?",minutes,minutes-20111213-0032,lower pricing on the existing swap lines
+q11,"What concern did a couple of participants raise about standing swap arrangements in October 2013?",minutes,minutes-20131030-0001,governance implications
+q12,"What balance-sheet option did participants weigh in March 2019?",minutes,minutes-20190320-0004,slowing balance sheet runoff before the September
+q13,"What did the Committee authorize by notation vote in March 2020 to support dollar funding?",minutes,minutes-20200429-0043,temporary U.S. dollar liquidity arrangements
+q14,"When do the Committee's plans say balance-sheet runoff should stop?",minutes,minutes-20240320-0004;minutes-20220504-0031,somewhat above the level it judges to be consistent with ample reserves
+q15,"Why did participants consider beginning reserve management purchases prudent in December 2025?",minutes,minutes-20251210-0008,maintain a supply of ample reserves
