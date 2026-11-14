@@ -197,7 +197,7 @@ regression, Holm, counts and CIs, robustness runs.
 **Who.** Author.
 **Tests.** Regression recovers a planted event effect on a synthetic series; an event date off the
 calendar raises; same-day CPI+FOMC sets both indicators.
-**Committed.** _hash_
+**Committed.** `5168a0b` (code) / `e4377f3` (results)
 
 ## Step 10 — MLP challenger (3 h)
 
