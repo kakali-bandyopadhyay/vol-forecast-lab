@@ -3,8 +3,8 @@
   "docs_manifest_sha256": "77417cb2f2e19b113d5a67d25a48f44b5872866fd82f7d80aa270cc9b3828105",
   "counts": {
     "extract": {
-      "extracted": 266,
-      "unchanged": 0,
+      "extracted": 0,
+      "unchanged": 266,
       "total": 266
     },
     "chunk": {
@@ -12,12 +12,11 @@
       "documents": 266
     },
     "dq": {
-      "vote_count_mismatch": 130,
       "minutes_missing": 1,
       "not_yet_released": 1
     }
   },
   "embedding_model": "text-embedding-3-small",
   "qdrant_version": "1.20.0",
-  "code_commit": "69af7332609df7a75b168336c3dd75ea481e9e69"
+  "code_commit": "7354c8858991f1b30fb10f1ca103e5a72b4c8228"
 }
