@@ -40,7 +40,7 @@ therefore close to a comparison over spring 2020 alone.
 | Clark–West, one-sided (full sample) | M2 vs M1 | 1.557 | 0.0597 | Not rejected at 0.05 |
 | Clark–West, one-sided (ex-window, headline) | M2 vs M1 | 3.14 | 0.0009 | Rejected at 0.05; 1,632 forecasts |
 | Diebold–Mariano on QLIKE | M2 vs M1 | 0.336 | 0.737 | Difference not detected; sign favours M1 |
-| Diebold–Mariano on QLIKE | M1 vs M0 | −2.215 | 0.0268 | Favours HAR; Holm pending |
+| Diebold–Mariano on QLIKE | M1 vs M0 | −2.215 | 0.0268 (raw) | Not detected after Holm (p = 0.107); sign favours HAR |
 | Mincer–Zarnowitz | M0 | 58.81 | 1.7 × 10⁻¹³ | Calibration rejected |
 | Mincer–Zarnowitz | M1 | 2.46 | 0.293 | Not rejected |
 | Mincer–Zarnowitz | M2 | 0.31 | 0.858 | Not rejected |
@@ -81,9 +81,7 @@ written to any result file and the real specification is untouched. The evaluati
 the degenerate-input guards and the Holm removal: every M0–M2 statistic and p-value is unchanged,
 to zero difference, against a local scratch copy of the pre-fix table.
 
-**Holm:** Q1b–Q1d remain deferred to Step 10 and provisional at Step 9; the fourth §5.5 test is
-Q1c (M4 vs M2). The Diebold–Mariano p-values in this file are raw and no adjusted value is quoted
-here. Q3's four §7.3 tests use Holm within the primary and ex-window runs; Q2 is not a Holm family.
+**Holm:** applied once, after Step 10, across the four §5.5 Diebold–Mariano tests (Q1b M2 vs M1, Q1c M4 vs M2, Q1d M1 vs M3 and M1 vs M0), separately in the full and ex-window samples (DEVIATIONS P). Final decisions are in the Step 10 section and `results/holm_final.parquet`. Q3's four §7.3 tests use Holm within the primary and ex-window runs; Q2 is not a Holm family.
 
 **Feb–Apr 2020 (§8).** The rule removes 71 forecasts — t in the window, or a target session in it
 — leaving 1,632. The full window-rule table is `results/window_rule.parquet` and the ex-window
@@ -99,8 +97,7 @@ maximum α+β = 0.974, and there were no other warnings.
 
 **Not detected.** Diebold–Mariano on QLIKE gives t = 0.833, raw p = 0.405, so a QLIKE difference
 between HAR and GARCH is not detected. The point estimates favour M3: mean QLIKE 0.3958 vs M1
-0.4133, and mean MSE 4.692 × 10⁻⁵ vs 4.705 × 10⁻⁵ for M1. Holm remains pending, so the p-value is
-raw.
+0.4133, and mean MSE 4.692 × 10⁻⁵ vs 4.705 × 10⁻⁵ for M1. After the final Holm family (Step 10) it remains not detected: Holm p = 1.000 full, 0.281 ex-window.
 
 | Test | Pair | Statistic | p-value | Reading |
 |---|---|---|---|---|
@@ -121,9 +118,10 @@ target. This is not a leak.
 | Result | Full sample | Ex-window | Headline |
 |---|---|---|---|
 | Clark–West, M2 vs M1 | not rejected (t = 1.557, p = 0.0597) | rejected (t = 3.14, p = 0.0009) | ex-window |
-| DM QLIKE, M2 vs M1 | not rejected (p = 0.737) | not rejected (p = 0.140) | full (provisional, Holm at Step 10) |
-| DM QLIKE, M1 vs M0 | rejected, favours HAR (p = 0.0268) | not rejected (p = 0.094) | ex-window (provisional, Holm at Step 10) |
-| DM QLIKE, M1 vs M3 | not rejected (p = 0.405) | not rejected (p = 0.173) | full (provisional, Holm at Step 10) |
+| DM QLIKE, M2 vs M1 | not rejected (raw p = 0.737, Holm p = 1.000) | not rejected (raw p = 0.140, Holm p = 0.281) | full (final) |
+| DM QLIKE, M4 vs M2 (Q1c) | not rejected (raw p = 0.849, Holm p = 1.000) | not rejected (raw p = 0.056, Holm p = 0.224) | full (final) |
+| DM QLIKE, M1 vs M0 | not rejected (raw p = 0.0268, Holm p = 0.107) | not rejected (raw p = 0.094, Holm p = 0.281) | full (final) |
+| DM QLIKE, M1 vs M3 | not rejected (raw p = 0.405, Holm p = 1.000) | not rejected (raw p = 0.173, Holm p = 0.281) | full (final) |
 | MZ M0 / M3 | rejected | rejected | full |
 | MZ M1 | not rejected (p = 0.293) | not rejected (p = 0.298) | full |
 | MZ M2 | not rejected (p = 0.858) | rejected (W = 27.9, p = 8.6 × 10⁻⁷) | ex-window |
@@ -131,7 +129,7 @@ target. This is not a leak.
 | Q2 ex-post premium, mean | positive, not significant (t = 1.06, p = 0.288) | positive, significant (t = 7.05) | ex-window |
 | Q3, four Holm tests | see below | same four decisions | full |
 
-Source: `results/window_rule.parquet`. The three Diebold–Mariano rows use raw p-values and are provisional (DEVIATIONS A.5).
+Source: `results/window_rule.parquet` for the Step 9 rows; the four Diebold–Mariano rows are the final §5.5 Holm family from `results/holm_final.parquet` (Step 10, DEVIATIONS A.5 and P). Decisions use Holm-adjusted p-values; raw p-values are shown for reference.
 
 **Q2 — implied versus realised (§6).** 30-day total variance, decimal; test-period dates.
 
@@ -187,6 +185,44 @@ quoted from it.
 
 Stated limit (§7.5): daily data measure the whole regular session on an FOMC day, including the
 hours before the statement — not the announcement window.
+
+### Step 10 — Q1c: MLP challenger vs HAR-X, and the final Holm family
+
+**Model.** M4 per §4.3 and DEVIATIONS I–S: log of M2's four inputs, standardised on the fit block; log per-session target, standardised on the fit block (S); ReLU network, full-batch Adam, early stopping on the last 20% of each training window; three seeds averaged in levels after the exp(ŷ + s²/2) back-transform; re-trained once per calendar year.
+
+**Implementation fix before the test run (DEVIATIONS S).** The first selection run trained on the unscaled log target and produced validation QLIKE of 4.8–7.8 for every configuration. The target was standardised, a regression test added, and selection re-run. No test-period M4 number existed before the fix (`9181046` rule, `0c35af5` code).
+
+**Selection (validation 2016-01-04 → 2019-11-29, 985 dates, 216 trainings).** Chosen: 32 hidden units, one layer, weight decay 1e-3 – validation QLIKE 0.2650 (runner-up, same network with weight decay 1e-4: +1.6e-5; tie-break not used). One-layer 32-unit networks beat two-layer (0.280) and smaller networks (0.293–0.302); weight decay barely mattered. No training hit the 3,000-epoch cap. Committed (`eb8bb23`) before any test forecast.
+
+**Integrity (§9.4).** Shuffled-target MLP: mean QLIKE 0.785 vs M0 0.509 – loses to M0, check passed. Test run: 7 folds, 1,703 forecasts on the M1 dates, none floored, no cap hits (best epochs 27–414).
+
+**Mean QLIKE, full sample (descriptive).** M3 0.3958 · M1 0.4133 · **M4 0.4147** · M2 0.4203 · M0 0.5087.
+
+**Q1c result.** DM QLIKE, M4 vs M2 (d = QLIKE(M4) − QLIKE(M2), HAC lag 21): full t = −0.190, raw p = 0.849, Holm p = 1.000; ex-window t = −1.911, raw p = 0.056, Holm p = 0.224. **Not detected in either sample; headline full.** No evidence that the MLP improves on HAR-X at this sample size. (§8's pre-committed reading for this outcome says "the linear form captures the information at this sample size"; that wording claims more than a non-rejection shows, so it is reported here under §5.6's rule – "not detected", never "no difference".) The point estimate favours M4 outside Feb–Apr 2020, but not significantly, and not across regimes (below).
+
+**Regimes (VIX terciles 14.89 / 18.57; mean QLIKE M4 − M2).**
+
+| Sample | Low | Mid | High |
+|---|---|---|---|
+| Full | +0.0455 (n 282) | −0.0277 (n 552) | −0.0083 (n 869) |
+| Ex-window | +0.0069 (n 273) | −0.0366 (n 539) | −0.0204 (n 820) |
+
+M4 is worse than HAR-X in the low-VIX tercile in both samples, so the DEVIATIONS Q condition fails as well.
+
+**Calibration.** Mincer–Zarnowitz for M4 not rejected: full W = 2.11 (p = 0.349), ex-window W = 2.63 (p = 0.268). On the ex-window headline sample, M2's MZ rejects (p = 8.6 × 10⁻⁷) and M4's does not. Reported outside Holm; not a ranking claim.
+
+**Final Holm family (§5.5).**
+
+| Test | Full: raw p → Holm p | Ex-window: raw p → Holm p | Decision | Headline |
+|---|---|---|---|---|
+| Q1b M2 vs M1 | 0.737 → 1.000 | 0.140 → 0.281 | not detected | full |
+| Q1c M4 vs M2 | 0.849 → 1.000 | 0.056 → 0.224 | not detected | full |
+| Q1d M1 vs M3 | 0.405 → 1.000 | 0.173 → 0.281 | not detected | full |
+| Q1d M1 vs M0 | 0.027 → 0.107 | 0.094 → 0.281 | not detected | full |
+
+**Change from Step 9.** M1 vs M0 was provisionally "rejected, favours HAR" on raw p (0.027) with the headline on the ex-window sample. After Holm it is not detected in either sample, so the headline moves to the full sample. The other two provisional rows are unchanged. The Q1 headline (Clark–West, ex-window, p = 0.0009) is outside the Holm family and does not change.
+
+**Files.** `results/mlp_selection.parquet`, `mlp_select_manifest.json`, `mlp_forecasts.parquet`, `mlp_test_manifest.json`, `mlp_tests.parquet`, `mlp_regimes.parquet`, `holm_final.parquet`, `holm_manifest.json`.
 
 ---
 

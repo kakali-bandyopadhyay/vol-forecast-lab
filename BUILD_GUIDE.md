@@ -205,7 +205,7 @@ calendar raises; same-day CPI+FOMC sets both indicators.
 validation-only selection, annual re-train, results reported whatever they show.
 **Tests.** Scaler uses training rows only (assert); fixed seed → identical output; shuffled-target
 MLP loses to M0.
-**Committed.** _hash_
+**Committed.** `72ca52d` / `0c35af5` (code) / `eb8bb23` (selection) / `4983d5f` (results)
 
 ## Step 10b — Unstructured-data pipeline: FOMC statements and minutes (6 h)
 
