@@ -58,8 +58,8 @@ def search(
     """Search document index with optional date and type filters."""
     try:
         results = index.search(q, date_from=date_from, date_to=date_to, doc_type=doc_type, k=k)
-    except NotImplementedError as exc:
-        raise HTTPException(status_code=501, detail="Search is unavailable until the index stub is implemented.") from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
     return SearchResponse(query=q, results=results)
 
 
@@ -68,6 +68,8 @@ def statement(date: str) -> StatementResponse:
     """Look up a statement by its event date."""
     try:
         document = index.get_statement(date)
-    except NotImplementedError as exc:
-        raise HTTPException(status_code=501, detail="Statement lookup is unavailable until the index stub is implemented.") from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=f"No statement for {date}") from exc
     return StatementResponse(date=date, document=document)
