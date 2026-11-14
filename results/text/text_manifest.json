@@ -3,12 +3,12 @@
   "docs_manifest_sha256": "77417cb2f2e19b113d5a67d25a48f44b5872866fd82f7d80aa270cc9b3828105",
   "counts": {
     "extract": {
-      "extracted": 0,
-      "unchanged": 266,
+      "extracted": 266,
+      "unchanged": 0,
       "total": 266
     },
     "chunk": {
-      "chunks": 6597,
+      "chunks": 6621,
       "documents": 266
     },
     "dq": {
@@ -18,5 +18,5 @@
   },
   "embedding_model": "text-embedding-3-small",
   "qdrant_version": "1.20.0",
-  "code_commit": "7354c8858991f1b30fb10f1ca103e5a72b4c8228"
+  "code_commit": "2e3842dfcba336151b44396a0c88a088f9a7e78e"
 }
