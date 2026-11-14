@@ -3,8 +3,15 @@
 What the build actually found, as distinct from what the pre-registration predicted. Numbers here
 come from committed scripts; anything not yet computed is absent rather than estimated.
 
-**Status:** Steps 1–9 complete. Q1's headline moves to the ex-window sample; Q1d (HAR vs GARCH)
-is unchanged; Q2 and Q3 are reported below.
+**Status:** Steps 1–10 complete (forecasting core). Q1's headline moves to the ex-window sample;
+Q1b–Q1d are not detected after the final Holm adjustment; Q2 and Q3 are reported below.
+
+**Platform (P3, scaffolding only — no results):** local Compose services (Kafka, OpenSearch, Redis,
+Qdrant; versions pinned), a Spark runner, an API skeleton, the FOMC document fetcher, and Terraform
+for the AWS data lake plus a separate, already-applied USD 10/month budget guardrail. The data-lake
+stack has been planned (15 resources) but not applied. Every author-owned module (Lambda handler,
+extraction, chunking, indexing, Kafka I/O, cache, Spark job) is still a stub, so nothing in this file
+comes from the platform yet; Steps 10b and 10c will add those results here.
 
 ---
 

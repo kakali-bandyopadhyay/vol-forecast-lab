@@ -367,6 +367,9 @@ advance.
 | # | Issue | Cause | Fix | Commit |
 |---|---|---|---|---|
 | 1 | Codex P3 wrote 9 plumbing tests (test_fetch_docs ×5, test_compose, test_api ×2, test_terraform_names) | P3 brief item 10 asked for them; brief not checked against the authorship rule before running | Kept; reviewed line by line by the author; authorship rule clarified 2026-11-12 | _P3 commit hash_ |
+| 2 | P3 review (Claude, 2026-11-14): Lambda permission without source_account; Kafka advertised only kafka:9092 (host clients fail); CI 3.14-only and CUDA torch; plan files not ignored; log-group name built with format() to pass the name test; no cost tags; qdrant healthcheck relied on curl; fetch_docs never retried error entries and treated 429 as permanent; limit test had one event row; kafka-init command was a plain string (Compose word-split it → bash exit 2, no topics) and `$topic` was interpolated by Compose; floating image tags | AI-written plumbing, not yet reviewed | Plumbing fixes by Claude: source_account, INTERNAL/EXTERNAL listeners, 3.12+3.14 matrix with CPU torch, *.tfplan ignored, literal log-group name, default_tags, /dev/tcp healthcheck, retry of error/429/5xx (+2 plumbing tests: fetch retry, kafka-init script; 2-row limit fixture), kafka-init command in list form with `$$topic`, images pinned (kafka 4.3.1, opensearch 2.19.7, redis 7.4.12, qdrant v1.20.1, spark 4.3.0-python3) | _P3 commit hash_ |
+| 3 | Glue table named vfl_documents_clean (P3 brief: documents_clean) | vfl-prefix naming test | Accepted deviation | _P3 commit hash_ |
+| 4 | P3 had no budget alert (guide: "budget alert set first"); Glue table partitions not registered (Athena would return 0 rows) | Not in the P3 brief | infra/budget/ root (USD 10/month; 50%/80% actual, 100% forecast; prevent_destroy; email via git-ignored tfvars) applied before infra/terraform; partition projection on the Glue table (author decision K1a, K2a, 2026-11-14) | _P3 commit hash_ |
 
 ## Lessons
 

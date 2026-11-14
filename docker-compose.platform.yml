@@ -1,0 +1,101 @@
+# Local development services only. OpenSearch security is disabled only for local use.
+services:
+  kafka:
+    image: apache/kafka:4.3.1
+    profiles: [kafka]
+    hostname: kafka
+    environment:
+      KAFKA_NODE_ID: "1"
+      KAFKA_LOG_DIRS: /var/lib/kafka/data
+      KAFKA_PROCESS_ROLES: broker,controller
+      # INTERNAL (kafka:19092) for containers; EXTERNAL (localhost:9092) for host clients.
+      KAFKA_LISTENERS: INTERNAL://:19092,EXTERNAL://:9092,CONTROLLER://:9093
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:19092,EXTERNAL://localhost:9092
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: "1"
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: "1"
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: "1"
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: "0"
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
+    ports:
+      - "127.0.0.1:9092:9092"
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+    healthcheck:
+      test: [CMD-SHELL, /opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:9092 >/dev/null 2>&1]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+
+  kafka-init:
+    image: apache/kafka:4.3.1
+    profiles: [kafka]
+    depends_on:
+      kafka:
+        condition: service_healthy
+    entrypoint: [/bin/bash, -ec]
+    # List form: a plain string would be word-split by Compose, so bash -c would receive only "for".
+    command:
+      - |
+        for topic in docs.raw docs.clean docs.dlq; do
+          /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:19092 --create --if-not-exists --topic "$$topic" --partitions 1 --replication-factor 1
+        done
+
+  opensearch:
+    image: opensearchproject/opensearch:2.19.7
+    profiles: [search]
+    environment:
+      discovery.type: single-node
+      DISABLE_SECURITY_PLUGIN: "true"
+      DISABLE_INSTALL_DEMO_CONFIG: "true"
+      OPENSEARCH_JAVA_OPTS: "-Xms1g -Xmx1g"
+    ports:
+      - "127.0.0.1:9200:9200"
+    volumes:
+      - opensearch_data:/usr/share/opensearch/data
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    healthcheck:
+      test: [CMD-SHELL, curl -fsS http://127.0.0.1:9200/_cluster/health >/dev/null]
+      interval: 15s
+      timeout: 10s
+      retries: 12
+      start_period: 45s
+
+  redis:
+    image: redis:7.4.12
+    profiles: [cache]
+    command: [redis-server, --save, "", --appendonly, "no"]
+    ports:
+      - "127.0.0.1:6379:6379"
+    healthcheck:
+      test: [CMD, redis-cli, ping]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  qdrant:
+    image: qdrant/qdrant:v1.20.1
+    profiles: [vector]
+    ports:
+      - "127.0.0.1:6333:6333"
+      - "127.0.0.1:6334:6334"
+    volumes:
+      - qdrant_data:/qdrant/storage
+    healthcheck:
+      # The qdrant image may not ship curl; bash /dev/tcp checks the HTTP port is accepting connections.
+      test: [CMD, bash, -c, ":> /dev/tcp/127.0.0.1/6333"]
+      interval: 10s
+      timeout: 5s
+      retries: 8
+
+volumes:
+  kafka_data:
+  opensearch_data:
+  qdrant_data:

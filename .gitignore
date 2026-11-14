@@ -14,3 +14,6 @@ results/tests_before.parquet
 *.tfstate
 *.tfstate.*
 *.zip
+*.tfplan
+tfplan
+*.tfvars
