@@ -187,7 +187,7 @@ DM and Clark–West on identical forecasts → statistic 0; planted-leak test (�
 **What.** `garch.py`: `arch` normal QMLE on % returns; sum N_t step-ahead variances; ÷ 10,000.
 **Tests.** Unit conversion; forecast positive; α + β logged per fold (arch caps it at 1; folds at the bound counted).
 **Who.** Author.
-**Committed.** _hash_
+**Committed.** `9eb2155` (code) / `5008c38` (results)
 
 ## Step 9 — Spread, premium and event study (3 h)
 
