@@ -180,12 +180,13 @@ This completes the slice: data → targets → models → Q1 result.
 `cov_type="HAC"` and the same lag (to 1e-6).
 **Tests.** QLIKE(RV = F) = 0; QLIKE(RV = 2F) = 0.306853; QLIKE(RV = F/2) = 0.193147;
 DM and Clark–West on identical forecasts → statistic 0; planted-leak test (§9.1) shows a sharp drop.
-**Committed.** _hash_
+**Committed.** `7775f9d` (code) / `0097ca6` (results)
 
 ## Step 8 — GARCH(1,1) (1.5 h)
 
 **What.** `garch.py`: `arch` normal QMLE on % returns; sum N_t step-ahead variances; ÷ 10,000.
-**Tests.** Unit conversion; forecast positive; parameters within stationarity (α + β < 1) logged.
+**Tests.** Unit conversion; forecast positive; α + β logged per fold (arch caps it at 1; folds at the bound counted).
+**Who.** Author.
 **Committed.** _hash_
 
 ## Step 9 — Spread, premium and event study (3 h)

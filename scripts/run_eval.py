@@ -1,4 +1,4 @@
-"""Step 7: run M0/M1/M2 end to end on the test period and write results/.
+"""Steps 7–8: run M0/M1/M2/M3 end to end on the test period and write results/.
 
 This is the first script that looks at 2020 onwards. Per the build guide it is run once, after the
 synthetic tests are green; any later change to the models or to this evaluation is a deviation.
@@ -6,8 +6,11 @@ synthetic tests are green; any later change to the models or to this evaluation 
 Conventions fixed before the run:
   * QLIKE is computed on the floored totals (§3.4 floors only what goes to QLIKE).
   * MSE, Clark–West and Mincer–Zarnowitz use the raw totals; §3.4 does not reach them.
-  * The Holm family at this step holds two tests (M2 vs M1, M1 vs M0). §5.5's full family has
-    four; the output is labelled provisional until Steps 8 and 10 exist.
+  * M3's forecast is already a 30-day total (N_t conditional variances summed, ÷ 10,000), so it
+    goes straight to `apply_floor` without `to_total`.
+  * The Holm family at this step holds three tests (M2 vs M1, M1 vs M0, M1 vs M3). §5.5's full
+    family has four; Holm stays deferred until Step 10 supplies the fourth, so the output is
+    labelled provisional.
 """
 
 from __future__ import annotations
@@ -25,7 +28,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from volab.data import REPO_ROOT, load_panel_metadata  # noqa: E402
 from volab.losses import qlike, squared_error  # noqa: E402
-from volab.models import apply_floor, har, to_total  # noqa: E402
+from volab.models import apply_floor, garch, har, to_total  # noqa: E402
 from volab.models.baselines import implied_variance, rolling_mean_rv  # noqa: E402
 from volab.splits import walk_forward  # noqa: E402
 from volab.stats_tests import (  # noqa: E402
@@ -38,7 +41,7 @@ from volab.stats_tests import (  # noqa: E402
 TEST_START = pd.Timestamp("2020-01-01")
 EXPECTED_FOLDS = 82
 EXPECTED_FORECASTS = 1703
-MODELS = ("M0", "M1", "M2")
+MODELS = ("M0", "M1", "M2", "M3")
 PANEL = REPO_ROOT / "data" / "panel" / "panel.parquet"
 RESULTS = REPO_ROOT / "results"
 
@@ -110,11 +113,14 @@ def main() -> int:
     m0_per_session = rolling_mean_rv(panel["rv"]).to_numpy()
     target = panel["rv_30d_per_session"].to_numpy()
     n_sessions = panel["n_sessions"].to_numpy()
+    returns = garch.pct_returns(panel["r_on"], panel["r_oc"])
+    garch_model = garch.build_model(returns)
 
     raw: dict[str, np.ndarray] = {}
     floored: dict[str, np.ndarray] = {}
     flags: dict[str, np.ndarray] = {}
     counts: dict[str, int] = {}
+    garch_fits: list[dict] = []
     dates: list[np.ndarray] = []
 
     for name in MODELS:
@@ -124,12 +130,21 @@ def main() -> int:
                 per_session = m0_per_session[fold.forecast_idx]
                 if not np.isfinite(per_session).all():
                     raise SystemExit("M0 produced a NaN per-session forecast")
+                total = to_total(per_session, n_sessions[fold.forecast_idx])
+            elif name == "M3":
+                res, record = garch.fit_fold(garch_model, fold.refit_date)
+                total = garch.forecast_fold(
+                    res,
+                    panel.index[fold.forecast_idx],
+                    n_sessions[fold.forecast_idx],
+                )
+                garch_fits.append(record)
             else:
                 extra = per_session_iv if name == "M2" else None
                 beta = har.fit_fold(features, target, fold.train_idx, extra)
                 per_session = har.forecast_fold(beta, features, fold.forecast_idx, extra)
+                total = to_total(per_session, n_sessions[fold.forecast_idx])
 
-            total = to_total(per_session, n_sessions[fold.forecast_idx])
             result = apply_floor(total, f_min)
             pieces_raw.append(result.raw)
             pieces_floored.append(result.total)
@@ -140,6 +155,11 @@ def main() -> int:
         flags[name] = np.concatenate(floored_flags).astype(bool)
         counts[name] = int(flags[name].sum())
         dates.append(np.concatenate([fold.forecast_idx for fold in folds]))
+
+    if len(garch_fits) != len(folds):
+        raise SystemExit(
+            f"expected one GARCH fit per fold, got {len(garch_fits)} for {len(folds)}"
+        )
 
     positions = dates[0]
     if len(positions) != EXPECTED_FORECASTS:
@@ -201,10 +221,14 @@ def main() -> int:
     cw_se = cw_mean / cw_stat
     cw_interval = [cw_mean - 1.96 * cw_se, cw_mean + 1.96 * cw_se]
 
-    # Holm is applied once, when all four §5.5 tests exist — after Steps 8 and 10. Adjusting a
-    # two-test subset now would produce a number that is not the pre-registered statistic and is
+    # Holm is applied once, when all four §5.5 tests exist — after Step 10. Adjusting a
+    # three-test subset now would produce a number that is not the pre-registered statistic and is
     # certain to change, so these rows carry raw p-values and nothing else.
-    for pair, (a, b) in {"M2_vs_M1": ("M2", "M1"), "M1_vs_M0": ("M1", "M0")}.items():
+    for pair, (a, b) in {
+        "M2_vs_M1": ("M2", "M1"),
+        "M1_vs_M0": ("M1", "M0"),
+        "M1_vs_M3": ("M1", "M3"),
+    }.items():
         statistic, pvalue = diebold_mariano(qlike_loss[a], qlike_loss[b], lag)
         rows.append({"test": "diebold_mariano", "pair": pair, "statistic": statistic,
                      "pvalue": pvalue, "family": "Q1b/Q1d (raw; Holm deferred)"})
@@ -217,10 +241,20 @@ def main() -> int:
     tests = pd.DataFrame(rows)
 
     # --- write --------------------------------------------------------------
+    garch_table = pd.DataFrame(garch_fits)
+    garch_summary = {
+        "mean": "Constant",
+        "n_folds": int(len(garch_table)),
+        "n_at_bound": int(garch_table["at_bound"].sum()),
+        "max_persistence": float(garch_table["persistence"].max()),
+        "n_other_warnings": int((garch_table["other_warnings"] != "").sum()),
+    }
+
     RESULTS.mkdir(parents=True, exist_ok=True)
     forecasts.to_parquet(RESULTS / "forecasts.parquet", index=False)
     losses.to_parquet(RESULTS / "losses.parquet", index=False)
     tests.to_parquet(RESULTS / "tests.parquet", index=False)
+    garch_table.to_parquet(RESULTS / "garch_fits.parquet", index=False)
     (RESULTS / "eval_manifest.json").write_text(
         json.dumps(
             {
@@ -232,6 +266,7 @@ def main() -> int:
                 "last_forecast": index[-1].date().isoformat(),
                 "hac_lag": lag,
                 "floored_counts": counts,
+                "garch": garch_summary,
                 "planted_leak_qlike_drop": planted_leak,
                 "clark_west_mean_difference": cw_mean,
                 "clark_west_interval_95": cw_interval,
@@ -240,7 +275,7 @@ def main() -> int:
                 ),
                 "code_commit": git_commit(),
                 "dm_convention": "d = loss(first) - loss(second); negative favours the first model",
-                "holm_family": "deferred until all four §5.5 tests exist; DM p-values are raw",
+                "holm_family": "deferred; 3 of 4 §5.5 tests present; DM p-values are raw",
             },
             indent=2,
         ) + "\n",
