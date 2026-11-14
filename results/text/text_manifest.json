@@ -8,7 +8,7 @@
       "total": 266
     },
     "chunk": {
-      "chunks": 6621,
+      "chunks": 6620,
       "documents": 266
     },
     "dq": {
@@ -18,5 +18,5 @@
   },
   "embedding_model": "text-embedding-3-small",
   "qdrant_version": "1.20.0",
-  "code_commit": "2e3842dfcba336151b44396a0c88a088f9a7e78e"
+  "code_commit": "4ed7a676af66689f585d41525d11cab154badf92"
 }
