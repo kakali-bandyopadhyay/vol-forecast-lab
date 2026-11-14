@@ -3,7 +3,8 @@
 What the build actually found, as distinct from what the pre-registration predicted. Numbers here
 come from committed scripts; anything not yet computed is absent rather than estimated.
 
-**Status:** Steps 1–7 complete. Q1 is answered below as a non-rejection; Q2 and Q3 are not yet run.
+**Status:** Steps 1–8 complete. Q1 is answered below as a non-rejection, as is Q1d (HAR vs
+GARCH); Q2 and Q3 are not yet run.
 
 ---
 
@@ -60,12 +61,37 @@ written to any result file and the real specification is untouched. The evaluati
 the degenerate-input guards and the Holm removal: every M0–M2 statistic and p-value is unchanged,
 to zero difference, against a local scratch copy of the pre-fix table.
 
-**Holm:** deferred. It is applied once, when all four §5.5 tests exist, after Steps 8 and 10. The
-Diebold–Mariano p-values above are raw and no adjusted value is quoted here.
+**Holm:** deferred. Three of the four §5.5 tests are now present; the fourth is Q1c (M4 vs M2),
+which Step 10 supplies. The Diebold–Mariano p-values in this file are raw and no adjusted value is
+quoted here.
 
 **Feb–Apr 2020:** the §8 check for whether a result is driven by that window is **not** computed at
 Step 7. It is reported alongside the regime tables at Step 9, which need the same split for the
 spread and premium results. Nothing above should be read as having excluded that window.
+
+### Step 8 — Q1d: HAR vs GARCH(1,1) on QLIKE
+
+M3 is a constant-mean GARCH(1,1) on daily close-to-close percent returns; its 30-day forecast is
+the sum of the 1- to N_t-step-ahead conditional variance forecasts ÷ 10,000. The mean model is the
+`arch` constant mean (DEVIATIONS, 2026-11-14). All 82 folds converged, none at the α+β bound,
+maximum α+β = 0.974, and there were no other warnings.
+
+**Not detected.** Diebold–Mariano on QLIKE gives t = 0.833, raw p = 0.405, so a QLIKE difference
+between HAR and GARCH is not detected. The point estimates favour M3: mean QLIKE 0.3958 vs M1
+0.4133, and mean MSE 4.692 × 10⁻⁵ vs 4.705 × 10⁻⁵ for M1. Holm remains pending, so the p-value is
+raw.
+
+| Test | Pair | Statistic | p-value | Reading |
+|---|---|---|---|---|
+| Diebold–Mariano on QLIKE | M1 vs M3 | 0.833 | 0.405 | Difference not detected; sign favours M3 |
+| Mincer–Zarnowitz | M3 | 15.33 | 4.7 × 10⁻⁴ | Calibration rejected |
+
+**M3 calibration:** the MZ Wald statistic is 15.33 (p = 4.7 × 10⁻⁴), with a = 1.37 × 10⁻³ and
+b = 0.667, so M3's calibration is rejected.
+
+**Information sets:** both models estimate on data through the session before each refit date.
+HAR has about 21 fewer training rows, because its newest rows do not yet have a complete 30-day
+target. This is not a leak.
 
 ---
 
