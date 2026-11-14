@@ -1,0 +1,19 @@
+{
+  "panel_sha256": "e5b8a91420e396696d6ae0ee821232e04f5111bc31ab82637ac5b965c367fe41",
+  "code_commit": "eb8bb23445148d2ebb865840f565eccd46968be0",
+  "n_full": 1703,
+  "n_ex_window": 1632,
+  "pairs": [
+    "M2_vs_M1",
+    "M4_vs_M2",
+    "M1_vs_M3",
+    "M1_vs_M0"
+  ],
+  "samples": [
+    "full",
+    "ex_window"
+  ],
+  "holm_rule": "Holm-adjusted p < 0.05; sign is the sign of d = loss(first) - loss(second)",
+  "headline_rule": "full if full and ex-window decisions and signs agree, else ex_window",
+  "note": "Q1b-Q1d final Holm replaces the three provisional Step 9 classifications."
+}

@@ -1,0 +1,53 @@
+{
+  "chosen_config": {
+    "hidden": 32,
+    "layers": 1,
+    "weight_decay": 0.001
+  },
+  "code_commit": "eb8bb23445148d2ebb865840f565eccd46968be0",
+  "torch_version": "2.15.0+cpu",
+  "n_folds": 7,
+  "n_forecasts": 1703,
+  "shuffled_mean_qlike": 0.7854556541199516,
+  "m0_mean_qlike": 0.5087482975606997,
+  "shuffled_pass": true,
+  "cap_hits": 0,
+  "best_epochs": [
+    [
+      27,
+      43,
+      58
+    ],
+    [
+      49,
+      201,
+      105
+    ],
+    [
+      54,
+      198,
+      215
+    ],
+    [
+      103,
+      118,
+      414
+    ],
+    [
+      99,
+      139,
+      276
+    ],
+    [
+      55,
+      90,
+      182
+    ],
+    [
+      69,
+      62,
+      173
+    ]
+  ],
+  "panel_sha256": "e5b8a91420e396696d6ae0ee821232e04f5111bc31ab82637ac5b965c367fe41"
+}
