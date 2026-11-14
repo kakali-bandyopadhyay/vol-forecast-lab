@@ -11,7 +11,7 @@ from typing import Any
 import pymupdf
 from bs4 import BeautifulSoup
 
-EXTRACTOR_VERSION = "1.1"
+EXTRACTOR_VERSION = "1.2"
 
 _TERMINAL = re.compile(r"[.:;?]$")
 # A block ending in a lowercase letter or comma is mid-sentence (page/column break), unless it is a
@@ -41,12 +41,66 @@ class ExtractionError(RuntimeError):
     """A source document does not have the structure the extractor requires."""
 
 
+# A line-end hyphen is either word-division ("Com-/mittee") or a real compound ("longer-/run").
+# _normalise marks it with this invisible separator; _resolve_hyphens decides per document.
+_LINE_HYPHEN = "\u2063"
+# "3½" → NFKC "31⁄2": a whole number followed by a single-digit fraction ("1⁄2", "3⁄4").
+_MIXED_FRACTION = re.compile(r"(\d)(\d\u2044\d)")
+
+
 def _normalise(text: str) -> str:
-    """NFKC, soft-hyphen removal, hyphen line-break joining and whitespace collapse."""
+    """NFKC, fractions as "3-1/2", soft hyphens, marked line-break hyphens, whitespace collapse."""
     text = unicodedata.normalize("NFKC", text)
+    text = _MIXED_FRACTION.sub(r"\1-\2", text).replace("\u2044", "/")
     text = text.replace("\u00ad", "")
-    text = re.sub(r"-\s*\n\s*(?=[a-z])", "", text)
+    text = re.sub(r"-\s*\n\s*(?=[a-z])", _LINE_HYPHEN, text)
     return re.sub(r"\s+", " ", text).strip()
+
+
+# Left halves that usually form one word with what follows ("over-/heating" → "overheating").
+_PREFIXES = frozenset({"over", "under", "out", "inter", "intra", "non", "pre", "post", "re", "un", "in",
+                       "can", "co", "sub", "super", "multi", "counter", "with", "down", "up"})
+_HYPHEN_SPLIT = re.compile(r"([A-Za-z]+)\u2063([A-Za-z]+)")
+
+
+def _resolve_hyphens(texts: list[str]) -> list[str]:
+    """Decide each line-end hyphen from evidence in the same document, in this order:
+
+    1. the hyphenated compound appears mid-line ("longer-run") → keep the hyphen;
+    2. the joined word appears ("committee", "because") → drop it;
+    3. both halves appear as words on their own ("maximum", "employment"), the left half has
+       ≥ 4 letters and is not a prefix ("over", "out", "under"…), the right half ≥ 5 → keep it;
+    4. otherwise it is word-division ("Com-/mittee") → drop it.
+    """
+    compounds = {
+        match.lower()
+        for text in texts
+        for match in re.findall(r"\b[A-Za-z]+-[A-Za-z]+\b", text)
+    }
+    vocabulary = {
+        word.lower()
+        for text in texts
+        for word in re.findall(r"(?<![A-Za-z\u2063-])[A-Za-z]+(?![A-Za-z\u2063-])", text)
+    }
+
+    def repair(match: re.Match) -> str:
+        left, right = match.group(1), match.group(2)
+        hyphenated, joined = f"{left}-{right}", f"{left}{right}"
+        if hyphenated.lower() in compounds:
+            return hyphenated
+        if joined.lower() in vocabulary:
+            return joined
+        if (
+            left.lower() in vocabulary
+            and right.lower() in vocabulary
+            and len(left) >= 4
+            and len(right) >= 5
+            and left.lower() not in _PREFIXES
+        ):
+            return hyphenated
+        return joined
+
+    return [_HYPHEN_SPLIT.sub(repair, text).replace(_LINE_HYPHEN, "") for text in texts]
 
 
 def _event_date(value: str) -> date:
@@ -395,8 +449,8 @@ def _join_raw(raw: list[tuple[int, str]]) -> list[dict[str, Any]]:
                 and not _title_like(text)
             )
             if not _TERMINAL.search(previous["text"]) and (text[:1].islower() or unfinished):
-                if previous["text"].endswith("-"):
-                    previous["text"] = previous["text"][:-1] + text
+                if previous["text"].endswith("-") and text[:1].islower():
+                    previous["text"] = previous["text"][:-1] + _LINE_HYPHEN + text
                 else:
                     previous["text"] = f"{previous['text']} {text}"
                 continue
@@ -466,6 +520,8 @@ def _extract_minutes(source_path: Path) -> tuple[str, list[dict[str, Any]], int,
             raw.append((page_number, text))
 
         paragraphs = _join_raw(raw)
+        for paragraph, resolved in zip(paragraphs, _resolve_hyphens([item["text"] for item in paragraphs])):
+            paragraph["text"] = resolved
 
         return (
             "\n\n".join(item["text"] for item in paragraphs),

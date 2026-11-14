@@ -80,7 +80,9 @@ def test_join_raw_joins_a_split_paragraph_without_a_space_after_hyphen():
 
     assert len(paragraphs) == 1
     assert paragraphs[0]["page"] == 1
-    assert "paragraphs 1 and 2" in paragraphs[0]["text"]
+    # 1.2: the join marks the hyphen; _resolve_hyphens drops it ("paragraphs" has no compound evidence)
+    resolved = extract._resolve_hyphens([paragraphs[0]["text"]])[0]
+    assert "paragraphs 1 and 2" in resolved
 
 
 def test_vote_record_handles_separate_and_mangled_against_paragraphs():
@@ -561,6 +563,31 @@ def test_statement_footnote_back_link_is_removed(tmp_path: Path):
     assert record["text"].endswith("technical note.")
 
 
-def test_extractor_version_is_1_1():
-    """Raised for the line-merge change so every stored document is re-extracted."""
-    assert extract.EXTRACTOR_VERSION == "1.1"
+def test_extractor_version_is_1_2():
+    """Raised for each extraction change (1.1 line merge, 1.2 fractions/hyphens) so stored docs re-extract."""
+    assert extract.EXTRACTOR_VERSION == "1.2"
+
+
+# --- extractor 1.2: fractions and line-end hyphens — Claude fix, BUILD_GUIDE Issues ---
+
+def test_mixed_fractions_read_like_the_statements():
+    """Minutes "3½ to 3¾" must match the statements' "3-1/2 to 3-3/4"; a bare "¼" becomes "1/4"."""
+    assert extract._normalise("at 3½ to 3¾ percent") == "at 3-1/2 to 3-3/4 percent"
+    assert extract._normalise("from 0 to ¼ percent") == "from 0 to 1/4 percent"
+    assert extract._normalise("at 3-1/2 percent") == "at 3-1/2 percent"
+
+
+def test_line_end_hyphens_are_resolved_from_document_evidence():
+    """Keep real compounds, drop word-division hyphens, using only words in the same document."""
+    marked = [extract._normalise(text) for text in (
+        "the longer-\nrun goal and the Com-\nmittee met",
+        "a longer-run view of the Committee",
+        "maximum-\nemployment goal; maximum effort; employment rose",
+        "the economy was over-\nheating in some sectors",
+    )]
+    resolved = extract._resolve_hyphens(marked)
+    assert "longer-run goal" in resolved[0]          # rule 1: hyphenated form appears mid-line
+    assert "Committee met" in resolved[0]            # rule 2: joined word appears
+    assert "maximum-employment goal" in resolved[2]  # rule 3: both halves are words
+    assert "overheating" in resolved[3]              # prefix: joined
+    assert all("\u2063" not in text for text in resolved)
