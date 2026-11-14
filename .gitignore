@@ -9,6 +9,7 @@ mlruns/
 .pytest_cache/
 logs/
 data/panel/
+data/text/embeddings.parquet
 results/tests_before.parquet
 .terraform/
 *.tfstate

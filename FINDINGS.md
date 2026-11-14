@@ -246,6 +246,10 @@ recorded before results.
   of each training window" and the only affected model is M4, the challenger, whose result is
   reported whatever it is. See `splits.early_stop_split`.
 
+- **FOMC minutes for 2012-10-24 are missing.** The Fed publishes an HTML minutes page but the
+  PDF URL returns 404. The DQ `minutes_missing` flag remains; it is 1 of 133 meetings and no
+  retrieval result depends on it.
+
 ---
 
 _Results are added per step as they are computed._
