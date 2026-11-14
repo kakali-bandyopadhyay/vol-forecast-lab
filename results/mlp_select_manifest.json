@@ -1,0 +1,16 @@
+{
+  "chosen_config": {
+    "hidden": 32,
+    "layers": 1,
+    "weight_decay": 0.001
+  },
+  "config_id": "h32_l1_wd0.001",
+  "validation_mean_qlike": 0.26502531406633306,
+  "code_commit": "0c35af58ec17c043e82e847bee215295311bff96",
+  "torch_version": "2.15.0+cpu",
+  "n_configs": 18,
+  "n_seeds": 3,
+  "n_folds": 4,
+  "n_forecasts": 985,
+  "panel_sha256": "e5b8a91420e396696d6ae0ee821232e04f5111bc31ab82637ac5b965c367fe41"
+}
