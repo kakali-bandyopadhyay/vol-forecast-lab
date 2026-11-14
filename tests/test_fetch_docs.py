@@ -163,3 +163,31 @@ def test_error_entry_is_retried_and_429_is_retryable(tmp_path: Path):
     )
     assert calls == [url, url]
     assert second["files"][f"statement/{EVENT_DATE}.html"]["status"] == "ok"
+
+
+def test_recent_minutes_404_is_retried_on_next_run(tmp_path: Path):
+    """Minutes not yet published (404 within the grace window) are retried; old 404s stay final."""
+    events = _events_file(tmp_path / "events" / "fomc.csv", dates=("2025-12-10", "2020-01-29"))
+    calls = []
+
+    def get(url, **kwargs):
+        calls.append(url)
+        return SimpleNamespace(status_code=404, content=b"not found")
+
+    args = _time_args()  # fetch time 2026-01-02: 23 days after 2025-12-10, years after 2020-01-29
+    manifest = fetch_docs.fetch_documents(SNAPSHOT, doc_type="minutes", root=tmp_path, events_file=events, get=get, **args)
+    assert manifest["files"]["minutes/20251210.pdf"]["status"] == "not_yet_released"
+    assert manifest["files"]["minutes/20200129.pdf"]["status"] == "not_found"
+    calls.clear()
+    fetch_docs.fetch_documents(SNAPSHOT, doc_type="minutes", root=tmp_path, events_file=events, get=get, **_time_args())
+    assert calls == [fetch_docs.build_document_url("20251210", "minutes")]
+
+
+def test_statement_404_is_final_even_when_recent(tmp_path: Path):
+    """Statements are published on the meeting day, so a recent statement 404 is still final."""
+    events = _events_file(tmp_path / "events" / "fomc.csv", dates=("2025-12-10",))
+    manifest = fetch_docs.fetch_documents(
+        SNAPSHOT, doc_type="statement", root=tmp_path, events_file=events,
+        get=lambda url, **kwargs: SimpleNamespace(status_code=404, content=b""), **_time_args(),
+    )
+    assert manifest["files"]["statement/20251210.html"]["status"] == "not_found"

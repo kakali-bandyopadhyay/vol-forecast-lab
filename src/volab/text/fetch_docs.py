@@ -24,6 +24,9 @@ STATEMENT_URL = "https://www.federalreserve.gov/newsevents/pressreleases/monetar
 MINUTES_URL = "https://www.federalreserve.gov/monetarypolicy/files/fomcminutes{date}.pdf"
 # Entries with these statuses are never re-requested; "error" entries are retried on the next run.
 FINAL_STATUSES = frozenset({"ok", "not_found"})
+# Minutes are released about three weeks after the meeting. A minutes 404 within this many days of
+# the event date is recorded as "not_yet_released" (not final) so a later run fetches the PDF.
+MINUTES_RELEASE_GRACE_DAYS = 35
 LOGGER = logging.getLogger(__name__)
 
 
@@ -171,12 +174,23 @@ def fetch_documents(
                     "bytes": 0,
                     "sha256": None,
                     "fetched_at_utc": fetched_at,
-                    "status": "not_found" if http_status == 404 else "error",
+                    "status": _missing_status(http_status, kind, event_date, fetched_at),
                     "error": error or "request failed",
                 }
             manifest["files"][relative_name] = entry
             _write_manifest(manifest_path, manifest)
     return manifest
+
+
+def _missing_status(http_status: int | None, kind: str, event_date: str, fetched_at: str) -> str:
+    """Classify a failed download: final 404, retryable pre-release minutes 404, or error."""
+    if http_status != 404:
+        return "error"
+    if kind == "minutes":
+        fetched_day = datetime.strptime(fetched_at[:10], "%Y-%m-%d")
+        if (fetched_day - datetime.strptime(event_date, "%Y%m%d")).days <= MINUTES_RELEASE_GRACE_DAYS:
+            return "not_yet_released"
+    return "not_found"
 
 
 def _write_manifest(path: Path, manifest: dict[str, Any]) -> None:
