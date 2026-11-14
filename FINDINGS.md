@@ -29,7 +29,7 @@ The interval spans zero, so neither a small gain nor a small loss for HAR-X is e
 | Test | Pair | Statistic | p-value | Reading |
 |---|---|---|---|---|
 | Clark–West, one-sided (headline) | M2 vs M1 | 1.557 | 0.0597 | Not rejected at 0.05 |
-| Diebold–Mariano on QLIKE | M2 vs M1 | 0.336 | 0.737 | No difference detected; sign favours M1 |
+| Diebold–Mariano on QLIKE | M2 vs M1 | 0.336 | 0.737 | Difference not detected; sign favours M1 |
 | Diebold–Mariano on QLIKE | M1 vs M0 | −2.215 | 0.0268 | Favours HAR; Holm pending |
 | Mincer–Zarnowitz | M0 | 58.81 | 1.7 × 10⁻¹³ | Calibration rejected |
 | Mincer–Zarnowitz | M1 | 2.46 | 0.293 | Not rejected |
