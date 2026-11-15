@@ -1,0 +1,61 @@
+{
+  "snapshot_id": "20240101T000000Z",
+  "pulled_at_utc": "2024-01-01T00:00:00Z",
+  "data_classification": "SYNTHETIC \u2013 not market data",
+  "sources": {
+    "spy": {
+      "url": "synthetic://vol-forecast-lab/20240101T000000Z",
+      "row_count": 2769,
+      "first_date": "2010-01-04",
+      "last_date": "2020-12-31",
+      "files": [
+        {
+          "file_name": "spy_raw.json",
+          "sha256": "dbbd1020bf523085dcb34e63588611f655a3a2784df483b7a81dca75f3032cdb"
+        },
+        {
+          "file_name": "spy.csv",
+          "sha256": "fe0bfdaef820b70de2bc8186959df18c4b7ab430b63891c4ae47a8923a2431f1"
+        }
+      ],
+      "status": "available",
+      "http_status": null,
+      "data_classification": "SYNTHETIC \u2013 not market data"
+    },
+    "vix_cboe": {
+      "url": "synthetic://vol-forecast-lab/20240101T000000Z",
+      "row_count": 2769,
+      "first_date": "2010-01-04",
+      "last_date": "2020-12-31",
+      "files": [
+        {
+          "file_name": "vix_cboe.csv",
+          "sha256": "36f6064dba9b6f932d68c968d9b25a1d3830bec0219ce93aafad06b1783fdb67"
+        }
+      ],
+      "status": "available",
+      "http_status": null,
+      "data_classification": "SYNTHETIC \u2013 not market data"
+    },
+    "vix_fred": {
+      "url": "synthetic://vol-forecast-lab/20240101T000000Z",
+      "row_count": 2769,
+      "first_date": "2010-01-04",
+      "last_date": "2020-12-31",
+      "files": [
+        {
+          "file_name": "vix_fred.csv",
+          "sha256": "f19cf35c74d0ab8bcfca0b27e014d4e6e873efd3f6c36871cae9a48479db9aa9"
+        }
+      ],
+      "status": "available",
+      "http_status": null,
+      "data_classification": "SYNTHETIC \u2013 not market data"
+    }
+  },
+  "package_versions": {
+    "pandas": "3.1.1",
+    "numpy": "2.5.4",
+    "python": "3.14.7"
+  }
+}
