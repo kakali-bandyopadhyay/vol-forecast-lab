@@ -107,22 +107,27 @@ jobs:
           print(f"Imported {len(bag.dags)} DAG(s)")
           PY
 
-  k8s-dry-run:
+  k8s-validate:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - name: Validate Kubernetes manifests when present
         run: |
           set -euo pipefail
-          shopt -s nullglob
-          manifests=(k8s/*.yaml)
-          if ((${#manifests[@]} == 0)); then
+          manifest_count=0
+          for manifest in k8s/*.yaml; do
+            [[ "$manifest" == "k8s/kind-config.yaml" ]] && continue
+            manifest_count=$((manifest_count + 1))
+          done
+          if ((manifest_count == 0)); then
             echo "no manifests yet"
             exit 0
           fi
-          version="v1.37.1"
-          curl -fsSLO "https://dl.k8s.io/release/${version}/bin/linux/amd64/kubectl"
-          curl -fsSLO "https://dl.k8s.io/release/${version}/bin/linux/amd64/kubectl.sha256"
-          echo "$(cat kubectl.sha256)  kubectl" | sha256sum --check
-          sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
-          kubectl apply --dry-run=client -f k8s/
+          version="v0.8.0"
+          archive="kubeconform-linux-amd64.tar.gz"
+          sha256="9bc2bffbf71f261128533edaf912153948b7ff238f9a531ae6d34466ec287883"
+          curl -fsSL "https://github.com/yannh/kubeconform/releases/download/${version}/${archive}" -o "${archive}"
+          echo "${sha256}  ${archive}" | sha256sum --check
+          tar -xzf "${archive}" kubeconform
+          chmod +x kubeconform
+          ./kubeconform -strict -summary -kubernetes-version 1.37.0 -ignore-filename-pattern kind-config.yaml k8s/

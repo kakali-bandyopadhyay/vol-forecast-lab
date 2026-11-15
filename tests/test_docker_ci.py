@@ -24,7 +24,7 @@ def test_ci_workflow_has_five_jobs_and_versioned_actions() -> None:
     workflow = yaml.safe_load((ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8"))
     jobs = workflow["jobs"]
 
-    assert set(jobs) == {"python-tests", "terraform", "docker-build", "dag-import", "k8s-dry-run"}
+    assert set(jobs) == {"python-tests", "terraform", "docker-build", "dag-import", "k8s-validate"}
     for job in jobs.values():
         for step in job.get("steps", []):
             if "uses" in step:
