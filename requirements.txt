@@ -24,3 +24,4 @@ confluent-kafka==2.16.1
 PyYAML==6.0.3
 langsmith==0.14.1
 langgraph==1.2.22
+mlflow==3.18.0
