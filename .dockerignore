@@ -1,0 +1,9 @@
+.venv
+.git
+data/snapshots
+data/panel
+data/text/embeddings.parquet
+mlruns
+*.tfstate*
+.env
+infra/**/.terraform
