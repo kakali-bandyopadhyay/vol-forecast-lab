@@ -1,0 +1,41 @@
+flowchart LR
+  subgraph Local[Local runtime]
+    API[FastAPI API<br/>Docker image]
+    AF[Airflow 3.4.0<br/>LocalExecutor]
+    VENV["/opt/vfl-venv<br/>separate Python environment"]
+    AF --> VENV
+    subgraph Kind[kind cluster]
+      DEP[API Deployment<br/>planned – Step 13]
+      CRON[drift CronJob<br/>planned – Step 13]
+    end
+    API -.image loaded into.-> DEP
+    subgraph Compose[docker-compose.platform.yml]
+      Q[Qdrant]
+      K[Kafka]
+      OS[OpenSearch]
+      RD[Redis]
+    end
+    PIPE[Text pipeline +<br/>Kafka consumers]
+    SPARK[PySpark container<br/>compact_stats]
+    PIPE --> K
+    PIPE --> Q
+    PIPE -.planned 10c-4.-> OS
+    API --> Q
+    API -.planned 10c-4.-> OS
+    API -.planned 10c-5.-> RD
+  end
+  subgraph AWS[AWS Terraform]
+    RAW[(S3 raw/)]
+    CLEAN[(S3 clean/)]
+    CURATED[(S3 curated/)]
+    ECR[ECR repository<br/>vfl-extract]
+    L[Image Lambda<br/>vfl-extract]
+    GL[Glue table<br/>vfl_docs.vfl_documents_clean]
+    ATH[Athena workgroup<br/>vfl-wg]
+    RAW --> L --> CLEAN
+    CLEAN --> GL --> ATH
+    ECR -.image for.-> L
+  end
+  K -.uploader.-> RAW
+  CLEAN -.s3 sync.-> SPARK
+  SPARK -.s3 sync.-> CURATED

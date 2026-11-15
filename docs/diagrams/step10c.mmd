@@ -1,0 +1,13 @@
+flowchart LR
+  P[fetch_docs] -->|new-doc event| K[(Kafka topic docs.raw)]
+  K --> U[uploader consumer] --> S1[S3 raw zone]
+  S1 -->|S3 event| LM[Lambda: extract text]
+  LM --> S2[S3 clean zone<br/>Parquet, partitioned year/doc_type]
+  S2 --> GL[Glue Data Catalog] --> AT[Athena SQL]
+  S2 --> SP[PySpark: compaction + stats]
+  S2 --> IX[indexer consumer]
+  IX --> OS[(OpenSearch BM25)]
+  IX --> QD[(Qdrant vectors)]
+  OS & QD --> API[FastAPI hybrid search<br/>reciprocal rank fusion]
+  API <--> RD[(Redis cache + rate limit)]
+  AF[Airflow] -.orchestrates.-> P & SP & IX

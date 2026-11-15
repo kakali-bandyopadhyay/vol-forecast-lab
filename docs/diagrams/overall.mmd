@@ -1,0 +1,23 @@
+flowchart LR
+  A[Tiingo SPY OHLC] --> S[(Snapshot + SHA-256 manifest)]
+  B[Cboe VIX history] --> S
+  B2[FRED VIXCLS] -.cross-check.-> S
+  E[FOMC / CPI calendars<br/>hand-built, sourced] --> S
+  S --> RV[RV proxies + 30-day targets]
+  RV --> WF[Walk-forward engine<br/>expanding, no target overlap]
+  WF --> M0[M0 persistence]
+  WF --> M1[M1 HAR / M2 HAR-X]
+  WF --> M3[M3 GARCH 1,1]
+  WF --> M4[M4 MLP - PyTorch]
+  M0 & M1 & M3 & M4 --> EV[Evaluation<br/>Clark-West, DM-QLIKE, MZ]
+  RV --> Q2[Ex-ante spread /<br/>ex-post premium]
+  RV --> EVT[Event regressions]
+  EV & Q2 & EVT --> R[(results/*.parquet)]
+  R --> AG[LangGraph agent] --> LS[LangSmith]
+  R --> API[FastAPI read-only]
+  WF -.params, metrics.-> ML[MLflow]
+  RV -.feature stats.-> DR[Drift report]
+  subgraph Orchestration
+    AF[Airflow DAG: audit → rv → refit → evaluate → q2_events → drift]
+    K8[kind cluster: API Deployment + drift CronJob]
+  end

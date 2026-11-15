@@ -1,0 +1,11 @@
+flowchart LR
+  F[fomc.csv dates] --> A[Fetch statement HTML<br/>+ minutes PDF]
+  A --> R[(Raw files + SHA-256<br/>in snapshot manifest)]
+  R --> X[Extract + clean text<br/>vote record as fields]
+  X --> D[(documents.parquet)]
+  D --> C[Chunk by paragraph]
+  C --> K[(chunks.parquet)]
+  K --> E[Embed + idempotent upsert<br/>Qdrant hybrid]
+  E --> S[search / get_statement API]
+  S --> G[Agent tool with citations]
+  D --> Q[Data-quality checks]
