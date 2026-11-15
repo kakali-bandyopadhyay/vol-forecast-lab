@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import uuid
+import zlib
 from datetime import date, datetime, timezone
 from pathlib import Path
 from types import SimpleNamespace
@@ -412,6 +414,66 @@ def test_index_is_idempotent_and_tracks_changes(tmp_path: Path):
 
     _, fourth = _index_chunks(tmp_path, changed.iloc[:2], documents, client=client)
     assert fourth["deleted"] == 1
+
+
+def test_context_header_formats_and_rejects_unknown_type():
+    assert index.context_header("statement", date(2010, 1, 27)) == (
+        "FOMC statement, 27 January 2010"
+    )
+    assert index.context_header("minutes", date(2010, 1, 27)) == (
+        "FOMC minutes, meeting of 27 January 2010"
+    )
+    with pytest.raises(ValueError):
+        index.context_header("projection", date(2010, 1, 27))
+
+
+def test_index_embeds_context_header_but_payload_keeps_raw_text(tmp_path: Path):
+    chunks, documents = _three_chunks()
+    row = chunks.iloc[0]
+    seen = []
+
+    def recording_embedder(texts):
+        seen.extend(texts)
+        return [[0.0] * 8 for _ in texts]
+
+    client = QdrantClient(":memory:")
+    counts = index.index_chunks(
+        chunks.iloc[[0]],
+        documents.iloc[[0]],
+        client=client,
+        embedder=recording_embedder,
+        cache_path=tmp_path / "embeddings.parquet",
+        dense_dim=8,
+    )
+    assert counts["upserted"] == 1
+    assert seen == [
+        "FOMC statement, 29 January 2020\n\n" + row.text
+    ]
+
+    point_id = str(uuid.uuid5(index.POINT_NAMESPACE, row.chunk_id))
+    point = client.retrieve(
+        collection_name=index.COLLECTION,
+        ids=[point_id],
+        with_payload=True,
+        with_vectors=True,
+    )[0]
+    assert point.payload["text"] == row.text
+    assert point.payload["chunk_content_hash"] == row.content_hash
+    assert point.payload["content_hash"] == index.index_hash(row)
+    assert zlib.crc32(b"january") & 0x7FFFFFFF in point.vector[index.SPARSE_VECTOR].indices
+
+
+def test_header_version_change_forces_every_point_to_reindex(tmp_path: Path, monkeypatch):
+    chunks, documents = _three_chunks()
+    client = QdrantClient(":memory:")
+    _, first = _index_chunks(tmp_path, chunks, documents, client=client)
+    _, second = _index_chunks(tmp_path, chunks, documents, client=client)
+    assert first["upserted"] == 3
+    assert second["upserted"] == 0
+
+    monkeypatch.setattr(index, "HEADER_VERSION", "2")
+    _, third = _index_chunks(tmp_path, chunks, documents, client=client)
+    assert third["upserted"] == 3
 
 
 def test_embed_texts_batches_at_256_and_saves_the_cache(tmp_path: Path):

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import os
 import re
 import uuid
@@ -26,6 +27,7 @@ BATCH_SIZE = 256
 DOCUMENTS_PATH = REPO_ROOT / "data" / "text" / "documents.parquet"
 EMBEDDINGS_PATH = REPO_ROOT / "data" / "text" / "embeddings.parquet"
 POINT_NAMESPACE = uuid.UUID("6ba7b811-9dad-11d1-80b4-00c04fd430c8")
+HEADER_VERSION = "1"
 
 STOPWORDS = frozenset(
     """
@@ -68,6 +70,28 @@ def _yyyymmdd(value) -> int:
 
 def _iso_date(value) -> str:
     return datetime.strptime(str(_yyyymmdd(value)), "%Y%m%d").date().isoformat()
+
+
+def context_header(doc_type: str, event_date) -> str:
+    """Return the contextual heading embedded with each chunk."""
+    parsed = date.fromisoformat(_iso_date(event_date))
+    formatted = f"{parsed.day} {parsed:%B %Y}"
+    if doc_type == "statement":
+        return f"FOMC statement, {formatted}"
+    if doc_type == "minutes":
+        return f"FOMC minutes, meeting of {formatted}"
+    raise ValueError(f"unsupported doc_type for context header: {doc_type!r}")
+
+
+def index_text(row) -> str:
+    """Text sent to the embedder, with its contextual header."""
+    return f"{context_header(row.doc_type, row.event_date)}\n\n{row.text}"
+
+
+def index_hash(row) -> str:
+    """Cache and change-detection key covering header, text, version and chunk hash."""
+    payload = f"{index_text(row)}|{HEADER_VERSION}|{row.content_hash}"
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 
 def validate_dates(date_from: str | None, date_to: str | None) -> tuple[int | None, int | None]:
@@ -257,14 +281,14 @@ def index_chunks(
     for row in chunks_frame.itertuples(index=False):
         point_id = str(uuid.uuid5(POINT_NAMESPACE, str(row.chunk_id)))
         previous = existing.get(point_id)
-        if previous is not None and previous[0] == str(row.chunk_id) and previous[1] == str(row.content_hash):
+        if previous is not None and previous[0] == str(row.chunk_id) and previous[1] == index_hash(row):
             unchanged += 1
             continue
         to_upsert.append((point_id, row))
 
     if to_upsert:
         vectors, total_tokens = _embed_texts(
-            [(str(row.content_hash), str(row.text)) for _, row in to_upsert],
+            [(index_hash(row), index_text(row)) for _, row in to_upsert],
             embedder=embedder or openai_embed,
             cache_path=cache_path,
         )
@@ -273,13 +297,13 @@ def index_chunks(
 
     points = []
     for point_id, row in to_upsert:
-        content_hash = str(row.content_hash)
+        key = index_hash(row)
         points.append(
             models.PointStruct(
                 id=point_id,
                 vector={
-                    DENSE_VECTOR: vectors[content_hash],
-                    SPARSE_VECTOR: sparse_vector(str(row.text)),
+                    DENSE_VECTOR: vectors[key],
+                    SPARSE_VECTOR: sparse_vector(index_text(row)),
                 },
                 payload={
                     "chunk_id": str(row.chunk_id),
@@ -288,7 +312,8 @@ def index_chunks(
                     "event_date": _yyyymmdd(row.event_date),
                     "url": urls.get(str(row.doc_id), ""),
                     "page": None if pd.isna(row.page) else int(row.page),
-                    "content_hash": content_hash,
+                    "content_hash": key,
+                    "chunk_content_hash": str(row.content_hash),
                     "text": str(row.text),
                 },
             )
