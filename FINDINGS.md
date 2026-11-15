@@ -231,6 +231,36 @@ M4 is worse than HAR-X in the low-VIX tercile in both samples, so the DEVIATIONS
 
 **Files.** `results/mlp_selection.parquet`, `mlp_select_manifest.json`, `mlp_forecasts.parquet`, `mlp_test_manifest.json`, `mlp_tests.parquet`, `mlp_regimes.parquet`, `holm_final.parquet`, `holm_manifest.json`.
 
+### Step 10b — Unstructured-data pipeline: FOMC statements and minutes
+
+**Scope.** Retrieval and citation only (PREREGISTRATION §2.1, §10 item 6): no sentiment, text features or signals; nothing here feeds M0–M4 or the event study.
+
+**Corpus (snapshot 20261112T071104Z).** 134 scheduled FOMC dates (2010-01-27 → 2026-10-28). Fetched 134 statements (HTML) and 132 minutes (PDF). Not fetched: 2012-10-24 minutes (the PDF URL returns 404; the Fed publishes that meeting's minutes as HTML only – known gap, no substitute source) and 2026-10-28 minutes (not yet released at fetch time; retried on the next run).
+
+**Extraction and storage.** 266 documents in `data/text/documents.parquet` (fixed schema; vote record as fields), extractor 1.2. All 134 statements parse their vote record; from 2026-06-17 the statements give a tally ("by a 9 – 3 vote") and name only dissenters, stored as `vote_tally`. Minutes: two-column reading order, paragraphs rebuilt on line-per-block PDFs (2024+), headers/footers, attendance lists, projection tables and chart labels removed; real compound hyphens kept ("longer-run"), fractions written "3-1/2" as in the statements. Extracted/raw word ratio 0.85–0.91 in every year (the difference is attendance lists, footnotes and tables, by design). A fresh extraction with the committed code reproduces documents.parquet exactly.
+
+**Chunks.** 6,620 chunks (365 statement, 6,255 minutes), paragraph-based, ≤ 300 tokens (median ~239), 1.50M tokens in total.
+
+**Data quality.** 2 flags: `minutes_missing` 2012-10-24 (the known gap above); `not_yet_released` 2026-10-28 (info). No other flags.
+
+**Index.** Qdrant v1.20.1, dense (text-embedding-3-small, 1,536 d) + keyword vectors (IDF weighting in Qdrant), fused by reciprocal rank fusion. Each chunk is indexed with a contextual header (document type and meeting date), because the eval questions name meetings and the chunk text carries no date; chunk text, chunk_ids and labels are unchanged; decided before the first index run. Idempotence: the successful index run upserted 6,620; the second run upserted 0, unchanged 6,620.
+
+**Retrieval evaluation (15 questions labelled before any embedding; 8 statement, 7 minutes; no filters).**
+
+| Mode | recall@5 | hit@5 | MRR@10 | recall@5 statements (8) | recall@5 minutes (7) |
+|---|---|---|---|---|---|
+| dense | 0.389 | 0.467 | 0.286 | 0.250 | 0.548 |
+| hybrid (RRF) | 0.322 | 0.400 | 0.244 | 0.125 | 0.548 |
+| keyword only | 0.122 | 0.200 | 0.130 | 0.000 | 0.262 |
+
+Result as measured: retrieval is weak on the statement questions, and fusion with the keyword vector does not improve on dense alone.
+
+**Post-hoc diagnostic (not part of the pre-registered evaluation; labels unchanged).** Each statement question's gold set contains only the statement chunk, but the same meeting's minutes record the same decision or dissent. Reading the top 5 for the 8 statement questions: a chunk from the same meeting that names the dissenter or carries the answer phrase appears in the top 5 for 6 of 8 questions (hybrid) and 5 of 8 (dense), against 1 and 2 of 8 under the pre-registered labels. The low statement scores therefore mostly reflect the single-document-type gold sets rather than missed content. Remaining misses: q07 (March 2022 forward guidance) and q08 (July 2026 dissent size) – no same-meeting chunk with the answer in the top 5; q01 dense ranks other 2010 meetings with the same dissenter first.
+
+**Process notes.** The first eval call ran against an empty collection (a single upsert of 6,620 points exceeded Qdrant's 32 MB request limit); its outputs were discarded before inspection, upserts are now batched (256) and the eval refuses an incomplete index. Embedding cost ≈ USD 0.03 (ESTIMATE from 1.5M tokens at list price; check the OpenAI usage page).
+
+**Limitations.** One officer-list chunk remains at the end of 2024+ minutes; "forwardlooking" ×7 left by the hyphen rule; short fragments ("Core PCE inflation" ×29, the secretary's name ×18) merge into neighbouring chunks. Eval set is small (15) and single-labelled; a future eval should label every chunk that answers a question, across document types – as a new, separately committed set.
+
 ---
 
 ## Limitations
@@ -249,9 +279,6 @@ recorded before results.
 - **FOMC minutes for 2012-10-24 are missing.** The Fed publishes an HTML minutes page but the
   PDF URL returns 404. The DQ `minutes_missing` flag remains; it is 1 of 133 meetings and no
   retrieval result depends on it.
-
-- The first eval call ran against an empty collection (upsert exceeded Qdrant’s 32 MB request
-  limit); its outputs were discarded before inspection; the eval set was not changed.
 
 ---
 
