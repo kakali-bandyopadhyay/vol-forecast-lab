@@ -476,6 +476,57 @@ def test_header_version_change_forces_every_point_to_reindex(tmp_path: Path, mon
     assert third["upserted"] == 3
 
 
+class _SpyQdrant:
+    def __init__(self, inner):
+        self.inner = inner
+        self.upsert_calls = []
+
+    def __getattr__(self, name):
+        return getattr(self.inner, name)
+
+    def upsert(self, *, collection_name, points, wait):
+        self.upsert_calls.append((len(points), wait))
+        return self.inner.upsert(
+            collection_name=collection_name, points=points, wait=wait
+        )
+
+
+def test_upsert_batches_at_256_points(tmp_path: Path):
+    chunks = pd.DataFrame([
+        {"chunk_id": f"statement-20200129-{i:04d}", "doc_id": "statement-20200129",
+         "doc_type": "statement", "event_date": pd.Timestamp("2020-01-29"),
+         "page": None, "text": f"target range chunk {i}", "content_hash": f"h{i}"}
+        for i in range(600)
+    ])
+    documents = pd.DataFrame([{"doc_id": "statement-20200129", "url": "u"}])
+    spy = _SpyQdrant(QdrantClient(":memory:"))
+
+    counts = index.index_chunks(
+        chunks,
+        documents,
+        client=spy,
+        embedder=_fake_embedder,
+        cache_path=tmp_path / "embeddings.parquet",
+        dense_dim=8,
+    )
+
+    assert counts["upserted"] == 600
+    assert spy.upsert_calls == [(256, True), (256, True), (88, True)]
+
+
+def test_eval_stage_rejects_an_empty_index(tmp_path: Path, monkeypatch):
+    chunks, _ = _three_chunks()
+    chunks_path = tmp_path / "chunks.parquet"
+    chunks.to_parquet(chunks_path, index=False)
+    empty = QdrantClient(":memory:")
+    index.ensure_collection(empty, dense_dim=8)
+    monkeypatch.setattr(pipeline, "CHUNKS_PATH", chunks_path)
+    monkeypatch.setattr(pipeline.index, "_client", lambda *args, **kwargs: empty)
+
+    with pytest.raises(SystemExit, match=r"0 points.*3 chunks"):
+        pipeline.eval_stage("20261112T071104Z")
+
+
 def test_embed_texts_batches_at_256_and_saves_the_cache(tmp_path: Path):
     calls = []
 

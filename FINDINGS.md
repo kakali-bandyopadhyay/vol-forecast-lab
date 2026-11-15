@@ -250,6 +250,9 @@ recorded before results.
   PDF URL returns 404. The DQ `minutes_missing` flag remains; it is 1 of 133 meetings and no
   retrieval result depends on it.
 
+- The first eval call ran against an empty collection (upsert exceeded Qdrant’s 32 MB request
+  limit); its outputs were discarded before inspection; the eval set was not changed.
+
 ---
 
 _Results are added per step as they are computed._

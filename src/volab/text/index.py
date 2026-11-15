@@ -24,6 +24,7 @@ EMBEDDING_DIM = 1536
 DENSE_LIMIT = 50
 SPARSE_LIMIT = 50
 BATCH_SIZE = 256
+UPSERT_BATCH = 256
 DOCUMENTS_PATH = REPO_ROOT / "data" / "text" / "documents.parquet"
 EMBEDDINGS_PATH = REPO_ROOT / "data" / "text" / "embeddings.parquet"
 POINT_NAMESPACE = uuid.UUID("6ba7b811-9dad-11d1-80b4-00c04fd430c8")
@@ -319,7 +320,12 @@ def index_chunks(
             )
         )
     if points:
-        qdrant.upsert(collection_name=collection, points=points, wait=True)
+        for start in range(0, len(points), UPSERT_BATCH):
+            qdrant.upsert(
+                collection_name=collection,
+                points=points[start:start + UPSERT_BATCH],
+                wait=True,
+            )
 
     stale = [
         point_id

@@ -257,7 +257,26 @@ def _metrics(gold: list[str], retrieved: list[str]) -> dict[str, float]:
     return {"recall_at_5": recall, "hit_at_5": hit, "mrr_at_10": mrr, "rank": rank or 0}
 
 
+def _require_index_count(chunks: pd.DataFrame) -> None:
+    """Fail before eval if the collection does not contain every chunk."""
+    qdrant = index._client(None)
+    try:
+        count = int(qdrant.count(collection_name=index.COLLECTION, exact=True).count)
+    except Exception as exc:
+        raise SystemExit(
+            f"Index guard: cannot count Qdrant collection {index.COLLECTION!r}; "
+            f"run the index stage before eval ({exc})."
+        ) from exc
+    if count != len(chunks):
+        raise SystemExit(
+            f"Index guard: Qdrant collection {index.COLLECTION!r} has {count} points "
+            f"but chunks.parquet has {len(chunks)} chunks. Run the index stage before eval."
+        )
+
+
 def eval_stage(snapshot: str) -> dict[str, Any]:
+    chunks = pd.read_parquet(CHUNKS_PATH)
+    _require_index_count(chunks)
     require_committed(str(EVAL_QUESTIONS.relative_to(REPO_ROOT)))
     questions = pd.read_csv(EVAL_QUESTIONS)
     rows = []
