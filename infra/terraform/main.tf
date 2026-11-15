@@ -16,10 +16,53 @@ resource "random_id" "vfl_bucket_suffix" {
   byte_length = 3
 }
 
-data "archive_file" "vfl_extract_package" {
-  type        = "zip"
-  source_dir  = "${path.module}/../../lambda/extract"
-  output_path = "${path.module}/../../lambda/extract.zip"
+# D2 (Spec_vfl-step10c): the extractor ships as a container image – PyMuPDF + pyarrow exceed the
+# 250 MB unzipped zip/layer limit. Apply this repository first, push the image (lambda/build_push.ps1),
+# then apply again with -var extract_image_uri=<digest URI>; the Lambda and its S3 trigger are created
+# only when extract_image_uri is set.
+resource "aws_ecr_repository" "vfl_extract" {
+  name                 = "vfl-extract"
+  image_tag_mutability = "IMMUTABLE"
+  force_delete         = true
+
+  image_scanning_configuration {
+    scan_on_push = true
+  }
+}
+
+# Same-account image pull by the Lambda service, limited to the vfl-extract function.
+resource "aws_ecr_repository_policy" "vfl_extract" {
+  repository = aws_ecr_repository.vfl_extract.name
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Sid       = "VflLambdaPull"
+      Effect    = "Allow"
+      Principal = { Service = "lambda.amazonaws.com" }
+      Action    = ["ecr:BatchGetImage", "ecr:GetDownloadUrlForLayer"]
+      Condition = {
+        StringLike = {
+          "aws:sourceArn" = "arn:aws:lambda:us-east-1:${data.aws_caller_identity.current.account_id}:function:vfl-extract"
+        }
+      }
+    }]
+  })
+}
+
+resource "aws_ecr_lifecycle_policy" "vfl_extract" {
+  repository = aws_ecr_repository.vfl_extract.name
+  policy = jsonencode({
+    rules = [{
+      rulePriority = 1
+      description  = "Keep the last 3 images"
+      selection = {
+        tagStatus   = "any"
+        countType   = "imageCountMoreThan"
+        countNumber = 3
+      }
+      action = { type = "expire" }
+    }]
+  })
 }
 
 resource "aws_s3_bucket" "vfl_docs" {
@@ -125,15 +168,14 @@ resource "aws_iam_role_policy" "vfl_extract" {
 }
 
 resource "aws_lambda_function" "vfl_extract" {
-  function_name    = "vfl-extract"
-  role             = aws_iam_role.vfl_extract.arn
-  runtime          = "python3.12"
-  handler          = "handler.handler"
-  filename         = data.archive_file.vfl_extract_package.output_path
-  source_code_hash = data.archive_file.vfl_extract_package.output_base64sha256
-  timeout          = 60
-  memory_size      = 512
-  layers           = [var.pandas_layer_arn]
+  count         = var.extract_image_uri == "" ? 0 : 1
+  function_name = "vfl-extract"
+  role          = aws_iam_role.vfl_extract.arn
+  package_type  = "Image"
+  image_uri     = var.extract_image_uri
+  architectures = ["x86_64"]
+  timeout       = 60
+  memory_size   = 1024
 
   environment {
     variables = {
@@ -145,19 +187,21 @@ resource "aws_lambda_function" "vfl_extract" {
 }
 
 resource "aws_lambda_permission" "vfl_s3_invoke" {
+  count          = length(aws_lambda_function.vfl_extract)
   statement_id   = "vfl-allow-s3-invoke"
   action         = "lambda:InvokeFunction"
-  function_name  = aws_lambda_function.vfl_extract.function_name
+  function_name  = aws_lambda_function.vfl_extract[0].function_name
   principal      = "s3.amazonaws.com"
   source_arn     = aws_s3_bucket.vfl_docs.arn
   source_account = data.aws_caller_identity.current.account_id
 }
 
 resource "aws_s3_bucket_notification" "vfl_raw_objects" {
+  count  = length(aws_lambda_function.vfl_extract)
   bucket = aws_s3_bucket.vfl_docs.id
 
   lambda_function {
-    lambda_function_arn = aws_lambda_function.vfl_extract.arn
+    lambda_function_arn = aws_lambda_function.vfl_extract[0].arn
     events              = ["s3:ObjectCreated:*"]
     filter_prefix       = "raw/"
   }
@@ -232,6 +276,27 @@ resource "aws_glue_catalog_table" "vfl_documents_clean" {
     columns {
       name = "extracted_at"
       type = "timestamp"
+    }
+    # D1: vote record + paragraph arrays so the indexer rebuilds the 10b chunks exactly.
+    columns {
+      name = "votes_against"
+      type = "array<string>"
+    }
+    columns {
+      name = "vote_tally"
+      type = "string"
+    }
+    columns {
+      name = "blocks_dropped"
+      type = "int"
+    }
+    columns {
+      name = "paragraph_texts"
+      type = "array<string>"
+    }
+    columns {
+      name = "paragraph_pages"
+      type = "array<int>"
     }
   }
 

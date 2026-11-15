@@ -18,3 +18,5 @@ results/tests_before.parquet
 *.tfplan
 tfplan
 *.tfvars
+# Step 10c local lake copies (synced from S3) and consumer state
+data/lake/
