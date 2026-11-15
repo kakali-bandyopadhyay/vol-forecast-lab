@@ -22,3 +22,5 @@ boto3==1.44.1
 tiktoken==0.14.0
 confluent-kafka==2.16.1
 PyYAML==6.0.3
+langsmith==0.14.1
+langgraph==1.2.22

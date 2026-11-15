@@ -1,6 +1,9 @@
 """Read-only API routes for document search and cached operational metrics."""
 
-from typing import Any
+import json
+from datetime import date
+from pathlib import Path
+from typing import Any, Literal
 
 from fastapi import FastAPI, HTTPException, Query
 from pydantic import BaseModel, Field
@@ -9,6 +12,11 @@ from volab.text import cache, index
 
 VERSION = "0.1.0"
 app = FastAPI(title="vol-forecast-lab document API", version=VERSION)
+
+RESULTS_DIR = Path(__file__).resolve().parents[1] / "results"
+FORECASTS_PATH = RESULTS_DIR / "forecasts.parquet"
+MLP_FORECASTS_PATH = RESULTS_DIR / "mlp_forecasts.parquet"
+LOSSES_PATH = RESULTS_DIR / "losses.parquet"
 
 
 class SearchResponse(BaseModel):
@@ -73,3 +81,48 @@ def statement(date: str) -> StatementResponse:
     except KeyError as exc:
         raise HTTPException(status_code=404, detail=f"No statement for {date}") from exc
     return StatementResponse(date=date, document=document)
+
+
+@app.get("/forecast", response_model=dict[str, Any])
+def forecast(
+    as_of: date,
+    model: Literal["M0", "M1", "M2", "M3", "M4"],
+) -> dict[str, Any]:
+    """Return stored forecast rows and their source citation."""
+    import pandas as pd
+
+    source_path = MLP_FORECASTS_PATH if model == "M4" else FORECASTS_PATH
+    frame = pd.read_parquet(source_path)
+    row_date = pd.to_datetime(frame["date"]).dt.date
+    mask = row_date == as_of
+    if "model" in frame.columns:
+        mask &= frame["model"] == model
+    selected = frame.loc[mask]
+    if selected.empty:
+        raise HTTPException(status_code=404, detail=f"No forecast for {model} on {as_of.isoformat()}")
+    records = json.loads(selected.to_json(orient="records", date_format="iso"))
+    return {"source_file": source_path.name, "date": as_of.isoformat(), "model": model, "rows": records}
+
+
+@app.get("/compare", response_model=dict[str, Any])
+def compare(
+    start: date,
+    end: date,
+    metric: Literal["qlike", "squared_error"],
+) -> dict[str, Any]:
+    """Return stored per-model mean losses over an inclusive date window."""
+    import pandas as pd
+
+    if start > end:
+        raise HTTPException(status_code=422, detail="start must be on or before end")
+    frame = pd.read_parquet(LOSSES_PATH)
+    row_dates = pd.to_datetime(frame["date"]).dt.date
+    selected = frame.loc[(row_dates >= start) & (row_dates <= end), ["model", metric]]
+    if selected.empty:
+        raise HTTPException(status_code=404, detail="No loss rows in the requested window")
+    grouped = selected.groupby("model")[metric].agg(["mean", "count"]).reset_index()
+    results = [
+        {"model": str(row.model), "mean": float(row["mean"]), "n": int(row["count"])}
+        for _, row in grouped.iterrows()
+    ]
+    return {"metric": metric, "start": start.isoformat(), "end": end.isoformat(), "results": results}
