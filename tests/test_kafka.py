@@ -335,6 +335,7 @@ def test_reindex_deletes_stale_chunks_only_for_that_document(tmp_path: Path):
         collection_name=index.COLLECTION,
         with_payload=True,
         with_vectors=False,
+        limit=10_000,  # scroll() returns 10 points by default
     )
     before_a = {point.payload["chunk_id"] for point in before if point.payload["doc_id"] == doc_a}
     before_b = {point.payload["chunk_id"] for point in before if point.payload["doc_id"] == doc_b}
@@ -348,6 +349,7 @@ def test_reindex_deletes_stale_chunks_only_for_that_document(tmp_path: Path):
         collection_name=index.COLLECTION,
         with_payload=True,
         with_vectors=False,
+        limit=10_000,  # scroll() returns 10 points by default
     )
     after_a = {point.payload["chunk_id"] for point in after if point.payload["doc_id"] == doc_a}
     after_b = {point.payload["chunk_id"] for point in after if point.payload["doc_id"] == doc_b}
