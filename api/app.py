@@ -1,12 +1,17 @@
 """Read-only API routes for document search and cached operational metrics."""
 
 import json
+import logging
+import os
+import time
 from datetime import date
+from functools import lru_cache
 from pathlib import Path
 from typing import Any, Literal
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import Depends, FastAPI, HTTPException, Query, Request
 from pydantic import BaseModel, Field
+from redis.exceptions import RedisError
 
 from volab.text import cache, index
 
@@ -17,6 +22,36 @@ RESULTS_DIR = Path(__file__).resolve().parents[1] / "results"
 FORECASTS_PATH = RESULTS_DIR / "forecasts.parquet"
 MLP_FORECASTS_PATH = RESULTS_DIR / "mlp_forecasts.parquet"
 LOSSES_PATH = RESULTS_DIR / "losses.parquet"
+EMPTY_CACHE_METRICS = {"hits": 0, "misses": 0, "hit_rate": 0.0, "rate_limited": 0}
+logger = logging.getLogger(__name__)
+
+
+def get_clock():
+    """Return the clock used by the rate limiter (overridden in tests for determinism)."""
+    return time.time
+
+
+def get_redis_client():
+    """Return the configured Redis client, or None when caching is disabled."""
+    return _redis_client_for_url(os.getenv("REDIS_URL"))
+
+
+@lru_cache(maxsize=4)
+def _redis_client_for_url(redis_url: str | None):
+    if not redis_url:
+        return None
+    from redis import Redis
+    from redis.backoff import NoBackoff
+    from redis.retry import Retry
+
+    # Short timeouts and one immediate retry so a Redis outage costs milliseconds, not seconds (fail open).
+    return Redis.from_url(
+        redis_url,
+        decode_responses=True,
+        socket_connect_timeout=0.25,
+        socket_timeout=0.25,
+        retry=Retry(NoBackoff(), 1),
+    )
 
 
 class SearchResponse(BaseModel):
@@ -47,28 +82,53 @@ def health() -> HealthResponse:
 
 
 @app.get("/metrics", response_model=dict[str, Any])
-def metrics() -> dict[str, Any]:
+def metrics(redis_client=Depends(get_redis_client)) -> dict[str, Any]:
     """Return cache counters from the cache backend implementation."""
+    if redis_client is None:
+        return dict(EMPTY_CACHE_METRICS)
     try:
-        return cache.get_metrics()
-    except NotImplementedError as exc:
-        raise HTTPException(status_code=501, detail="Metrics are unavailable until the cache stub is implemented.") from exc
+        return cache.get_metrics(redis_client)
+    except RedisError as exc:
+        logger.warning("Redis unavailable for /metrics: %s", exc)
+        return {**EMPTY_CACHE_METRICS, "redis_error": True}
 
 
 @app.get("/search", response_model=SearchResponse)
 def search(
+    request: Request,
     q: str = Query(min_length=1),
     date_from: str | None = None,
     date_to: str | None = None,
     doc_type: str | None = None,
     k: int = Query(default=5, ge=1, le=100),
+    redis_client=Depends(get_redis_client),
+    clock=Depends(get_clock),
 ) -> SearchResponse:
     """Search document index with optional date and type filters."""
+    key = cache.make_key(q, date_from, date_to, doc_type, k, "hybrid")
+    if redis_client is not None:
+        # Fail open: a Redis outage disables limiting and caching, never search itself.
+        try:
+            allowed = cache.RateLimiter(redis_client).allow(request.client.host, now=clock())
+            cached = cache.SearchCache(redis_client).get(key) if allowed else None
+        except RedisError as exc:
+            logger.warning("Redis unavailable, serving /search uncached: %s", exc)
+            redis_client, allowed, cached = None, True, None
+        if not allowed:
+            raise HTTPException(status_code=429, detail="rate limited")
+        if cached is not None:
+            return SearchResponse.model_validate(cached)
     try:
         results = index.search(q, date_from=date_from, date_to=date_to, doc_type=doc_type, k=k)
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
-    return SearchResponse(query=q, results=results)
+    response = SearchResponse(query=q, results=results)
+    if redis_client is not None:
+        try:
+            cache.SearchCache(redis_client).set(key, response.model_dump())
+        except RedisError as exc:
+            logger.warning("Redis unavailable, response not cached: %s", exc)
+    return response
 
 
 @app.get("/statement/{date}", response_model=StatementResponse)

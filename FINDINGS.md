@@ -277,6 +277,14 @@ Result as measured: retrieval is weak on the statement questions, and fusion wit
 - Caveats: n=15 (one question ≈ 6.7 pp hit@5); BM25 gain drivers (stemming, header boost on month/year) not isolated — ablation in P8. Date filters proven by the Docker test only (question file has no filters).
 - Incidents: the Docker test wrote 3 docs into the real index (fixed by delete + reindex); eval needs `.env` loaded for `OPENAI_API_KEY`.
 
+### 10c-5 Redis cache + rate limiter (16 Nov 2026)
+
+- `cache.py` (Kakali): key = sha256 of the normalised query (lower-case, whitespace collapsed) + date_from/date_to/doc_type/k/mode, TTL 3600 s; hit/miss/rate-limited counters on `/metrics`; atomic Lua token bucket (capacity 10, refill 5/s) keyed by client IP. Tests Codex (P7f); API wiring Codex, with Claude fixes (fixed test clock, fail-open on Redis errors, 0.25 s timeouts).
+- Live (Docker redis 7.4.12): miss 4,013 ms (includes cold start) → hit 37 ms for a case/spacing variant; 15-request burst → 10 allowed, 5 × 429; `/metrics` hits 11, misses 1, hit_rate 0.917, rate_limited 5.
+- Tests: 13 passed (cache + API); full suite 249 passed, 1 skipped (excl. test_text.py).
+- Caveats: cached results can be up to 1 h stale after a reindex (key has no index version); rate limit is per IP, so clients behind one NAT share a bucket; fakeredis is in runtime requirements (no dev file yet).
+- Incident: the first API rate-limit test used the real clock and failed 2/15 runs (a token refilled if 11 requests took > 0.2 s); fixed with an injected clock (15/15).
+
 ---
 
 ## Limitations
