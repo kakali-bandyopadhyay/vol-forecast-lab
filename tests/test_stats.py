@@ -58,11 +58,6 @@ def test_holm_rejects_a_nan_p_value():
         holm([0.01, np.nan, 0.03])
 
 
-def test_qlike_rejects_a_nan_target():
-    with pytest.raises(ValueError, match="finite"):
-        qlike(np.array([np.nan]), np.array([0.002]))
-
-
 def test_mz_rejects_non_finite_input():
     with pytest.raises(ValueError, match="finite"):
         mincer_zarnowitz(np.array([0.1, np.nan, 0.3]), np.array([0.1, 0.2, 0.3]), lag=1)

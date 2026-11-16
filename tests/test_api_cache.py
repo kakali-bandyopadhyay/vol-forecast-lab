@@ -38,6 +38,30 @@ def test_search_reuses_cached_response(client, monkeypatch):
     assert len(calls) == 1
 
 
+def test_search_reuses_the_same_rate_limiter_for_two_requests(client, monkeypatch):
+    http, redis_client = client
+    api_module._rate_limiter_for_client.cache_clear()
+    constructed = []
+
+    class CountingLimiter:
+        def __init__(self, client):
+            self.client = client
+            constructed.append(self)
+
+        def allow(self, client_id, *, now):
+            return True
+
+    monkeypatch.setattr(api_module.cache, "RateLimiter", CountingLimiter)
+    monkeypatch.setattr(api_module.index, "search", lambda query, **kwargs: [])
+
+    assert http.get("/search", params={"q": "first"}).status_code == 200
+    assert http.get("/search", params={"q": "second"}).status_code == 200
+
+    assert len(constructed) == 1
+    assert api_module._rate_limiter_for_client(redis_client) is constructed[0]
+    api_module._rate_limiter_for_client.cache_clear()
+
+
 def test_search_rate_limit_returns_429_and_metrics_merge_cache_metrics(client, monkeypatch):
     http, _ = client
     monkeypatch.setattr(api_module.index, "search", lambda query, **kwargs: [])

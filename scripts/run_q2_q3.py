@@ -447,7 +447,7 @@ def main() -> int:
         },
     }
     (RESULTS / "q2q3_manifest.json").write_text(
-        json.dumps(manifest, indent=2) + "\n", encoding="utf-8"
+        json.dumps(manifest, indent=2) + "\n", encoding="utf-8", newline="\n"  # Codex fix (P8e)
     )
 
     print(f"forecasts {len(dates)}, ex-window {int(ex_mask.sum())}, removed {removed}")

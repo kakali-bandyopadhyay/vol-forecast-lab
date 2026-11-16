@@ -138,8 +138,10 @@ def _manifest_files(snapshot: str) -> dict[str, Any]:
 
 
 def fetch_stage(snapshot: str, *, publish: bool = False) -> dict[str, Any]:
-    manifest = fetch_documents(snapshot)
-    files = manifest.get("files", {})
+    if publish:  # Codex fix (P8e)
+        files = _manifest_files(snapshot)
+    else:
+        files = fetch_documents(snapshot).get("files", {})
     counts = {"files": len(files)}
     if publish:
         producer = kafka_io.make_producer()
@@ -163,7 +165,8 @@ def fetch_stage(snapshot: str, *, publish: bool = False) -> dict[str, Any]:
             kafka_io.publish_document(message, producer=producer, topic="docs.raw")
             published += 1
         counts["published"] = published
-    _update_manifest(snapshot, "fetch", counts)
+    if not publish:
+        _update_manifest(snapshot, "fetch", counts)
     return counts
 
 

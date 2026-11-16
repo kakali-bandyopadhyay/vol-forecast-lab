@@ -26,6 +26,7 @@ EXPECTED_PROPERTIES = {
 
 def test_mapping_matches_the_contract_field_by_field():
     assert os_index.INDEX == "fomc_chunks_v1"
+    assert os_index.MAPPING["settings"]["index"] == {"number_of_shards": 1, "number_of_replicas": 0}  # Codex fix (P8e)
     assert os_index.MAPPING["mappings"]["properties"] == EXPECTED_PROPERTIES
 
 
@@ -115,10 +116,29 @@ def _docker_endpoint_available() -> bool:
         return False
 
 
+@pytest.fixture
+def docker_test_index(monkeypatch):
+    client = OpenSearch(hosts=[{"host": "127.0.0.1", "port": 9200}], use_ssl=False)
+    production_index = "fomc_chunks_v1"
+    had_production_index = client.indices.exists(index=production_index)
+    production_count = client.count(index=production_index)["count"] if had_production_index else None
+    test_index = "fomc_chunks_test"
+    monkeypatch.setattr(os_index, "INDEX", test_index)
+    if client.indices.exists(index=test_index):
+        client.indices.delete(index=test_index)
+    try:
+        yield client
+    finally:
+        if client.indices.exists(index=test_index):
+            client.indices.delete(index=test_index)
+        if had_production_index:
+            assert client.count(index=production_index)["count"] == production_count
+
+
 @pytest.mark.docker
 @pytest.mark.skipif(not _docker_endpoint_available(), reason="OpenSearch is not answering on localhost:9200")
-def test_docker_mapping_and_filtered_search():
-    client = OpenSearch(hosts=[{"host": "127.0.0.1", "port": 9200}], use_ssl=False)
+def test_docker_mapping_and_filtered_search(docker_test_index):
+    client = docker_test_index
     os_index.ensure_index(client)
     mapping = client.indices.get_mapping(index=os_index.INDEX)
     assert mapping[os_index.INDEX]["mappings"] == os_index.MAPPING["mappings"]

@@ -13,6 +13,25 @@ sys.path.insert(0, str(REPO_ROOT / "src"))
 
 QUESTIONS = REPO_ROOT / "data" / "text" / "eval_questions.csv"
 OUTPUT = REPO_ROOT / "results" / "text" / "retrieval_eval_10c.parquet"
+CHUNKS = REPO_ROOT / "data" / "text" / "chunks.parquet"
+
+
+def _require_opensearch_index_count(client, chunks: pd.DataFrame) -> None:
+    """Fail before evaluation when the temporary retrieval index is incomplete."""
+    from volab.text.opensearch_index import INDEX
+
+    try:
+        count = int(client.count(index=INDEX)["count"])
+    except Exception as exc:
+        raise SystemExit(
+            f"Index guard: cannot count OpenSearch index {INDEX!r}; "
+            f"run the index stage before eval ({exc})."
+        ) from exc
+    if count != len(chunks):
+        raise SystemExit(
+            f"Index guard: OpenSearch index {INDEX!r} has {count} documents "
+            f"but chunks.parquet has {len(chunks)} chunks. Run the index stage before eval."
+        )
 
 
 def _filters(question: pd.Series) -> dict[str, str]:
@@ -32,16 +51,19 @@ def run_eval(
     dense_search: Callable | None = None,
     fuse: Callable | None = None,
     metrics_func: Callable | None = None,
+    opensearch_client=None,
+    qdrant_count_check: Callable | None = None,
 ) -> pd.DataFrame:
     """Evaluate BM25, dense and fused top-50 rankings and write the 10b summary shape."""
-    if bm25_search is None or fuse is None:
+    if bm25_search is None or fuse is None or opensearch_client is None:
         from opensearchpy import OpenSearch
         from volab.text.opensearch_index import rrf as default_rrf
         from volab.text.opensearch_index import search_bm25 as default_bm25
 
+        if opensearch_client is None:
+            opensearch_client = OpenSearch(hosts=[{"host": "127.0.0.1", "port": 9200}], use_ssl=False, timeout=30)
         if bm25_search is None:
-            os_client = OpenSearch(hosts=[{"host": "127.0.0.1", "port": 9200}], use_ssl=False, timeout=30)
-            bm25_search = lambda query, **filters: default_bm25(os_client, query, **filters)
+            bm25_search = lambda query, **filters: default_bm25(opensearch_client, query, **filters)
         fuse = fuse or default_rrf
     if dense_search is None:
         from volab.text import index
@@ -51,6 +73,13 @@ def run_eval(
         # Reuse the Step 10b metric implementation; do not let the test path
         # import its tokenizer-heavy pipeline module unless it needs the real metrics.
         from volab.text.pipeline import _metrics as metrics_func
+    chunks = pd.read_parquet(CHUNKS)
+    _require_opensearch_index_count(opensearch_client, chunks)
+    if qdrant_count_check is None:
+        from volab.text.pipeline import _require_index_count
+
+        qdrant_count_check = _require_index_count
+    qdrant_count_check(chunks)
     questions = pd.read_csv(question_path)
     rows: list[dict] = []
 
@@ -102,7 +131,14 @@ def run_eval(
     return output
 
 
-if __name__ == "__main__":
+def main() -> None:
+    from dotenv import load_dotenv
+
+    load_dotenv()
     result = run_eval()
     print(result.to_string(index=False))
     print(f"written: {OUTPUT}")
+
+
+if __name__ == "__main__":
+    main()

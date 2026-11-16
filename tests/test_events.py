@@ -9,9 +9,11 @@ from __future__ import annotations
 
 import csv
 import re
+import warnings
 from pathlib import Path
 
 import exchange_calendars as xcals
+from pandas.errors import Pandas4Warning
 import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -50,7 +52,15 @@ def _read(name: str) -> list[dict[str, str]]:
 
 @pytest.fixture(scope="module")
 def calendar():
-    return xcals.get_calendar(CALENDAR)
+    # exchange_calendars currently reads timezone-aware schedule Series.values while
+    # constructing its session cache; silence only that upstream compatibility warning.
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore",
+            message="Series.values returning an ndarray that drops timezone information",
+            category=Pandas4Warning,
+        )
+        return xcals.get_calendar(CALENDAR)
 
 
 @pytest.fixture(scope="module")

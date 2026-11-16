@@ -54,6 +54,18 @@ def _redis_client_for_url(redis_url: str | None):
     )
 
 
+@lru_cache(maxsize=32)
+def _rate_limiter_for_client(redis_client):
+    """Reuse one limiter and its token-bucket settings for each Redis client."""
+    return cache.RateLimiter(redis_client)
+
+
+@lru_cache(maxsize=32)
+def _search_cache_for_client(redis_client):
+    """Reuse one search-cache wrapper for each Redis client."""
+    return cache.SearchCache(redis_client)
+
+
 class SearchResponse(BaseModel):
     """Response containing query text and matching cited chunks."""
 
@@ -109,8 +121,8 @@ def search(
     if redis_client is not None:
         # Fail open: a Redis outage disables limiting and caching, never search itself.
         try:
-            allowed = cache.RateLimiter(redis_client).allow(request.client.host, now=clock())
-            cached = cache.SearchCache(redis_client).get(key) if allowed else None
+            allowed = _rate_limiter_for_client(redis_client).allow(request.client.host, now=clock())
+            cached = _search_cache_for_client(redis_client).get(key) if allowed else None
         except RedisError as exc:
             logger.warning("Redis unavailable, serving /search uncached: %s", exc)
             redis_client, allowed, cached = None, True, None
@@ -125,7 +137,7 @@ def search(
     response = SearchResponse(query=q, results=results)
     if redis_client is not None:
         try:
-            cache.SearchCache(redis_client).set(key, response.model_dump())
+            _search_cache_for_client(redis_client).set(key, response.model_dump())
         except RedisError as exc:
             logger.warning("Redis unavailable, response not cached: %s", exc)
     return response

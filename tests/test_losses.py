@@ -39,6 +39,11 @@ def test_qlike_rejects_a_non_finite_forecast():
         qlike(np.array([0.002]), np.array([np.nan]))
 
 
+def test_qlike_rejects_a_nan_target():
+    with pytest.raises(ValueError, match="finite"):
+        qlike(np.array([np.nan]), np.array([0.002]))
+
+
 def test_qlike_rejects_a_non_positive_target():
     with pytest.raises(ValueError, match="strictly positive"):
         qlike(np.array([0.0]), np.array([0.002]))

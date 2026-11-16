@@ -125,5 +125,7 @@ def test_compact_rejects_wrong_parquet_column_type(spark, tmp_path):
     rows = [_row("statement-20200101", date(2020, 1, 1), "ten", "2020", "statement")]
     spark.createDataFrame(rows, _input_schema(T.StringType())).write.partitionBy("year", "doc_type").parquet(str(source))
 
-    with pytest.raises(Exception):
+    with pytest.raises(Exception) as excinfo:
         compact_and_summarize(source, output)
+    assert not isinstance(excinfo.value, NotImplementedError)
+    assert "n_chars" in str(excinfo.value) or "type" in str(excinfo.value).lower()

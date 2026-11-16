@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import time
 from typing import Any
 
@@ -11,6 +12,7 @@ HITS_KEY = "vfl:metrics:hits"
 MISSES_KEY = "vfl:metrics:misses"
 RATE_LIMITED_KEY = "vfl:metrics:rate_limited"
 RATE_LIMIT_PREFIX = "vfl:ratelimit:"
+INDEX_VERSION = os.getenv("VFL_INDEX_VERSION", "v1")  # Codex fix (P8e)
 
 TOKEN_BUCKET_LUA = """
 local key = KEYS[1]
@@ -61,8 +63,23 @@ def make_key(
         "" if doc_type is None else str(doc_type),
         str(k),
         str(mode),
+        INDEX_VERSION,  # Codex fix (P8e)
     ]
     return "vfl:search:" + hashlib.sha256("|".join(parts).encode("utf-8")).hexdigest()
+
+
+def flush_search_cache(client) -> int:
+    """Delete search response keys using Redis SCAN, returning the deleted count.  # Codex fix (P8e)"""
+    deleted = 0
+    batch: list[str] = []
+    for key in client.scan_iter(match="vfl:search:*", count=500):
+        batch.append(key)
+        if len(batch) == 500:
+            deleted += int(client.delete(*batch))
+            batch.clear()
+    if batch:
+        deleted += int(client.delete(*batch))
+    return deleted
 
 
 class SearchCache:

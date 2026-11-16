@@ -101,6 +101,8 @@ def test_generated_headers_match_real_snapshot_when_available() -> None:
     if not synthetic_dir.is_dir():
         pytest.skip("synthetic fixture has not been generated")
     for name in ("spy.csv", "vix_cboe.csv", "vix_fred.csv"):
-        real_header = (real_dir / name).open("r", encoding="utf-8-sig").readline().rstrip("\r\n")
-        synthetic_header = (synthetic_dir / name).open("r", encoding="utf-8-sig").readline().rstrip("\r\n")
+        with (real_dir / name).open("r", encoding="utf-8-sig") as stream:
+            real_header = stream.readline().rstrip("\r\n")
+        with (synthetic_dir / name).open("r", encoding="utf-8-sig") as stream:
+            synthetic_header = stream.readline().rstrip("\r\n")
         assert synthetic_header == real_header

@@ -274,7 +274,8 @@ Result as measured: retrieval is weak on the statement questions, and fusion wit
 - Index `fomc_chunks_v1` (English analyzer, `header^2`): 6,620 chunks; reload idempotent (6,620 created → 6,620 updated). Module: `opensearch_index.py` (Kakali; Claude review fixes typed by Kakali).
 - Eval (same 15 committed 10b questions, all; columns recall@5/hit@5/MRR@10): dense 0.389/0.467/0.286 (identical to 10b → wiring check); `bm25_os` 0.367/0.400/0.288 (10b sparse 0.122/0.200/0.130); `fused_os` 0.589/0.667/0.402 (10b hybrid 0.322/0.400/0.244).
 - Minutes: fused hit@5 1.00. Statements remain weak (fused hit@5 0.375).
-- Caveats: n=15 (one question ≈ 6.7 pp hit@5); BM25 gain drivers (stemming, header boost on month/year) not isolated — ablation in P8. Date filters proven by the Docker test only (question file has no filters).
+- BM25 ablation (post-hoc diagnostic, 15 questions): the `header^2` boost adds 1–2 hits@5 (English 0.333→0.400; standard 0.267→0.400); analyzer choice makes no recall/hit difference with the boost. 10c config kept; n=15, so directional only.
+- Caveats: n=15 (one question ≈ 6.7 pp hit@5); date filters proven by the Docker test only (question file has no filters).
 - Incidents: the Docker test wrote 3 docs into the real index (fixed by delete + reindex); eval needs `.env` loaded for `OPENAI_API_KEY`.
 
 ### 10c-5 Redis cache + rate limiter (16 Nov 2026)

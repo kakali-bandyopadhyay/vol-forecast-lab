@@ -6,7 +6,7 @@ import io
 import hashlib
 import json
 import os
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Any, Callable
 
@@ -77,9 +77,13 @@ def _save_state(path: Path, state: dict[str, Any]) -> None:
 
 
 def write_counters(name: str, counts: dict[str, int], *, path: Path = COUNTERS_PATH) -> None:
-    """Merge one consumer's counters into results/text/10c_kafka.json."""
+    """Append one run of counters for a consumer role.  # Codex fix (P8e)"""
     all_counts = _load_state(path)
-    all_counts[name] = {key: int(value) for key, value in counts.items()}
+    role_runs = all_counts.get(name, {})
+    if role_runs and not all(isinstance(value, dict) for value in role_runs.values()):
+        role_runs = {"legacy": role_runs}
+    role_runs[datetime.now(timezone.utc).isoformat()] = {key: int(value) for key, value in counts.items()}  # Codex fix (P8e)
+    all_counts[name] = role_runs
     _save_state(path, all_counts)
 
 

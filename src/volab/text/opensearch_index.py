@@ -12,6 +12,7 @@ from volab.text import index as qdrant_index
 INDEX = "fomc_chunks_v1"
 
 MAPPING = {
+    "settings": {"index": {"number_of_shards": 1, "number_of_replicas": 0}},  # Codex fix (P8e)
     "mappings": {
         "properties": {
             "chunk_id": {"type": "keyword"},

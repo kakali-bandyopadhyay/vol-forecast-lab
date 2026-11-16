@@ -6,6 +6,7 @@ import importlib.util
 from pathlib import Path
 
 import pandas as pd
+import pytest
 
 
 SCRIPT = Path(__file__).resolve().parents[1] / "scripts" / "run_eval_10c.py"
@@ -44,9 +45,19 @@ def test_eval_uses_fake_search_functions_and_writes_10b_summary_columns(tmp_path
         return {"recall_at_5": 0.5, "hit_at_5": 1.0, "mrr_at_10": 1.0, "rank": 1}
 
     destination = tmp_path / "out" / "retrieval_eval_10c.parquet"
+    chunks = pd.DataFrame([{"chunk_id": "a"}, {"chunk_id": "b"}])
+    run_eval_10c.CHUNKS = tmp_path / "chunks.parquet"
+    chunks.to_parquet(run_eval_10c.CHUNKS, index=False)
+
+    class FakeOpenSearch:
+        def count(self, *, index):
+            assert index == "fomc_chunks_v1"
+            return {"count": 2}
+
     result = run_eval_10c.run_eval(
         questions, destination, bm25_search=fake_bm25, dense_search=fake_dense,
-        fuse=fake_rrf, metrics_func=fake_metrics,
+        fuse=fake_rrf, metrics_func=fake_metrics, opensearch_client=FakeOpenSearch(),
+        qdrant_count_check=lambda frame: None,
     )
 
     assert destination.exists()
@@ -66,3 +77,50 @@ def test_eval_uses_fake_search_functions_and_writes_10b_summary_columns(tmp_path
         (["a", "b"], ["a", "b", "x"]),
     ]
     assert result.loc[result["mode"] == "bm25_os", "recall_at_5"].iloc[0] == 0.5
+
+
+def test_opensearch_count_guard_fails_before_any_search(tmp_path):
+    chunks_path = tmp_path / "chunks.parquet"
+    pd.DataFrame([{"chunk_id": "one"}, {"chunk_id": "two"}]).to_parquet(chunks_path, index=False)
+    run_eval_10c.CHUNKS = chunks_path
+
+    class WrongCountClient:
+        def count(self, *, index):
+            return {"count": 1}
+
+    calls = []
+    with pytest.raises(SystemExit, match="OpenSearch index.*has 1 documents"):
+        run_eval_10c.run_eval(
+            tmp_path / "missing_questions.csv", tmp_path / "unused.parquet",
+            bm25_search=lambda *args, **kwargs: calls.append("query"),
+            dense_search=lambda *args, **kwargs: calls.append("query"),
+            fuse=lambda *args, **kwargs: [], metrics_func=lambda *args: {},
+            opensearch_client=WrongCountClient(),
+            qdrant_count_check=lambda frame: calls.append("qdrant"),
+        )
+    assert calls == []
+
+
+def test_qdrant_count_guard_fails_before_any_search(tmp_path):
+    chunks_path = tmp_path / "chunks.parquet"
+    pd.DataFrame([{"chunk_id": "one"}]).to_parquet(chunks_path, index=False)
+    run_eval_10c.CHUNKS = chunks_path
+
+    class CorrectCountClient:
+        def count(self, *, index):
+            return {"count": 1}
+
+    calls = []
+
+    def bad_qdrant_count(frame):
+        raise SystemExit("Index guard: Qdrant collection has 0 points but chunks.parquet has 1 chunks.")
+
+    with pytest.raises(SystemExit, match="Qdrant collection"):
+        run_eval_10c.run_eval(
+            tmp_path / "missing_questions.csv", tmp_path / "unused.parquet",
+            bm25_search=lambda *args, **kwargs: calls.append("query"),
+            dense_search=lambda *args, **kwargs: calls.append("query"),
+            fuse=lambda *args, **kwargs: [], metrics_func=lambda *args: {},
+            opensearch_client=CorrectCountClient(), qdrant_count_check=bad_qdrant_count,
+        )
+    assert calls == []

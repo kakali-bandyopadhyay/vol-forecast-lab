@@ -12,7 +12,7 @@ RAW_EVENT = "raw"
 CLEAN_EVENT = "clean"
 DOC_TYPES = frozenset({"statement", "minutes"})
 EVENTS = frozenset({RAW_EVENT, CLEAN_EVENT})
-DEFAULT_BOOTSTRAP = "localhost:9092"
+DEFAULT_BOOTSTRAP = "127.0.0.1:9092"  # Codex fix (P8e)
 DEFAULT_DLQ_TOPIC = "docs.dlq"
 
 

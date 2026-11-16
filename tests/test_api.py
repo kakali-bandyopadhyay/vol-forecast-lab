@@ -1,8 +1,28 @@
 """Offline tests for API health, search/statement routing and error mapping."""
 
 from fastapi.testclient import TestClient
+import pytest
+
+fakeredis = pytest.importorskip("fakeredis", reason="fakeredis[lua] is required by the API tests")
 
 from api.app import app
+from api import app as api_module
+
+
+@pytest.fixture(autouse=True)
+def isolated_redis(monkeypatch):
+    """Give every API test an isolated Redis backend and clear client caches."""
+    api_module._redis_client_for_url.cache_clear()
+    api_module._rate_limiter_for_client.cache_clear()
+    api_module._search_cache_for_client.cache_clear()
+    redis_client = fakeredis.FakeRedis(decode_responses=True)
+    monkeypatch.setitem(app.dependency_overrides, api_module.get_redis_client, lambda: redis_client)
+    try:
+        yield redis_client
+    finally:
+        api_module._redis_client_for_url.cache_clear()
+        api_module._rate_limiter_for_client.cache_clear()
+        api_module._search_cache_for_client.cache_clear()
 
 
 def test_health_returns_version():
@@ -19,7 +39,8 @@ def test_search_invalid_date_returns_422():
     assert "YYYY-MM-DD" in response.json()["detail"]
 
 
-def test_search_returns_index_results(monkeypatch):
+@pytest.mark.parametrize("run", [1, 2])
+def test_search_returns_index_results(monkeypatch, run):
     """Search passes filters through and wraps the index results."""
     seen = {}
 
