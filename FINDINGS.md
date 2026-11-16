@@ -261,6 +261,14 @@ Result as measured: retrieval is weak on the statement questions, and fusion wit
 
 **Limitations.** One officer-list chunk remains at the end of 2024+ minutes; "forwardlooking" ×7 left by the hyphen rule; short fragments ("Core PCE inflation" ×29, the secretary's name ×18) merge into neighbouring chunks. Eval set is small (15) and single-labelled; a future eval should label every chunk that answers a question, across document types – as a new, separately committed set.
 
+### 10c-3 Spark compaction (16 Nov 2026)
+
+- Job: `spark/compact_stats.py` (Codex-written P7j, reviewed by Kakali); run in Docker `spark:4.1.2-java21-python3` (no local Java/winutils).
+- Result: 266 docs → 34 (year, doc_type) groups; one curated file per group; exact median (`percentile`, not approx).
+- Parity vs pandas (`documents.parquet`): 34/34 PASS (counts/dates exact, mean/median ≤1e-9) → `results/text/10c_spark_stats.parquet`.
+- Fix: `check_spark_parity` accepted only a file; Spark writes `stats.parquet` as a folder (`.exists()`).
+- Note: the wrong-type test passes on any exception (the stub passed it); narrow the assertion in P8.
+
 ---
 
 ## Limitations
