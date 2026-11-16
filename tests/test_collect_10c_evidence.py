@@ -7,26 +7,8 @@ from datetime import datetime, timezone
 
 import pandas as pd
 
-# The production tokenizer cache is not present in this offline checkout. These
-# short synthetic paragraphs never exercise splitting, so provide a local token
-# counter while importing and calling the real repository chunking function.
-import tiktoken
-
-
-class _OfflineEncoding:
-    def encode(self, text):
-        return list(range(len(text)))
-
-    def decode(self, tokens):
-        return "x" * len(tokens)
-
-
-tiktoken_get_encoding = tiktoken.get_encoding
-tiktoken.get_encoding = lambda _name: _OfflineEncoding()
-
 from scripts import collect_10c_evidence as evidence
 from volab.text import chunk
-tiktoken.get_encoding = tiktoken_get_encoding
 
 CHUNK_COLUMNS = [
     "chunk_id", "doc_id", "doc_type", "event_date", "ord",
