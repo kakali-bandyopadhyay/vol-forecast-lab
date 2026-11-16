@@ -61,7 +61,11 @@ def _run(tmp_path, *, text_mismatch=False, missing_chunk=False):
     lake, documents, chunks = _fixtures(tmp_path, text_mismatch=text_mismatch,
                                         missing_chunk=missing_chunk)
     athena = tmp_path / "10c_athena.json"
-    athena.write_text(json.dumps({"counts.sql": {"state": "SUCCEEDED", "row_count": 3}}), encoding="utf-8")
+    athena.write_text(json.dumps({
+        "count_by_partition.sql": {"state": "SUCCEEDED", "row_count": 2,
+                                   "rows": [["2020", "minutes", "132"], ["2020", "statement", "134"]]},
+        "partition_check.sql": {"state": "SUCCEEDED", "row_count": 7, "rows": []},
+    }), encoding="utf-8")
     client = FakeCloudWatch()
     output = tmp_path / "results" / "10c_evidence.json"
     lines = []
@@ -81,7 +85,8 @@ def test_collect_evidence_passes_with_matching_lake_documents_and_chunks(tmp_pat
     assert result["lambda_metrics"]["errors"] == 2
     assert result["lake_text_parity"]["same_doc_ids"] is True
     assert result["d1_chunk_parity"]["status"] == "PASS"
-    assert result["athena_counts"]["queries"]["counts.sql"]["row_count"] == 3
+    assert result["athena_counts"]["status"] == "PASS"
+    assert result["athena_counts"]["totals_by_doc_type"] == {"minutes": 132, "statement": 134}
     assert len(client.calls) == 2
     assert all(call["Namespace"] == "AWS/Lambda" for call in client.calls)
     assert len(lines) == 4

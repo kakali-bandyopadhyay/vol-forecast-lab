@@ -59,7 +59,17 @@ def _lake_rows(lake_root: Path) -> pd.DataFrame:
     paths = sorted(lake_root.rglob("*.parquet"))
     if not paths:
         raise FileNotFoundError(f"no parquet files under {lake_root}")
-    return pd.concat((pd.read_parquet(path) for path in paths), ignore_index=True)
+    frames = []
+    for path in paths:
+        frame = pd.read_parquet(path)
+        # year/doc_type are Hive partitions: they live in the folder names, not inside the files.
+        for part in path.parts:
+            if "=" in part:
+                name, value = part.split("=", 1)
+                if name in ("year", "doc_type") and name not in frame.columns:
+                    frame[name] = value
+        frames.append(frame)
+    return pd.concat(frames, ignore_index=True)
 
 
 def _metric_sum(client: Any, metric: str, function: str, start: datetime, end: datetime) -> int:
@@ -157,8 +167,17 @@ def collect(
     if athena_path.is_file():
         try:
             athena = json.loads(athena_path.read_text(encoding="utf-8"))
+            totals: dict[str, int] = {}
+            for row in athena.get("count_by_partition.sql", {}).get("rows", []):
+                totals[str(row[1])] = totals.get(str(row[1]), 0) + int(row[2])
+            partition_rows = athena.get("partition_check.sql", {}).get("row_count")
+            states_ok = all(record.get("state") == "SUCCEEDED" for record in athena.values())
+            # Expected values come from the committed 10b documents.parquet (2020 statements = 7 in this corpus).
+            ok = states_ok and totals == {"minutes": 132, "statement": 134} and partition_rows == 7
             evidence["athena_counts"] = {
-                "status": "PASS", "present": True,
+                "status": "PASS" if ok else "FAIL", "present": True,
+                "totals_by_doc_type": totals, "partition_check_rows": partition_rows,
+                "bytes_scanned": {name: record.get("data_scanned_bytes", 0) for name, record in athena.items()},
                 "queries": {name: {"state": record.get("state"), "row_count": record.get("row_count", 0)}
                             for name, record in athena.items()},
             }
