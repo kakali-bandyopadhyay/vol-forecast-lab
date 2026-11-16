@@ -1,0 +1,16 @@
+{
+  "Records": [
+    {
+      "s3": {
+        "bucket": {"name": "fixture"},
+        "object": {"key": "raw/statement/20200129.html"}
+      }
+    },
+    {
+      "s3": {
+        "bucket": {"name": "fixture"},
+        "object": {"key": "clean/year=2020/doc_type=statement/statement-20200129.parquet"}
+      }
+    }
+  ]
+}
