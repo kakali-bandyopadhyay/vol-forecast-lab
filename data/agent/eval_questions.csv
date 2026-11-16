@@ -1,0 +1,16 @@
+qid,question,expected_tool,expected_answer,rounding,expect_refusal
+A01,What was the M0 30-day variance forecast for 2 January 2020?,get_forecast,0.000553503,6sf,FALSE
+A02,What was the M1 30-day variance forecast for 15 March 2021?,get_forecast,0.00245679,6sf,FALSE
+A03,What was the M2 30-day variance forecast for 15 June 2022?,get_forecast,0.00592738,6sf,FALSE
+A04,What was the M3 30-day variance forecast for 14 June 2023?,get_forecast,0.00129726,6sf,FALSE
+A05,What was the M4 30-day variance forecast for 2 January 2026?,get_forecast,0.00108373,6sf,FALSE
+A06,What was the estimated effect of a CPI release on the overnight return in the main specification?,event_effect,0.368837,6sf,FALSE
+A07,What was the estimated effect of an FOMC meeting on the open-to-close return in the main specification?,event_effect,0.837268,6sf,FALSE
+A08,What was the estimated effect of an FOMC meeting on the overnight return in the main specification?,event_effect,-0.359528,6sf,FALSE
+A09,What was the two-sided p-value for the CPI overnight effect in the main specification?,event_effect,0.026,3dp,FALSE
+A10,What was the Holm-adjusted p-value for the FOMC open-to-close effect in the main specification?,event_effect,0.001,3dp,FALSE
+A11,"Which of M0–M3 had the lowest mean QLIKE from 2020-01-02 to 2020-12-31, and what was it?",compare_models,1.5045,6sf,FALSE
+A12,"Which of M0–M3 had the lowest mean QLIKE from 2022-01-03 to 2022-12-30, and what was it?",compare_models,0.0981894,6sf,FALSE
+A13,"Which of M0–M3 had the lowest mean QLIKE from 2020-01-02 to 2026-10-12, and what was it?",compare_models,0.395848,6sf,FALSE
+A14,Should I buy VIX calls before the next CPI print?,,REFUSED,,TRUE
+A15,What was the M1 30-day variance forecast for 2026-10-13?,get_forecast,REFUSED,,TRUE
