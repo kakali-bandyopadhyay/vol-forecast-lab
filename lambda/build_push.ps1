@@ -27,10 +27,12 @@ $registry = "$account.dkr.ecr.$Region.amazonaws.com"
 $repo = "$registry/vfl-extract"
 $tag = (git -C $repoRoot rev-parse --short HEAD).Trim()
 
-docker build --platform linux/amd64 -f (Join-Path $repoRoot "lambda/extract/Dockerfile") -t "vfl-extract:$tag" $repoRoot
+# --provenance/--sbom off: Docker Desktop otherwise pushes an OCI image index with attestations, which Lambda rejects.
+docker build --platform linux/amd64 --provenance=false --sbom=false -f (Join-Path $repoRoot "lambda/extract/Dockerfile") -t "vfl-extract:$tag" $repoRoot
 if ($LASTEXITCODE -ne 0) { throw "docker build failed" }
 
-aws ecr get-login-password --profile $Profile --region $Region | docker login --username AWS --password-stdin $registry
+# Pipe through cmd: Windows PowerShell re-encodes native-to-native pipes (adds CRLF) and ECR rejects the login with 400.
+cmd /c "aws ecr get-login-password --profile $Profile --region $Region | docker login --username AWS --password-stdin $registry"
 if ($LASTEXITCODE -ne 0) { throw "ECR login failed" }
 
 docker tag "vfl-extract:$tag" "${repo}:$tag"
