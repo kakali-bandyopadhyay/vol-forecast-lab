@@ -1,0 +1,55 @@
+{
+  "athena_counts": {
+    "bytes_scanned": {
+      "count_by_partition.sql": 0,
+      "lengths.sql": 20748,
+      "partition_check.sql": 1330
+    },
+    "partition_check_rows": 7,
+    "present": true,
+    "queries": {
+      "count_by_partition.sql": {
+        "row_count": 34,
+        "state": "SUCCEEDED"
+      },
+      "lengths.sql": {
+        "row_count": 2,
+        "state": "SUCCEEDED"
+      },
+      "partition_check.sql": {
+        "row_count": 7,
+        "state": "SUCCEEDED"
+      }
+    },
+    "status": "PASS",
+    "totals_by_doc_type": {
+      "minutes": 132,
+      "statement": 134
+    }
+  },
+  "d1_chunk_parity": {
+    "extra_chunk_ids": [],
+    "frame_mismatch": null,
+    "missing_chunk_ids": [],
+    "rebuilt_chunks": 6620,
+    "status": "PASS",
+    "stored_chunks": 6620
+  },
+  "lake_text_parity": {
+    "document_docs": 266,
+    "extra_doc_ids": [],
+    "lake_docs": 266,
+    "missing_doc_ids": [],
+    "same_doc_ids": true,
+    "status": "PASS",
+    "text_mismatch_doc_ids": []
+  },
+  "lambda_metrics": {
+    "end": "2026-11-16T10:38:13.160405+00:00",
+    "errors": 0,
+    "function": "vfl-extract",
+    "invocations": 266,
+    "start": "2026-11-16T10:17:50.723924+00:00",
+    "status": "PASS"
+  }
+}

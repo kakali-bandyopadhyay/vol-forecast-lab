@@ -1,0 +1,17 @@
+{
+  "clean_publisher": {
+    "dlq": 0,
+    "duplicates_suppressed": 0,
+    "processed": 266
+  },
+  "indexer": {
+    "dlq": 0,
+    "duplicates_suppressed": 0,
+    "processed": 266
+  },
+  "uploader": {
+    "dlq": 0,
+    "duplicates_suppressed": 266,
+    "processed": 0
+  }
+}
