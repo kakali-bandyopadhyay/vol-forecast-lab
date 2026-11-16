@@ -13,7 +13,7 @@ from typing import Any, Callable
 import pandas as pd
 
 from volab.data import REPO_ROOT
-from volab.text import chunk, index
+from volab.text import chunk, index, opensearch_index
 from volab.text import kafka_io
 from volab.text.kafka_io import DocumentMessage, publish_document
 
@@ -220,6 +220,7 @@ def indexer(
     s3=None,
     bucket: str | None = None,
     qdrant=None,
+    opensearch_client=None,
     embedder: Callable[[list[str]], list[list[float]]] | None = None,
     state_path: Path = INDEXER_STATE,
     cache_path: Path = index.EMBEDDINGS_PATH,
@@ -260,6 +261,8 @@ def indexer(
         dense_dim=dense_dim,
         delete_stale="doc",
     )
+    if opensearch_client is not None:
+        opensearch_index.index_chunks_os(opensearch_client, chunks)
     state[record.doc_id] = record.sha256
     _save_state(state_path, state)
     return "processed"

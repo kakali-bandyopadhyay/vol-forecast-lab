@@ -35,10 +35,13 @@ def run_eval(
 ) -> pd.DataFrame:
     """Evaluate BM25, dense and fused top-50 rankings and write the 10b summary shape."""
     if bm25_search is None or fuse is None:
+        from opensearchpy import OpenSearch
         from volab.text.opensearch_index import rrf as default_rrf
         from volab.text.opensearch_index import search_bm25 as default_bm25
 
-        bm25_search = bm25_search or default_bm25
+        if bm25_search is None:
+            os_client = OpenSearch(hosts=[{"host": "127.0.0.1", "port": 9200}], use_ssl=False, timeout=30)
+            bm25_search = lambda query, **filters: default_bm25(os_client, query, **filters)
         fuse = fuse or default_rrf
     if dense_search is None:
         from volab.text import index

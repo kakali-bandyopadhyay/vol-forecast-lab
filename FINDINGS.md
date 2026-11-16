@@ -269,6 +269,14 @@ Result as measured: retrieval is weak on the statement questions, and fusion wit
 - Fix: `check_spark_parity` accepted only a file; Spark writes `stats.parquet` as a folder (`.exists()`).
 - Note: the wrong-type test passes on any exception (the stub passed it); narrow the assertion in P8.
 
+### 10c-4 OpenSearch BM25 + RRF fusion (16 Nov 2026)
+
+- Index `fomc_chunks_v1` (English analyzer, `header^2`): 6,620 chunks; reload idempotent (6,620 created → 6,620 updated). Module: `opensearch_index.py` (Kakali; Claude review fixes typed by Kakali).
+- Eval (same 15 committed 10b questions, all; columns recall@5/hit@5/MRR@10): dense 0.389/0.467/0.286 (identical to 10b → wiring check); `bm25_os` 0.367/0.400/0.288 (10b sparse 0.122/0.200/0.130); `fused_os` 0.589/0.667/0.402 (10b hybrid 0.322/0.400/0.244).
+- Minutes: fused hit@5 1.00. Statements remain weak (fused hit@5 0.375).
+- Caveats: n=15 (one question ≈ 6.7 pp hit@5); BM25 gain drivers (stemming, header boost on month/year) not isolated — ablation in P8. Date filters proven by the Docker test only (question file has no filters).
+- Incidents: the Docker test wrote 3 docs into the real index (fixed by delete + reindex); eval needs `.env` loaded for `OPENAI_API_KEY`.
+
 ---
 
 ## Limitations
