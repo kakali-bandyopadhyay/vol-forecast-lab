@@ -1,0 +1,17 @@
+{
+  "n_questions": 15,
+  "repeats": 3,
+  "n_errors": 0,
+  "n_cost_cap": 0,
+  "tool_accuracy": 1.0,
+  "exact_accuracy": 0.9111111111111111,
+  "refusal_accuracy": 0.9333333333333333,
+  "headline_accuracy": 0.8444444444444444,
+  "total_cost_usd": 0.06353025000000002,
+  "mean_cost_usd": 0.0014117833333333338,
+  "latency_p50_s": 4.142916599987075,
+  "latency_p95_s": 6.945189120003487,
+  "model": "gpt-5.4-mini-2026-03-17",
+  "price_source_date": "2026-11-17",
+  "git_head": "eb68dd205c2660a6ce1949618bda3a3365629870"
+}
