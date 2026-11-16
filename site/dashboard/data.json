@@ -1,0 +1,683 @@
+{
+  "schema_version": 1,
+  "built_at": "2026-11-16T09:26:38+00:00",
+  "commit": "f7b4365",
+  "provenance": [
+    {
+      "file": "results/text/text_manifest.json",
+      "sha256": "2877de774105b17ef374d41e66fbbaeb810bfc6a8d0b9328b0a93a648db2c268"
+    },
+    {
+      "file": "results/text/dq_flags.parquet",
+      "sha256": "fa44abde969f45f8044addb72b3a655c01d25938157e0ecd407a230c82fa3005"
+    },
+    {
+      "file": "results/text/retrieval_eval.parquet",
+      "sha256": "077af92634809bb5e36980cc77bc6b99fb9fd70a434cf3a580153c32b8511ae1"
+    },
+    {
+      "file": "results/losses.parquet",
+      "sha256": "7ca4b40900f79131ceface5366a1fec98bbdaeae34756192af65aaf03b75f955"
+    },
+    {
+      "file": "results/tests.parquet",
+      "sha256": "c2ffbf308dfad826b2b61ea30843d0739ece977ad144d0cdbbaba931bd9a1a54"
+    },
+    {
+      "file": "results/holm_final.parquet",
+      "sha256": "aa249c453189a9c9dea8ce63868ad8ff368b6530b3a9267eb0b8644be8508340"
+    },
+    {
+      "file": "results/mlp_tests.parquet",
+      "sha256": "975ea9c8c036fbc888a60748f1e4c837456b2a806a3f498d37386082d7aa7255"
+    },
+    {
+      "file": "results/q2_summary.parquet",
+      "sha256": "13f85c0b215f24bbe471bc997996ccf7f52e3356d8ccea97ec3fc87deca738b3"
+    },
+    {
+      "file": "data/text/documents.parquet",
+      "sha256": "91d4050739abf9caefa89625f0a23d5ae2305fe1d472f0a072d1893b15b9d1ad"
+    },
+    {
+      "file": "data/text/chunks.parquet",
+      "sha256": "345a63eb6ff840468d7cf58afcda4089257418fada57b537c20569271428fc4c"
+    },
+    {
+      "file": "data/text/eval_questions.csv",
+      "sha256": "eddc22fbd04ed922ecaa1f8b7f18a299740d7e7b9fa292233060101282389f5a"
+    },
+    {
+      "file": "results/text/retrieval_ranks.parquet",
+      "sha256": "6bd08d504f8bc8487061479024e0e255f20774f554b8f56dbdd28a3d21bbe8a7"
+    }
+  ],
+  "corpus": {
+    "documents": 266,
+    "chunks": 6620,
+    "tokens": 1500244,
+    "documents_by_doc_type_and_year": {
+      "by_doc_type": [
+        {
+          "doc_type": "minutes",
+          "documents": 132
+        },
+        {
+          "doc_type": "statement",
+          "documents": 134
+        }
+      ],
+      "by_year": [
+        {
+          "doc_type": "minutes",
+          "year": "2010",
+          "documents": 8
+        },
+        {
+          "doc_type": "minutes",
+          "year": "2011",
+          "documents": 8
+        },
+        {
+          "doc_type": "minutes",
+          "year": "2012",
+          "documents": 7
+        },
+        {
+          "doc_type": "minutes",
+          "year": "2013",
+          "documents": 8
+        },
+        {
+          "doc_type": "minutes",
+          "year": "2014",
+          "documents": 8
+        },
+        {
+          "doc_type": "minutes",
+          "year": "2015",
+          "documents": 8
+        },
+        {
+          "doc_type": "minutes",
+          "year": "2016",
+          "documents": 8
+        },
+        {
+          "doc_type": "minutes",
+          "year": "2017",
+          "documents": 8
+        },
+        {
+          "doc_type": "minutes",
+          "year": "2018",
+          "documents": 8
+        },
+        {
+          "doc_type": "minutes",
+          "year": "2019",
+          "documents": 8
+        },
+        {
+          "doc_type": "minutes",
+          "year": "2020",
+          "documents": 7
+        },
+        {
+          "doc_type": "minutes",
+          "year": "2021",
+          "documents": 8
+        },
+        {
+          "doc_type": "minutes",
+          "year": "2022",
+          "documents": 8
+        },
+        {
+          "doc_type": "minutes",
+          "year": "2023",
+          "documents": 8
+        },
+        {
+          "doc_type": "minutes",
+          "year": "2024",
+          "documents": 8
+        },
+        {
+          "doc_type": "minutes",
+          "year": "2025",
+          "documents": 8
+        },
+        {
+          "doc_type": "minutes",
+          "year": "2026",
+          "documents": 6
+        },
+        {
+          "doc_type": "statement",
+          "year": "2010",
+          "documents": 8
+        },
+        {
+          "doc_type": "statement",
+          "year": "2011",
+          "documents": 8
+        },
+        {
+          "doc_type": "statement",
+          "year": "2012",
+          "documents": 8
+        },
+        {
+          "doc_type": "statement",
+          "year": "2013",
+          "documents": 8
+        },
+        {
+          "doc_type": "statement",
+          "year": "2014",
+          "documents": 8
+        },
+        {
+          "doc_type": "statement",
+          "year": "2015",
+          "documents": 8
+        },
+        {
+          "doc_type": "statement",
+          "year": "2016",
+          "documents": 8
+        },
+        {
+          "doc_type": "statement",
+          "year": "2017",
+          "documents": 8
+        },
+        {
+          "doc_type": "statement",
+          "year": "2018",
+          "documents": 8
+        },
+        {
+          "doc_type": "statement",
+          "year": "2019",
+          "documents": 8
+        },
+        {
+          "doc_type": "statement",
+          "year": "2020",
+          "documents": 7
+        },
+        {
+          "doc_type": "statement",
+          "year": "2021",
+          "documents": 8
+        },
+        {
+          "doc_type": "statement",
+          "year": "2022",
+          "documents": 8
+        },
+        {
+          "doc_type": "statement",
+          "year": "2023",
+          "documents": 8
+        },
+        {
+          "doc_type": "statement",
+          "year": "2024",
+          "documents": 8
+        },
+        {
+          "doc_type": "statement",
+          "year": "2025",
+          "documents": 8
+        },
+        {
+          "doc_type": "statement",
+          "year": "2026",
+          "documents": 7
+        }
+      ],
+      "chunks_by_doc_type": [
+        {
+          "doc_type": "minutes",
+          "chunks": 6255
+        },
+        {
+          "doc_type": "statement",
+          "chunks": 365
+        }
+      ]
+    },
+    "tokens_note": "Corpus token total: 1,500,244 (sum of chunks.parquet n_tokens).",
+    "dq_flags": {
+      "count": 2,
+      "by_reason": [
+        {
+          "reason": "minutes_missing",
+          "count": 1
+        },
+        {
+          "reason": "not_yet_released",
+          "count": 1
+        }
+      ]
+    },
+    "dq_severity": [
+      {
+        "severity": "failure",
+        "count": 1
+      },
+      {
+        "severity": "info",
+        "count": 1
+      }
+    ]
+  },
+  "retrieval": {
+    "overall": [
+      {
+        "mode": "dense",
+        "n": 15,
+        "recall_at_5": 0.3888888888888889,
+        "mrr_at_10": 0.28645502645502646
+      },
+      {
+        "mode": "hybrid",
+        "n": 15,
+        "recall_at_5": 0.3222222222222222,
+        "mrr_at_10": 0.24396825396825397
+      },
+      {
+        "mode": "sparse",
+        "n": 15,
+        "recall_at_5": 0.12222222222222222,
+        "mrr_at_10": 0.12962962962962962
+      }
+    ],
+    "by_doc_type": [
+      {
+        "mode": "dense",
+        "gold_doc_type": "minutes",
+        "n": 7,
+        "recall_at_5": 0.5476190476190476,
+        "mrr_at_10": 0.501360544217687
+      },
+      {
+        "mode": "dense",
+        "gold_doc_type": "statement",
+        "n": 8,
+        "recall_at_5": 0.25,
+        "mrr_at_10": 0.09841269841269841
+      },
+      {
+        "mode": "hybrid",
+        "gold_doc_type": "minutes",
+        "n": 7,
+        "recall_at_5": 0.5476190476190476,
+        "mrr_at_10": 0.4666666666666667
+      },
+      {
+        "mode": "hybrid",
+        "gold_doc_type": "statement",
+        "n": 8,
+        "recall_at_5": 0.125,
+        "mrr_at_10": 0.049107142857142856
+      },
+      {
+        "mode": "sparse",
+        "gold_doc_type": "minutes",
+        "n": 7,
+        "recall_at_5": 0.2619047619047619,
+        "mrr_at_10": 0.2777777777777778
+      },
+      {
+        "mode": "sparse",
+        "gold_doc_type": "statement",
+        "n": 8,
+        "recall_at_5": 0.0,
+        "mrr_at_10": 0.0
+      }
+    ],
+    "question_grid": {
+      "available": true,
+      "modes": [
+        "dense",
+        "hybrid",
+        "sparse"
+      ],
+      "rows": [
+        {
+          "qid": "q01",
+          "label": "Why did Thomas Hoenig dissent at the January 2010 FOMC meeting?",
+          "gold_doc_type": "statement",
+          "hits": {
+            "dense": false,
+            "hybrid": false,
+            "sparse": false
+          }
+        },
+        {
+          "qid": "q02",
+          "label": "Why did James Bullard dissent at the June 2013 FOMC meeting?",
+          "gold_doc_type": "statement",
+          "hits": {
+            "dense": true,
+            "hybrid": true,
+            "sparse": false
+          }
+        },
+        {
+          "qid": "q03",
+          "label": "What did Narayana Kocherlakota cite as a concern when he dissented in October 20",
+          "gold_doc_type": "statement",
+          "hits": {
+            "dense": false,
+            "hybrid": false,
+            "sparse": false
+          }
+        },
+        {
+          "qid": "q04",
+          "label": "What did Jeffrey Lacker prefer at the September 2015 FOMC meeting?",
+          "gold_doc_type": "statement",
+          "hits": {
+            "dense": true,
+            "hybrid": false,
+            "sparse": false
+          }
+        },
+        {
+          "qid": "q05",
+          "label": "What did Esther George and Eric Rosengren prefer at the July 2019 FOMC meeting?",
+          "gold_doc_type": "statement",
+          "hits": {
+            "dense": false,
+            "hybrid": false,
+            "sparse": false
+          }
+        },
+        {
+          "qid": "q06",
+          "label": "How did the April 2020 statement describe the coronavirus outbreak's impact?",
+          "gold_doc_type": "statement",
+          "hits": {
+            "dense": false,
+            "hybrid": false,
+            "sparse": false
+          }
+        },
+        {
+          "qid": "q07",
+          "label": "What did the Committee anticipate about future rate moves in March 2022?",
+          "gold_doc_type": "statement",
+          "hits": {
+            "dense": false,
+            "hybrid": false,
+            "sparse": false
+          }
+        },
+        {
+          "qid": "q08",
+          "label": "How large a rate increase did the dissenters prefer in July 2026?",
+          "gold_doc_type": "statement",
+          "hits": {
+            "dense": false,
+            "hybrid": false,
+            "sparse": false
+          }
+        },
+        {
+          "qid": "q09",
+          "label": "How much Treasury debt did the 2011 maturity extension program plan to purchase?",
+          "gold_doc_type": "minutes",
+          "hits": {
+            "dense": true,
+            "hybrid": true,
+            "sparse": true
+          }
+        },
+        {
+          "qid": "q10",
+          "label": "What change did some participants think could reduce the stigma of using swap li",
+          "gold_doc_type": "minutes",
+          "hits": {
+            "dense": true,
+            "hybrid": true,
+            "sparse": true
+          }
+        },
+        {
+          "qid": "q11",
+          "label": "What concern did a couple of participants raise about standing swap arrangements",
+          "gold_doc_type": "minutes",
+          "hits": {
+            "dense": false,
+            "hybrid": false,
+            "sparse": false
+          }
+        },
+        {
+          "qid": "q12",
+          "label": "What balance-sheet option did participants weigh in March 2019?",
+          "gold_doc_type": "minutes",
+          "hits": {
+            "dense": false,
+            "hybrid": false,
+            "sparse": false
+          }
+        },
+        {
+          "qid": "q13",
+          "label": "What did the Committee authorize by notation vote in March 2020 to support dolla",
+          "gold_doc_type": "minutes",
+          "hits": {
+            "dense": true,
+            "hybrid": true,
+            "sparse": false
+          }
+        },
+        {
+          "qid": "q14",
+          "label": "When do the Committee's plans say balance-sheet runoff should stop?",
+          "gold_doc_type": "minutes",
+          "hits": {
+            "dense": true,
+            "hybrid": true,
+            "sparse": true
+          }
+        },
+        {
+          "qid": "q15",
+          "label": "Why did participants consider beginning reserve management purchases prudent in ",
+          "gold_doc_type": "minutes",
+          "hits": {
+            "dense": true,
+            "hybrid": true,
+            "sparse": false
+          }
+        }
+      ]
+    },
+    "best_mode": "dense",
+    "best_recall_at_5": 0.3888888888888889,
+    "question_count": 15
+  },
+  "forecasting": {
+    "loss_by_model_horizon": [
+      {
+        "model": "M0",
+        "horizon": "30d",
+        "mean_loss": 0.5087482975606998,
+        "loss_ratio_vs_har": 1.2310473646672262
+      },
+      {
+        "model": "M1",
+        "horizon": "30d",
+        "mean_loss": 0.41326460066646054,
+        "loss_ratio_vs_har": 1.0
+      },
+      {
+        "model": "M2",
+        "horizon": "30d",
+        "mean_loss": 0.4203454473553704,
+        "loss_ratio_vs_har": 1.017133929878075
+      },
+      {
+        "model": "M3",
+        "horizon": "30d",
+        "mean_loss": 0.3958479527069618,
+        "loss_ratio_vs_har": 0.957855940403772
+      }
+    ],
+    "clark_west": [
+      {
+        "pair": "M2_vs_M1",
+        "statistic": 1.5574129261662608,
+        "pvalue": 0.05968623957011934,
+        "sample": "full",
+        "source": "tests.parquet"
+      }
+    ],
+    "holm": [
+      {
+        "pair": "M2_vs_M1",
+        "sample": "<bound method NDFrame.sample of pair                   M2_vs_M1\nsample                     full\nstatistic               0.33598\nraw_p                  0.736886\nholm_p                      1.0\ndecision           not rejected\nsign                   positive\nheadline_sample            full\nName: 0, dtype: object>",
+        "statistic": 0.33597951099342954,
+        "holm_p": 1.0,
+        "reject": false,
+        "decision": "not rejected"
+      },
+      {
+        "pair": "M4_vs_M2",
+        "sample": "<bound method NDFrame.sample of pair                   M4_vs_M2\nsample                     full\nstatistic              -0.19027\nraw_p                  0.849097\nholm_p                      1.0\ndecision           not rejected\nsign                   negative\nheadline_sample            full\nName: 1, dtype: object>",
+        "statistic": -0.19027040582816176,
+        "holm_p": 1.0,
+        "reject": false,
+        "decision": "not rejected"
+      },
+      {
+        "pair": "M1_vs_M3",
+        "sample": "<bound method NDFrame.sample of pair                   M1_vs_M3\nsample                     full\nstatistic              0.833146\nraw_p                  0.404762\nholm_p                      1.0\ndecision           not rejected\nsign                   positive\nheadline_sample            full\nName: 2, dtype: object>",
+        "statistic": 0.8331464457992809,
+        "holm_p": 1.0,
+        "reject": false,
+        "decision": "not rejected"
+      },
+      {
+        "pair": "M1_vs_M0",
+        "sample": "<bound method NDFrame.sample of pair                   M1_vs_M0\nsample                     full\nstatistic             -2.214821\nraw_p                  0.026772\nholm_p                 0.107089\ndecision           not rejected\nsign                   negative\nheadline_sample            full\nName: 3, dtype: object>",
+        "statistic": -2.214821416033124,
+        "holm_p": 0.10708929862137805,
+        "reject": false,
+        "decision": "not rejected"
+      },
+      {
+        "pair": "M2_vs_M1",
+        "sample": "<bound method NDFrame.sample of pair                   M2_vs_M1\nsample                ex_window\nstatistic             -1.477548\nraw_p                  0.139529\nholm_p                 0.280711\ndecision           not rejected\nsign                   negative\nheadline_sample            full\nName: 4, dtype: object>",
+        "statistic": -1.4775481368292387,
+        "holm_p": 0.2807106879081387,
+        "reject": false,
+        "decision": "not rejected"
+      },
+      {
+        "pair": "M4_vs_M2",
+        "sample": "<bound method NDFrame.sample of pair                   M4_vs_M2\nsample                ex_window\nstatistic             -1.910944\nraw_p                  0.056012\nholm_p                 0.224047\ndecision           not rejected\nsign                   negative\nheadline_sample            full\nName: 5, dtype: object>",
+        "statistic": -1.9109441272088628,
+        "holm_p": 0.22404704586984947,
+        "reject": false,
+        "decision": "not rejected"
+      },
+      {
+        "pair": "M1_vs_M3",
+        "sample": "<bound method NDFrame.sample of pair                   M1_vs_M3\nsample                ex_window\nstatistic              1.362475\nraw_p                  0.173048\nholm_p                 0.280711\ndecision           not rejected\nsign                   positive\nheadline_sample            full\nName: 6, dtype: object>",
+        "statistic": 1.3624748712865369,
+        "holm_p": 0.2807106879081387,
+        "reject": false,
+        "decision": "not rejected"
+      },
+      {
+        "pair": "M1_vs_M0",
+        "sample": "<bound method NDFrame.sample of pair                   M1_vs_M0\nsample                ex_window\nstatistic             -1.676858\nraw_p                   0.09357\nholm_p                 0.280711\ndecision           not rejected\nsign                   negative\nheadline_sample            full\nName: 7, dtype: object>",
+        "statistic": -1.676858120082687,
+        "holm_p": 0.2807106879081387,
+        "reject": false,
+        "decision": "not rejected"
+      }
+    ],
+    "available_columns": {
+      "losses.parquet": [
+        "model",
+        "date",
+        "qlike",
+        "squared_error"
+      ],
+      "tests.parquet": [
+        "test",
+        "pair",
+        "statistic",
+        "pvalue",
+        "family"
+      ],
+      "holm_final.parquet": [
+        "pair",
+        "sample",
+        "statistic",
+        "raw_p",
+        "holm_p",
+        "decision",
+        "sign",
+        "headline_sample"
+      ],
+      "mlp_tests.parquet": [
+        "test",
+        "pair",
+        "sample",
+        "statistic",
+        "pvalue",
+        "family"
+      ],
+      "q2_summary.parquet": [
+        "variable",
+        "sample",
+        "group",
+        "label",
+        "n",
+        "mean",
+        "median",
+        "share_positive",
+        "hac_t",
+        "p_two_sided"
+      ]
+    },
+    "model_mapping": [
+      {
+        "id": "M0",
+        "name": "Persistence baseline"
+      },
+      {
+        "id": "M1",
+        "name": "HAR"
+      },
+      {
+        "id": "M2",
+        "name": "HAR-X"
+      },
+      {
+        "id": "M3",
+        "name": "GARCH"
+      },
+      {
+        "id": "M4",
+        "name": "MLP"
+      }
+    ],
+    "model_mapping_source": "prereg/PREREGISTRATION.md, section 4.2 model table (M1 through M4); M0 is the persistence baseline in scripts/run_eval.py.",
+    "note": "Horizon is shown as 30d from the target definition; loss input has no horizon column."
+  },
+  "platform_evidence": {
+    "status": "pending",
+    "message": "Pending AWS evidence run"
+  }
+}
