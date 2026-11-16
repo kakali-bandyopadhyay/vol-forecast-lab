@@ -31,6 +31,21 @@ class RouteDecision(BaseModel):
     usage: Usage
 
 
+class DraftAnswer(BaseModel):
+    """Structured model output; source_rows are attached by the graph."""
+
+    as_of: str | None
+    horizon: str
+    forecast: str | None
+    implied_variance: str | None
+    spread: str | None
+    text: str
+    limitations: str
+    citations: list[Citation]
+    refused: bool
+    refusal_reason: str | None
+
+
 class Answer(BaseModel):
     """The final answer returned by the agent."""
 

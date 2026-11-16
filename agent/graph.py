@@ -159,7 +159,11 @@ def answer_question(
             decision.tool,
         )
         if ok:
-            return {"answer": state["answer"]}
+            return {
+                "answer": state["answer"].model_copy(
+                    update={"source_rows": state["output"]["rows"]}
+                )
+            }
         attempts = state.get("attempts", 0)
         if attempts < MAX_DRAFTS:
             return {"answer": None, "rejection": reason}

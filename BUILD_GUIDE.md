@@ -387,6 +387,8 @@ advance.
 | 19 | Redis 8.1 deprecation warnings (`retry_on_timeout`, `lib_name`/`lib_version`); test-only packages in runtime requirements | fakeredis 2.31.3; single requirements file | Codex fix (P8d): `requirements-dev.txt` (`-r requirements.txt`, `fakeredis[lua]==2.40.0`), CI installs it, Dockerfile unchanged; warnings gone | `d0e9aba` |
 | 20 | API built a new RateLimiter and SearchCache on every request | Per-request construction | Codex fix (P8d): one per Redis client (`lru_cache`), fail-open unchanged; test that two requests reuse the limiter | `d0e9aba` |
 | 21 | Test hygiene: Pandas4Warning in test_events, NaN-QLIKE test in test_stats, unclosed files in test_synthetic_fixture, Spark wrong-type test accepted NotImplementedError | Carried minors (Step 8, 10c) | Codex fix (P8d/P8f): warning scoped to the test; test moved to test_losses; `with open`; assertion tightened | `d0e9aba` |
+| 22 | `run_agent_eval` failed with `No module named 'agent'` when run as a file, and `.env` was loaded after the model-price check | File execution puts `scripts/`, not the repo root, on `sys.path`; environment loading was too late | Author: prepend repo root and `src` to `sys.path` before imports; load `.env` at the start of `main()` before the model check | pending |
+| 23 | `Answer.source_rows: list[Any]` made the OpenAI structured-output schema fail with a 400; 39 of 45 first-live attempts hit it | The model schema included a free-form list that strict structured outputs cannot express | Author: added `DraftAnswer` with all required scalar/list fields; `llm.draft` uses it and converts to `Answer`; the graph attaches `source_rows` only after verification | pending |
 
 ## Lessons
 

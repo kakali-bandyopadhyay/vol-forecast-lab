@@ -286,6 +286,8 @@ Result as measured: retrieval is weak on the statement questions, and fusion wit
 - Caveats: cached results can be up to 1 h stale after a reindex (key has no index version); rate limit is per IP, so clients behind one NAT share a bucket; fakeredis is in runtime requirements (no dev file yet).
 - Incident: the first API rate-limit test used the real clock and failed 2/15 runs (a token refilled if 11 requests took > 0.2 s); fixed with an injected clock (15/15).
 
+**Step 11 process note.** The first live run at `2b6b011` was invalid: 39 of 45 attempts hit the OpenAI schema error, and no A01–A13 answers were seen. Re-run at the new commit.
+
 ---
 
 ## Limitations

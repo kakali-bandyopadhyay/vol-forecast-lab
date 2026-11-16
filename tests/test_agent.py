@@ -469,3 +469,24 @@ def test_run_eval_continues_after_a_route_error(tmp_path: Path):
     assert len(result) == 2
     assert set(result["error"]) == {"ValueError: route failed"}
     assert not result[["correct_tool", "exact_match", "refusal_correct"]].any().any()
+
+
+def test_draft_answer_schema_is_strict_compatible():
+    from openai.lib._pydantic import to_strict_json_schema
+    from agent.schema import DraftAnswer
+
+    schema = to_strict_json_schema(DraftAnswer)
+    assert sorted(schema["required"]) == sorted(schema["properties"])
+
+    def walk(node):
+        if isinstance(node, dict):
+            if "items" in node:
+                item = node["items"]
+                assert "type" in item or "$ref" in item or "anyOf" in item
+            for value in node.values():
+                walk(value)
+        elif isinstance(node, list):
+            for value in node:
+                walk(value)
+
+    walk(schema)

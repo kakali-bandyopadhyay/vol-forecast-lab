@@ -6,7 +6,7 @@ import json
 import os
 from typing import Any
 
-from agent.schema import Answer, RouteDecision, Usage
+from agent.schema import Answer, DraftAnswer, RouteDecision, Usage
 from agent.tracing import get_tracing_config
 
 ROUTE_INSTRUCTIONS = """You are a routing model for a volatility-forecasting research assistant.
@@ -141,8 +141,8 @@ class OpenAIAgentLLM:
             model=self.model,
             instructions=DRAFT_INSTRUCTIONS,
             input=json.dumps(content, default=str),
-            text_format=Answer,
+            text_format=DraftAnswer,
         )
         if response.output_parsed is None:
             raise ValueError("model returned no structured answer")
-        return response.output_parsed, _usage(response)
+        return Answer(**response.output_parsed.model_dump()), _usage(response)

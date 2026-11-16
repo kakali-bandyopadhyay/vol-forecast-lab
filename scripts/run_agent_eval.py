@@ -6,7 +6,11 @@ import argparse
 import json
 import os
 import subprocess
+import sys
 from pathlib import Path
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+sys.path[:0] = [str(REPO_ROOT), str(REPO_ROOT / "src")]
 
 import pandas as pd
 
@@ -14,7 +18,6 @@ from agent.graph import CostCapExceeded, PRICE_SOURCE_DATE, PRICES_USD_PER_1M, a
 from agent.schema import Answer
 from agent.verifier import ISO_DATE, NUMBER_TOKEN
 
-REPO_ROOT = Path(__file__).resolve().parents[1]
 RESULTS_DIR = REPO_ROOT / "results"
 DEFAULT_QUESTIONS = REPO_ROOT / "data" / "agent" / "eval_questions.csv"
 DEFAULT_OUT = RESULTS_DIR / "agent" / "agent_eval.parquet"
@@ -139,6 +142,9 @@ def _git_head() -> str:
 
 
 def main() -> int:
+    from dotenv import load_dotenv
+    load_dotenv(REPO_ROOT / ".env", override=False)
+
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--questions", type=Path, default=DEFAULT_QUESTIONS)
     parser.add_argument("--model", default=os.environ.get("AGENT_MODEL", ""))
