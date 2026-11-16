@@ -37,6 +37,7 @@ from volab.stats_tests import (  # noqa: E402
     hac_lag,
     mincer_zarnowitz,
 )
+from volab import tracking  # noqa: E402
 
 TEST_START = pd.Timestamp("2020-01-01")
 EXPECTED_FOLDS = 82
@@ -291,6 +292,36 @@ def main() -> int:
     print(f"mean MSE  : " + ", ".join(f"{m} {mse_loss[m].mean():.3e}" for m in MODELS))
     print(tests.to_string(index=False))
     print(f"written: {RESULTS}")
+
+    metrics = {
+        **{f"qlike_{model}": float(qlike_loss[model].mean()) for model in MODELS},
+        **{f"mse_{model}": float(mse_loss[model].mean()) for model in MODELS},
+        "planted_leak_qlike_drop": float(planted_leak),
+        "clark_west_pvalue": float(cw_p),
+        "clark_west_mean_difference": float(cw_mean),
+        "n_folds": float(len(folds)),
+        "n_forecasts": float(len(index)),
+    }
+    with tracking.run(
+        "step7_eval",
+        snapshot_id=str(metadata.get("snapshot_id", "unknown")),
+        params={
+            "models": ",".join(MODELS),
+            "n_folds": len(folds),
+            "n_forecasts": len(index),
+            "f_min": f_min,
+            "hac_lag": lag,
+        },
+    ) as tracker:
+        tracker.log_metrics(metrics)
+        for name in (
+            "forecasts.parquet",
+            "losses.parquet",
+            "tests.parquet",
+            "garch_fits.parquet",
+            "eval_manifest.json",
+        ):
+            tracker.log_artifact(RESULTS / name)
     return 0
 
 

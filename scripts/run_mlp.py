@@ -22,10 +22,11 @@ import torch
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from volab.data import REPO_ROOT, load_panel_metadata  # noqa: E402
-from volab.losses import qlike  # noqa: E402
+from volab.losses import qlike, squared_error  # noqa: E402
 from volab.models import apply_floor, har, mlp  # noqa: E402
 from volab.models.baselines import implied_variance  # noqa: E402
 from volab.splits import annual_walk_forward  # noqa: E402
+from volab import tracking  # noqa: E402
 
 PANEL = REPO_ROOT / "data" / "panel" / "panel.parquet"
 RESULTS = REPO_ROOT / "results"
@@ -204,6 +205,24 @@ def select_stage() -> int:
     _write_json(RESULTS / "mlp_select_manifest.json", manifest)
     print(f"selection: {len(selection)} rows, chosen {chosen} ({best_score:.6f})")
     print(f"written: {RESULTS / 'mlp_selection.parquet'}")
+
+    with tracking.run(
+        "step10_mlp_select",
+        snapshot_id=str(metadata.get("snapshot_id", "unknown")),
+        params={
+            "stage": "select",
+            "config": chosen,
+            "n_configs": len(configs),
+            "n_seeds": len(mlp.SEEDS),
+            "n_folds": len(folds),
+        },
+    ) as tracker:
+        tracker.log_metrics({
+            "best_validation_mean_qlike": float(best_score),
+            "selection_rows": float(len(selection)),
+        })
+        tracker.log_artifact(RESULTS / "mlp_selection.parquet")
+        tracker.log_artifact(RESULTS / "mlp_select_manifest.json")
     return 0
 
 
@@ -333,6 +352,28 @@ def test_stage() -> int:
 
     mlp_forecasts.to_parquet(RESULTS / "mlp_forecasts.parquet", index=False)
     _write_json(RESULTS / "mlp_test_manifest.json", manifest)
+    m4_qlike = float(qlike(m1_realised, mlp_forecasts["floored_30d"].to_numpy(dtype=float)).mean())
+    m4_mse = float(squared_error(m1_realised, mlp_forecasts["raw_30d"].to_numpy(dtype=float)).mean())
+    with tracking.run(
+        "step10_mlp_test",
+        snapshot_id=str(metadata.get("snapshot_id", "unknown")),
+        params={
+            "stage": "test",
+            "config": selection_manifest.get("config_id", "unknown"),
+            "n_folds": len(folds),
+            "n_forecasts": len(mlp_forecasts),
+        },
+    ) as tracker:
+        tracker.log_metrics({
+            "m4_qlike": m4_qlike,
+            "m4_mse": m4_mse,
+            "shuffled_mean_qlike": float(shuffled_qlike),
+            "m0_mean_qlike": float(m0_qlike),
+            "shuffled_pass": float(shuffled_pass),
+            "cap_hits": float(cap_hits),
+        })
+        tracker.log_artifact(RESULTS / "mlp_forecasts.parquet")
+        tracker.log_artifact(RESULTS / "mlp_test_manifest.json")
     print(f"test: {len(mlp_forecasts)} forecasts, cap hits {cap_hits}")
     print(f"shuffled QLIKE {shuffled_qlike:.6f} > M0 {m0_qlike:.6f}: {shuffled_pass}")
     return 0
