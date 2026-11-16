@@ -294,6 +294,10 @@ Result as measured: retrieval is weak on the statement questions, and fusion wit
 
 Errors: 2 answers reported the log-scale coefficient (beta) instead of the effect – both values are in the tool output, so the copy-only verifier accepted them; 5 p-value answers ignored the 3 dp rule – 3 were refused after two drafts ("could not verify"), 2 gave the correct value at 6 significant figures and scored as not exact. No number absent from the tool output reached a final answer.
 
+By repeat (pre-registered: each reported separately): repeat 0 = 13/15, repeat 1 = 14/15, repeat 2 = 11/15; tool choice 15/15 in each; cost USD 0.020 / 0.023 / 0.020.
+
+Not fixed: the two verifier limits above (wrong field accepted; p-value precision not enforced) are left open (BUILD_GUIDE Issues 25–26). Fixing them and re-running the same 15 questions would be tuning on the test set, so 0.844 stands as the result.
+
 Process: an earlier run at 2b6b011 was invalid (structured-output schema rejected by the API; no A01–A13 answers were seen); the reported run is at eb68dd2.
 
 ---

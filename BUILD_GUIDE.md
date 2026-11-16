@@ -299,7 +299,7 @@ pinned in `.env`; per-run cost cap in code.
 **Evaluation.** 15 questions with expected answers written **before** the first run: 10 look-ups,
 3 comparisons, 2 refusals. Exact match to stated rounding, correct tool, refusal accuracy, cost and
 latency. Three repeats, each reported separately.
-**Committed.** _hash_
+**Committed.** `2b6b011` (code) / `062ec7c`, `eb68dd2` (fixes) / `133b944` (results) / `2aa9a7f` (FINDINGS). Closed 17 Nov 2026: headline 0.844 (38/45) is final; no post-hoc fixes (Issues 25–26 left open, see FINDINGS).
 
 ## Step 12 — MLOps (2.5 h)
 
@@ -387,8 +387,11 @@ advance.
 | 19 | Redis 8.1 deprecation warnings (`retry_on_timeout`, `lib_name`/`lib_version`); test-only packages in runtime requirements | fakeredis 2.31.3; single requirements file | Codex fix (P8d): `requirements-dev.txt` (`-r requirements.txt`, `fakeredis[lua]==2.40.0`), CI installs it, Dockerfile unchanged; warnings gone | `d0e9aba` |
 | 20 | API built a new RateLimiter and SearchCache on every request | Per-request construction | Codex fix (P8d): one per Redis client (`lru_cache`), fail-open unchanged; test that two requests reuse the limiter | `d0e9aba` |
 | 21 | Test hygiene: Pandas4Warning in test_events, NaN-QLIKE test in test_stats, unclosed files in test_synthetic_fixture, Spark wrong-type test accepted NotImplementedError | Carried minors (Step 8, 10c) | Codex fix (P8d/P8f): warning scoped to the test; test moved to test_losses; `with open`; assertion tightened | `d0e9aba` |
-| 22 | `run_agent_eval` failed with `No module named 'agent'` when run as a file, and `.env` was loaded after the model-price check | File execution puts `scripts/`, not the repo root, on `sys.path`; environment loading was too late | Author: prepend repo root and `src` to `sys.path` before imports; load `.env` at the start of `main()` before the model check | pending |
-| 23 | `Answer.source_rows: list[Any]` made the OpenAI structured-output schema fail with a 400; 39 of 45 first-live attempts hit it | The model schema included a free-form list that strict structured outputs cannot express | Author: added `DraftAnswer` with all required scalar/list fields; `llm.draft` uses it and converts to `Answer`; the graph attaches `source_rows` only after verification | pending |
+| 22 | `run_agent_eval` failed with `No module named 'agent'` when run as a file, and `.env` was loaded after the model-price check | File execution puts `scripts/`, not the repo root, on `sys.path`; environment loading was too late | Author: prepend repo root and `src` to `sys.path` before imports; load `.env` at the start of `main()` before the model check | `062ec7c` |
+| 23 | `Answer.source_rows: list[Any]` made the OpenAI structured-output schema fail with a 400; 39 of 45 first-live attempts hit it | The model schema included a free-form list that strict structured outputs cannot express | Author: added `DraftAnswer` with all required scalar/list fields; `llm.draft` uses it and converts to `Answer`; the graph attaches `source_rows` only after verification | `062ec7c` |
+| 24 | A01 smoke refused twice: `unsupported number -0.000659647` | The model computed forecast − realised itself; the copy-only verifier correctly rejected a number not in any tool output | Author: draft prompt forbids model-side arithmetic; a retry must remove the rejected item; `last_rejection` logged per attempt. Changed after the A01 smoke only, before the full eval | `eb68dd2` |
+| 25 | A06 r2, A08 r2 reported `beta` (log-scale coefficient) instead of `effect` | Verifier checks that a number is present in the tool output, not that it is the right field; `event_effect` returns both | Open – not fixed. A fix (field-aware verifier or dropping coefficient-scale columns) would be post-hoc and needs new held-out questions to test | open |
+| 26 | 5 of 6 p-value answers ignored the 3 dp rule (3 refused, 2 correct at 6 s.f. scored not exact) | Rule only in the prompt; the verifier accepts 6 s.f. for any field | Open – not fixed. Fix = accept p-values only at 3 dp; same post-hoc caveat as Issue 25 | open |
 
 ## Lessons
 
