@@ -285,7 +285,7 @@ query is a cache hit; rate limiter rejects over the limit.
 everything destroyed after the evidence run, with the destroy output saved in FINDINGS.
 **Result.** Kafka messages processed _n_ / duplicates suppressed _n_; Lambda runs _n_ / errors _n_;
 Athena query cost _$x_; recall@5 BM25 / vector / fused _x / x / x_; cache hit rate _x_.
-**Committed.** _hash_
+**Committed.** `f52709c` (10c-1 Kafka) / `5a76abc`, `e5a22b4` (10c-2 Lambda/Athena + evidence) / `c381703` (10c-3 Spark) / `9adbf4a` (10c-4 OpenSearch) / `13a0922` (10c-5 Redis – 10c complete) / `d0e9aba` (follow-ups).
 
 ## Step 11 — Research agent: LangGraph + LangSmith (4 h)
 
