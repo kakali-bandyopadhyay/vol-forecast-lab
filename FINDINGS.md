@@ -290,6 +290,12 @@ Result as measured: retrieval is weak on the statement questions, and fusion wit
 
 **Step 11 A01 smoke note.** A single-question smoke run showed A01 was refused ("could not verify") after two drafts. The draft prompt was changed after the A01 smoke runs; only A01's outcome had been seen at that point, not the full eval. The change forbids model-side arithmetic and tells a retry to remove the rejected item.
 
+**Step 11 – agent eval (pre-registered set, 15 questions × 3 repeats, gpt-5.4-mini-2026-03-17, commit eb68dd2).** Headline accuracy = exact_match AND refusal_correct (a correct refusal scores exact = True): **0.844 (38/45)**. Tool choice 45/45; refusals 6/6 (advice guard, out-of-range date); forecast lookups 15/15; model comparisons 9/9; event effects 7/9; p-values 1/6. Cost USD 0.064 in total (0.0014 per attempt; list prices as of 2026-11-17); latency p50 4.1 s, p95 6.9 s.
+
+Errors: 2 answers reported the log-scale coefficient (beta) instead of the effect – both values are in the tool output, so the copy-only verifier accepted them; 5 p-value answers ignored the 3 dp rule – 3 were refused after two drafts ("could not verify"), 2 gave the correct value at 6 significant figures and scored as not exact. No number absent from the tool output reached a final answer.
+
+Process: an earlier run at 2b6b011 was invalid (structured-output schema rejected by the API; no A01–A13 answers were seen); the reported run is at eb68dd2.
+
 ---
 
 ## Limitations
