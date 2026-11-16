@@ -25,9 +25,14 @@ def main() -> int:
         choices=("fetch", "extract", "chunk", "dq", "index", "eval"),
     )
     parser.add_argument("--snapshot", default=pipeline.DEFAULT_SNAPSHOT)
+    parser.add_argument(
+        "--publish",
+        action="store_true",
+        help="Publish successfully fetched raw documents to Kafka (off by default).",
+    )
     args = parser.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
-    counts = pipeline.run_stage(args.stage, args.snapshot)
+    counts = pipeline.run_stage(args.stage, args.snapshot, publish=args.publish)
     print(f"{args.stage}: {counts}")
     return 0
 

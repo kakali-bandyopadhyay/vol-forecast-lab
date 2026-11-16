@@ -17,7 +17,7 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 
 from volab.data import REPO_ROOT
-from volab.text import chunk, dq, extract, index
+from volab.text import chunk, dq, extract, index, kafka_io
 from volab.text.fetch_docs import fetch_documents
 
 DEFAULT_SNAPSHOT = "20261112T071104Z"
@@ -137,9 +137,32 @@ def _manifest_files(snapshot: str) -> dict[str, Any]:
     return json.loads(path.read_text(encoding="utf-8")).get("files", {})
 
 
-def fetch_stage(snapshot: str) -> dict[str, Any]:
+def fetch_stage(snapshot: str, *, publish: bool = False) -> dict[str, Any]:
     manifest = fetch_documents(snapshot)
-    counts = {"files": len(manifest.get("files", {}))}
+    files = manifest.get("files", {})
+    counts = {"files": len(files)}
+    if publish:
+        producer = kafka_io.make_producer()
+        published = 0
+        for relative, entry in sorted(files.items()):
+            if entry.get("status") != "ok":
+                continue
+            doc_type, filename = relative.split("/", 1)
+            compact = Path(filename).stem
+            event_date = f"{compact[:4]}-{compact[4:6]}-{compact[6:8]}"
+            message = kafka_io.DocumentMessage(
+                doc_id=f"{doc_type}-{compact}",
+                doc_type=doc_type,
+                event_date=event_date,
+                sha256=str(entry.get("sha256", "")),
+                path=str(SNAPSHOT_ROOT / snapshot / "docs" / relative),
+                s3_key=None,
+                url=entry.get("url"),
+                event=kafka_io.RAW_EVENT,
+            )
+            kafka_io.publish_document(message, producer=producer, topic="docs.raw")
+            published += 1
+        counts["published"] = published
     _update_manifest(snapshot, "fetch", counts)
     return counts
 
@@ -331,7 +354,9 @@ STAGES = {
 }
 
 
-def run_stage(stage: str, snapshot: str = DEFAULT_SNAPSHOT) -> dict[str, Any]:
+def run_stage(stage: str, snapshot: str = DEFAULT_SNAPSHOT, *, publish: bool = False) -> dict[str, Any]:
     if stage not in STAGES:
         raise ValueError(f"unknown stage {stage}")
+    if stage == "fetch":
+        return fetch_stage(snapshot, publish=publish)
     return STAGES[stage](snapshot)

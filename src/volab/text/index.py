@@ -9,7 +9,7 @@ import uuid
 import zlib
 from datetime import date, datetime
 from pathlib import Path
-from typing import Any, Callable, Iterable
+from typing import Any, Callable, Iterable, Literal
 
 import pandas as pd
 from qdrant_client import QdrantClient, models
@@ -263,8 +263,11 @@ def index_chunks(
     collection: str = COLLECTION,
     cache_path: Path = EMBEDDINGS_PATH,
     dense_dim: int = EMBEDDING_DIM,
+    delete_stale: bool | Literal["doc"] = True,
 ) -> dict[str, int]:
     """Idempotently upsert chunks and delete points no longer present."""
+    if delete_stale not in (True, False, "doc"):
+        raise ValueError("delete_stale must be True, False, or 'doc'")
     chunks_frame = chunks.copy() if isinstance(chunks, pd.DataFrame) else pd.DataFrame(chunks)
     required = {"chunk_id", "doc_id", "doc_type", "event_date", "page", "text", "content_hash"}
     missing = required - set(chunks_frame.columns)
@@ -327,10 +330,17 @@ def index_chunks(
                 wait=True,
             )
 
+    current_doc_ids = {
+        str(chunk_id).rsplit("-", 1)[0] for chunk_id in current_chunk_ids
+    }
     stale = [
         point_id
         for point_id, (chunk_id, _) in existing.items()
         if chunk_id not in current_chunk_ids
+        and (
+            delete_stale is True
+            or (delete_stale == "doc" and chunk_id.rsplit("-", 1)[0] in current_doc_ids)
+        )
     ]
     if stale:
         qdrant.delete(collection_name=collection, points_selector=stale, wait=True)
