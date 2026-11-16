@@ -45,6 +45,7 @@ class AgentResult:
     attempts: int
     cost_usd: float
     latency_s: float
+    last_rejection: str | None = None
 
 
 class _State(TypedDict, total=False):
@@ -199,4 +200,5 @@ def answer_question(
         attempts=int(final.get("attempts", 0)),
         cost_usd=float(cost),
         latency_s=time.perf_counter() - started,
+        last_rejection=final.get("rejection"),
     )

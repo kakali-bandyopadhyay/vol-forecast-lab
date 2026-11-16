@@ -288,6 +288,8 @@ Result as measured: retrieval is weak on the statement questions, and fusion wit
 
 **Step 11 process note.** The first live run at `2b6b011` was invalid: 39 of 45 attempts hit the OpenAI schema error, and no A01–A13 answers were seen. Re-run at the new commit.
 
+**Step 11 A01 smoke note.** A single-question smoke run showed A01 was refused ("could not verify") after two drafts. The draft prompt was changed after the A01 smoke runs; only A01's outcome had been seen at that point, not the full eval. The change forbids model-side arithmetic and tells a retry to remove the rejected item.
+
 ---
 
 ## Limitations

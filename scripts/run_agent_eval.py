@@ -92,6 +92,7 @@ def run_eval(
                 "answer_text": "",
                 "error": None,
                 "cost_cap": False,
+                "last_rejection": None,
             }
             try:
                 result = answer_question(
@@ -126,6 +127,7 @@ def run_eval(
                 "refusal_reason": answer.refusal_reason,
                 "attempts": int(result.attempts),
                 "answer_text": answer.text,
+                "last_rejection": result.last_rejection,
             })
             rows.append(base)
     return pd.DataFrame(rows)

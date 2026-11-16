@@ -315,6 +315,7 @@ def test_agent_refuses_when_both_drafts_fail_verification(toy_results: Path):
     assert llm.draft_calls == 2
     assert result.attempts == 2 and result.answer.refused
     assert result.answer.refusal_reason == "could not verify"
+    assert "999" in result.last_rejection
 
 
 def test_cost_cap_stops_before_next_llm_call(toy_results: Path, monkeypatch):
@@ -376,6 +377,7 @@ def test_run_eval_repeats_each_question_and_scores_refusal_rows(toy_results: Pat
 
     result = runner.run_eval(questions, FakeLLM(), model_name="fake", results_dir=toy_results, repeats=3)
     assert len(result) == 6
+    assert "last_rejection" in result.columns
     assert set(result["repeat"]) == {0, 1, 2}
     assert result.groupby("qid")["repeat"].nunique().to_dict() == {"q1": 3, "q2": 3}
     refusal_rows = result[result["qid"] == "q2"]

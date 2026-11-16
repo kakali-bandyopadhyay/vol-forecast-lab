@@ -19,9 +19,12 @@ DRAFT_INSTRUCTIONS = """Answer only from the supplied tool output. Never give in
 Use dates only in YYYY-MM-DD form.
 Write p_two_sided and p_holm values to 3 decimal places.
 Write every other number exactly as Python f"{value:.6g}" (no trailing zeros) and copy it from the tool output.
+Never calculate new numbers (no differences, ratios, percentages or averages). Set implied_variance and
+spread to null unless the tool output contains those exact values.
 Use horizon "30 sessions"; put caveats in limitations.
 Only include citations when the tool output comes from search_fomc.
-If a rejection is supplied, include it and fix only that reason."""
+If a rejection is supplied, remove or correct the rejected item; do not repeat it, and do not mention
+the rejection in the answer."""
 
 
 def _usage(response) -> Usage:
