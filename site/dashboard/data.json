@@ -1,11 +1,11 @@
 {
   "schema_version": 1,
-  "built_at": "2026-11-16T09:26:38+00:00",
-  "commit": "f7b4365",
+  "built_at": "2026-11-16T10:45:08+00:00",
+  "commit": "92bb952",
   "provenance": [
     {
       "file": "results/text/text_manifest.json",
-      "sha256": "2877de774105b17ef374d41e66fbbaeb810bfc6a8d0b9328b0a93a648db2c268"
+      "sha256": "b67fe7160f12aeb03010600ebf5d4fd02c281992d24b12d41ba07c17f48be72a"
     },
     {
       "file": "results/text/dq_flags.parquet",
@@ -50,6 +50,18 @@
     {
       "file": "results/text/retrieval_ranks.parquet",
       "sha256": "6bd08d504f8bc8487061479024e0e255f20774f554b8f56dbdd28a3d21bbe8a7"
+    },
+    {
+      "file": "results/text/10c_kafka.json",
+      "sha256": "c3cc18ffca94ffd0866b73ba83ac14c90df4feccb01025ee1dae45156e989373"
+    },
+    {
+      "file": "results/text/10c_athena.json",
+      "sha256": "7a357200a085c3512a361fd6bdf23d0e408bf3c130f69a8561fd417d5058eb0a"
+    },
+    {
+      "file": "results/text/10c_evidence.json",
+      "sha256": "e7c28a0a55eb6012dc599aeb64b0bd728b361ec905a6280b6efe9b0f4cd0c623"
     }
   ],
   "corpus": {
@@ -677,7 +689,323 @@
     "note": "Horizon is shown as 30d from the target definition; loss input has no horizon column."
   },
   "platform_evidence": {
-    "status": "pending",
-    "message": "Pending AWS evidence run"
+    "status": "available",
+    "files": {
+      "10c_kafka.json": {
+        "clean_publisher": {
+          "dlq": 0,
+          "duplicates_suppressed": 0,
+          "processed": 266
+        },
+        "indexer": {
+          "dlq": 0,
+          "duplicates_suppressed": 0,
+          "processed": 266
+        },
+        "uploader": {
+          "dlq": 0,
+          "duplicates_suppressed": 266,
+          "processed": 0
+        }
+      },
+      "10c_athena.json": {
+        "count_by_partition.sql": {
+          "query_execution_id": "478fc792-7e83-4da3-a1b2-e4ef72727d15",
+          "state": "SUCCEEDED",
+          "data_scanned_bytes": 0,
+          "engine_ms": 857,
+          "row_count": 34,
+          "rows": [
+            [
+              "2010",
+              "minutes",
+              "8"
+            ],
+            [
+              "2010",
+              "statement",
+              "8"
+            ],
+            [
+              "2011",
+              "minutes",
+              "8"
+            ],
+            [
+              "2011",
+              "statement",
+              "8"
+            ],
+            [
+              "2012",
+              "minutes",
+              "7"
+            ],
+            [
+              "2012",
+              "statement",
+              "8"
+            ],
+            [
+              "2013",
+              "minutes",
+              "8"
+            ],
+            [
+              "2013",
+              "statement",
+              "8"
+            ],
+            [
+              "2014",
+              "minutes",
+              "8"
+            ],
+            [
+              "2014",
+              "statement",
+              "8"
+            ],
+            [
+              "2015",
+              "minutes",
+              "8"
+            ],
+            [
+              "2015",
+              "statement",
+              "8"
+            ],
+            [
+              "2016",
+              "minutes",
+              "8"
+            ],
+            [
+              "2016",
+              "statement",
+              "8"
+            ],
+            [
+              "2017",
+              "minutes",
+              "8"
+            ],
+            [
+              "2017",
+              "statement",
+              "8"
+            ],
+            [
+              "2018",
+              "minutes",
+              "8"
+            ],
+            [
+              "2018",
+              "statement",
+              "8"
+            ],
+            [
+              "2019",
+              "minutes",
+              "8"
+            ],
+            [
+              "2019",
+              "statement",
+              "8"
+            ],
+            [
+              "2020",
+              "minutes",
+              "7"
+            ],
+            [
+              "2020",
+              "statement",
+              "7"
+            ],
+            [
+              "2021",
+              "minutes",
+              "8"
+            ],
+            [
+              "2021",
+              "statement",
+              "8"
+            ],
+            [
+              "2022",
+              "minutes",
+              "8"
+            ],
+            [
+              "2022",
+              "statement",
+              "8"
+            ],
+            [
+              "2023",
+              "minutes",
+              "8"
+            ],
+            [
+              "2023",
+              "statement",
+              "8"
+            ],
+            [
+              "2024",
+              "minutes",
+              "8"
+            ],
+            [
+              "2024",
+              "statement",
+              "8"
+            ],
+            [
+              "2025",
+              "minutes",
+              "8"
+            ],
+            [
+              "2025",
+              "statement",
+              "8"
+            ],
+            [
+              "2026",
+              "minutes",
+              "6"
+            ],
+            [
+              "2026",
+              "statement",
+              "7"
+            ]
+          ],
+          "cost_usd_estimate": 0.0,
+          "cost_label": "ESTIMATE"
+        },
+        "lengths.sql": {
+          "query_execution_id": "8f894f6c-60ba-41e3-a62b-c4b326745bca",
+          "state": "SUCCEEDED",
+          "data_scanned_bytes": 20748,
+          "engine_ms": 772,
+          "row_count": 2,
+          "rows": [
+            [
+              "minutes",
+              "60120.03787878788",
+              "30442"
+            ],
+            [
+              "statement",
+              "3111.805970149254",
+              "840"
+            ]
+          ],
+          "cost_usd_estimate": 1.0374e-07,
+          "cost_label": "ESTIMATE"
+        },
+        "partition_check.sql": {
+          "query_execution_id": "a93abb23-de94-46a2-8feb-a33d39fb9789",
+          "state": "SUCCEEDED",
+          "data_scanned_bytes": 1330,
+          "engine_ms": 423,
+          "row_count": 7,
+          "rows": [
+            [
+              "statement-20200129",
+              "2020-01-29"
+            ],
+            [
+              "statement-20200429",
+              "2020-04-29"
+            ],
+            [
+              "statement-20200610",
+              "2020-06-10"
+            ],
+            [
+              "statement-20200729",
+              "2020-07-29"
+            ],
+            [
+              "statement-20200916",
+              "2020-09-16"
+            ],
+            [
+              "statement-20201105",
+              "2020-11-05"
+            ],
+            [
+              "statement-20201216",
+              "2020-12-16"
+            ]
+          ],
+          "cost_usd_estimate": 6.65e-09,
+          "cost_label": "ESTIMATE"
+        }
+      },
+      "10c_evidence.json": {
+        "athena_counts": {
+          "bytes_scanned": {
+            "count_by_partition.sql": 0,
+            "lengths.sql": 20748,
+            "partition_check.sql": 1330
+          },
+          "partition_check_rows": 7,
+          "present": true,
+          "queries": {
+            "count_by_partition.sql": {
+              "row_count": 34,
+              "state": "SUCCEEDED"
+            },
+            "lengths.sql": {
+              "row_count": 2,
+              "state": "SUCCEEDED"
+            },
+            "partition_check.sql": {
+              "row_count": 7,
+              "state": "SUCCEEDED"
+            }
+          },
+          "status": "PASS",
+          "totals_by_doc_type": {
+            "minutes": 132,
+            "statement": 134
+          }
+        },
+        "d1_chunk_parity": {
+          "extra_chunk_ids": [],
+          "frame_mismatch": null,
+          "missing_chunk_ids": [],
+          "rebuilt_chunks": 6620,
+          "status": "PASS",
+          "stored_chunks": 6620
+        },
+        "lake_text_parity": {
+          "document_docs": 266,
+          "extra_doc_ids": [],
+          "lake_docs": 266,
+          "missing_doc_ids": [],
+          "same_doc_ids": true,
+          "status": "PASS",
+          "text_mismatch_doc_ids": []
+        },
+        "lambda_metrics": {
+          "end": "2026-11-16T10:38:13.160405+00:00",
+          "errors": 0,
+          "function": "vfl-extract",
+          "invocations": 266,
+          "start": "2026-11-16T10:17:50.723924+00:00",
+          "status": "PASS"
+        }
+      }
+    }
   }
 }

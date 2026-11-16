@@ -1,7 +1,7 @@
 # From central-bank documents to governed hybrid search: an evidence-gated data and AI platform
 
 **Tags:** Data · AI · Architecture case study
-**Status (16 Nov 2026):** Steps 0–10b complete and measured. Step 10c platform slice designed, plumbed and tested offline; the AWS evidence run is pending — the results table below is filled from the run's output files, nothing estimated.
+**Status (16 Nov 2026):** Steps 0–10b complete and measured. Step 10c Kafka + AWS lake run completed, evidenced and destroyed on 16 Nov 2026; Spark, OpenSearch and Redis parts pending. Every number below comes from committed output files.
 **Code:** vol-forecast-lab (private until release) · **Diagrams:** `figures/diagrams/platform.svg`, `step10b.svg`, `step10c.svg`
 
 ---
@@ -65,14 +65,14 @@ Documents enter once, are published as events, land raw in S3, are extracted by 
 | Hybrid (RRF) | 0.322 | 0.244 | 0.125 | 0.548 |
 | Keyword | 0.122 | 0.130 | 0.000 | 0.262 |
 
-**Step 10c platform — pending AWS run** (filled from output files only)
+**Step 10c platform — AWS run 16 Nov 2026** (from `results/text/10c_*.json`)
 
 | Check | Result |
 |---|---|
-| Kafka processed / duplicates suppressed / DLQ | _pending_ |
-| Lambda invocations / errors (target 266 / 0) | _pending_ |
-| Athena counts (target 134 statements / 132 minutes); bytes scanned and cost | _pending_ |
-| Text parity and chunk parity | _pending_ |
+| Kafka: 266 published; indexer processed 266, DLQ 0; replay of all 266 → 266 duplicates suppressed, 0 re-uploaded | PASS |
+| Lambda invocations / errors | 266 / 0 |
+| Athena: 134 statements / 132 minutes across 34 partitions; 2020 statements = 7 rows; ≤ 20,748 bytes scanned per query (billed at the 10 MB minimum) | PASS |
+| Text parity (266/266 identical) and chunk parity (6,620 rebuilt = 6,620 stored, row for row) | PASS |
 | Recall@5: OpenSearch BM25 / dense / fused | _pending_ |
 | Cache hit rate | _pending_ |
 
@@ -81,6 +81,8 @@ Documents enter once, are published as events, land raw in S3, are extracted by 
 - **Hybrid did not beat dense.** On statement questions hybrid scored 0.125 against dense 0.250. A post-hoc check (labelled, gold labels unchanged) found a same-meeting chunk naming the answer in the hybrid top five for **6 of 8** statement questions (dense 5 of 8). The gold sets were labelled within one document type, while the same fact often appears in both the statement and the minutes. Lesson: label gold sets across document types.
 - **A per-document index call would have erased the index.** The indexing function deletes points it no longer sees, which is correct for a full batch and destructive when a consumer calls it one document at a time. Caught in review before any run; fixed with an explicit flag and a two-document test.
 - **Test doubles that lie.** A fake S3 returned a field the real listing API never returns, so a checkpoint test passed against behaviour production would not have. Fixed by making fakes match the real API.
+- **A policy that can create cannot always destroy.** Teardown stopped on the Glue database: deleting it also needs permission on its user-defined functions. Fixed the build user's policy, finished the destroy, and kept both attempts in `10c_destroy.txt`.
+- **Two Windows-specific traps in the image push.** PowerShell re-encodes piped passwords (ECR login 400), and Docker Desktop pushes an image index with attestations that Lambda rejects. Both fixed in the build script.
 - **Known data gap.** The 24 Oct 2012 minutes exist only as HTML in the source; recorded as a known gap rather than patched.
 
 ## What changes at bank scale
