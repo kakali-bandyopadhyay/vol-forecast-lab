@@ -305,6 +305,13 @@ recorded before results.
   PDF URL returns 404. The DQ `minutes_missing` flag remains; it is 1 of 133 meetings and no
   retrieval result depends on it.
 
+- **The agent's `search_fomc` answers cannot be fully verified.** The verifier cannot check dates
+  inside returned FOMC text, and any number quoted from that text fails the numeric rule. None of
+  A01–A15 uses `search_fomc`, so the agent eval is unaffected.
+
+- **The agent's advice filter over-matches "trading day".** A question such as "forecast for the
+  first trading day of 2021" is refused as investment advice. The pre-registered guard is unchanged.
+
 ---
 
 _Results are added per step as they are computed._
