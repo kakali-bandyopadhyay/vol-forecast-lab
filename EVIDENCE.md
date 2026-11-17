@@ -44,7 +44,7 @@ from the repo (AWS rows needed a live account on 16 Nov 2026 and cannot be re-ru
 
 | # | Claim | Value | Evidence file | Reproduce / check | Commit |
 |---|---|---|---|---|---|
-| A1 | Agent accuracy (15 pre-registered questions × 3) | 0.844 (38/45); tool choice 45/45; refusals 6/6 | `results/agent/agent_eval.parquet`, `agent_eval_summary.json` | `python scripts/run_agent_eval.py` (OpenAI key; costs ~USD 0.06) | `87a1523`, `376abe5` |
+| A1 | Agent accuracy (15 frozen questions × 3) | 0.844 (38/45); tool choice 45/45; refusals 6/6 | `results/agent/agent_eval.parquet`, `agent_eval_summary.json` | `python scripts/run_agent_eval.py` (OpenAI key; costs ~USD 0.06) | `87a1523`, `376abe5` |
 | A2 | No unverified number reached an answer | 0 of 45 | as A1 | as A1 | `376abe5` |
 | A3 | Agent cost and latency | USD 0.064 total; p50 4.1 s, p95 6.9 s | as A1 | as A1 | `376abe5` |
 | M1 | Drift: model degradation rule | 11 of 79 month-ends degraded; latest (2026-10) not | `results/drift_report.parquet`, `drift_summary.json` | `python scripts/run_drift.py` | `e292c9c` |
