@@ -1,0 +1,24 @@
+flowchart LR
+  subgraph Dev["Developer machine (Docker Desktop)"]
+    subgraph AFC["Airflow 3.4 (Compose)"]
+      D1[audit_snapshot] --> D2[build_rv] --> D3[refit_models] --> D4[evaluate] --> D5[q2_events] --> D6[drift_report]
+      T1[fetch_docs] --> T2[extract] --> T3[chunk] --> T4[embed_index]
+    end
+    subgraph KIND["kind cluster 'vfl' (Kubernetes 1.37)"]
+      CM[ConfigMap vfl-config]
+      DEP[Deployment vfl-api<br/>uid 10001, probes, limits] --> SVC[Service NodePort 30080]
+      CJ[CronJob vfl-drift<br/>monthly, Forbid, backoff 2]
+      CM -.env.-> DEP
+      CM -.env.-> CJ
+    end
+    PLAT[Compose platform profiles:<br/>Kafka · OpenSearch · Redis · Qdrant · Spark]
+    ML[(MLflow local)]
+  end
+  subgraph AWS["AWS (applied for the evidence run, destroyed same day)"]
+    S3[S3 raw/clean/curated] --> LAM[Lambda container] --> GLUE[Glue + Athena]
+    BUD[Budget stack USD 10 - never destroyed]
+  end
+  D6 -.same code.-> CJ
+  D3 -.params, metrics.-> ML
+  PLAT <--> AWS
+  CLIENT[curl / agent] --> SVC

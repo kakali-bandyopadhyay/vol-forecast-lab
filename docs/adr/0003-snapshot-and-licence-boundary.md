@@ -1,0 +1,23 @@
+# ADR 0003 — Hash-pinned snapshot and the licence boundary
+
+**Status:** Accepted · **Date:** Step 1
+
+**Context.** Results must be reproducible from the same inputs, and the price data come from a vendor
+licence that does not allow redistribution of row-level data.
+
+**Decision.** Every pull is written to a snapshot with a SHA-256 manifest; the audit task checks it
+before anything else runs; the snapshot ID is stamped into every results table and the drift report.
+Raw and snapshot folders are git-ignored. Public outputs (FINDINGS, dashboard) carry statistics and
+aggregates only — never price, return, realised-variance or forecast series.
+
+**Alternatives rejected.** Fetch-on-run (results drift with vendor revisions); committing the data
+(licence breach).
+
+**Consequences.** A clean clone reproduces the pipeline on the synthetic fixture, not the headline
+numbers; reproducing those needs the user's own data key and the same snapshot date. Stated in the
+README boundary.
+
+**Evidence.** `data/snapshot_manifest.json`, `data/audit.json`; `snapshot_id` 20261112T071104Z in the
+drift report; dashboard build test that fails on series-like keys.
+
+**Revisit if.** The study moves to a data source whose licence allows redistribution.
