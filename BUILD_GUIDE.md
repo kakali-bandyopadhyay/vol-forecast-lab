@@ -308,7 +308,8 @@ monthly PSI of HAR inputs vs training (> 0.25 = drift) and rolling 63-session QL
 M2/M1 (> 1.10 for 3 consecutive months = degradation); Dockerfile; GitHub Actions: lint, pytest and
 a pipeline smoke run on the synthetic fixture.
 **Who.** Drift metrics = author. Dockerfile, CI = AI-drafted, reviewed.
-**Committed.** _hash_
+Actual (2026-11-17): drift.py + tests and MLflow wiring in run_eval/run_mlp = author; run_drift.py, test_run_drift.py, test_tracking_wiring.py = Codex P10, reviewed (plumbing fixes by Claude: report dtypes, per-section latest month, RESULTS_DIR default); tracking.py, stamp_snapshot.py, export_har_inputs.py (+ train_end manifest by Claude) = plumbing. PSI window per Issue 27.
+**Committed.** `a923d9b` (MLflow wiring, train_end manifest, Issue 27) / `1ee37b6` (snapshot_id stamp) / `9ea3f71` (drift code, tests, report)
 
 ## Step 13 — Airflow DAG and local Kubernetes (5.5 h) — must-have
 
@@ -392,7 +393,7 @@ advance.
 | 24 | A01 smoke refused twice: `unsupported number -0.000659647` | The model computed forecast − realised itself; the copy-only verifier correctly rejected a number not in any tool output | Author: draft prompt forbids model-side arithmetic; a retry must remove the rejected item; `last_rejection` logged per attempt. Changed after the A01 smoke only, before the full eval | `eb68dd2` |
 | 25 | A06 r2, A08 r2 reported `beta` (log-scale coefficient) instead of `effect` | Verifier checks that a number is present in the tool output, not that it is the right field; `event_effect` returns both | Open – not fixed. A fix (field-aware verifier or dropping coefficient-scale columns) would be post-hoc and needs new held-out questions to test | open |
 | 26 | 5 of 6 p-value answers ignored the 3 dp rule (3 refused, 2 correct at 6 s.f. scored not exact) | Rule only in the prompt; the verifier accepts 6 s.f. for any field | Open – not fixed. Fix = accept p-values only at 3 dp; same post-hoc caveat as Issue 25 | open |
-| 27 | Monthly PSI on calendar-month rows (~21 sessions, 10 training-decile bins, ε = 1e-6) would flag drift almost every month | Small samples leave decile bins empty; each empty bin adds ~1.15 to PSI. Null simulation (iid, no drift, 20k draws): n = 21 → median PSI 1.42, 88% of months > 0.25; n = 63 → 0.14, 12%; n = 126 → 0.07, ~0% | Author decision 2026-11-17, before any drift code or run: PSI still computed monthly, but at each month-end on the trailing 126 sessions (not the calendar month's rows); deciles, ε and the 0.25 threshold unchanged. Deviation from the Step 12 "monthly PSI" wording | _hash_ |
+| 27 | Monthly PSI on calendar-month rows (~21 sessions, 10 training-decile bins, ε = 1e-6) would flag drift almost every month | Small samples leave decile bins empty; each empty bin adds ~1.15 to PSI. Null simulation (iid, no drift, 20k draws): n = 21 → median PSI 1.42, 88% of months > 0.25; n = 63 → 0.14, 12%; n = 126 → 0.07, ~0% | Author decision 2026-11-17, before any drift code or run: PSI still computed monthly, but at each month-end on the trailing 126 sessions (not the calendar month's rows); deciles, ε and the 0.25 threshold unchanged. Deviation from the Step 12 "monthly PSI" wording | `a923d9b` (applied in `9ea3f71`) |
 
 ## Lessons
 
