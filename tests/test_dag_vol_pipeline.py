@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import timedelta
 
 import pytest
-pytest.importorskip("airflow")  # python-tests jobs have no Airflow; dag-import job runs these
+pytest.importorskip("airflow.dag_processing.dagbag")  # real Airflow only: the repo's airflow/ folder (Dockerfile) shadows the top-level name
 from airflow.dag_processing.dagbag import DagBag
 
 pytestmark = pytest.mark.airflow
