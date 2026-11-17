@@ -300,6 +300,8 @@ Not fixed: the two verifier limits above (wrong field accepted; p-value precisio
 
 Process: an earlier run at 2b6b011 was invalid (structured-output schema rejected by the API; no A01–A13 answers were seen); the reported run is at eb68dd2.
 
+**Step 12 – drift monitoring.** QLIKE ratio M2/M1 (63 sessions; degraded = 3 consecutive month-ends > 1.10): degraded at 11 of 79 month-ends (2020-06…09, 2021-03, 2021-07…10, 2024-10, 2026-05); latest (2026-10) not degraded. PSI of the four HAR inputs (training deciles to 2019-12-02; trailing 126 sessions, BUILD_GUIDE Issue 27; threshold 0.25) flagged 40–78 of 78 month-ends. A post-hoc check found 126-session windows inside the training period also exceed 0.25 in 46–100% of cases: for persistent regressors this PSI rule cannot separate drift from normal regime variation. Reported as a limit, not tuned; a block-bootstrap null threshold tested on later data would be the fix.
+
 ---
 
 ## Limitations

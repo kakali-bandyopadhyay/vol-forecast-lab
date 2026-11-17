@@ -1,0 +1,44 @@
+{
+  "train_end": "2019-12-02",
+  "snapshot_id": "20261112T071104Z",
+  "psi_window": 126,
+  "qlike_window": 63,
+  "thresholds": {
+    "psi": 0.25,
+    "qlike_ratio": 1.1,
+    "qlike_ratio_months": 3
+  },
+  "first_month_covered": "2020-01",
+  "last_month_covered": "2026-11",
+  "n_months_flagged_per_input": {
+    "rv_d": 40,
+    "rv_w": 64,
+    "rv_m": 78,
+    "iv_ps": 78
+  },
+  "months_degraded": [
+    "2020-06",
+    "2020-07",
+    "2020-08",
+    "2020-09",
+    "2021-03",
+    "2021-07",
+    "2021-08",
+    "2021-09",
+    "2021-10",
+    "2024-10",
+    "2026-05"
+  ],
+  "latest_month_status": {
+    "psi_month": "2026-11",
+    "qlike_month": "2026-10",
+    "inputs": {
+      "rv_d": false,
+      "rv_w": false,
+      "rv_m": true,
+      "iv_ps": true
+    },
+    "degraded": false
+  },
+  "code_commit": "1ee37b66924c2dfe1f796f87fd1546a366ab79dc"
+}
