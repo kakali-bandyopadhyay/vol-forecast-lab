@@ -1,4 +1,4 @@
-"""P8e contract for publishing from an existing snapshot manifest."""  # Codex fix (P8e)
+"""Contract for publishing from an existing snapshot manifest."""  # Codex fix (10c review, 16 Nov)
 
 import json
 
@@ -7,7 +7,7 @@ import pytest
 from volab.text import pipeline
 
 
-def test_publish_uses_manifest_without_fetching_or_writing_text_manifest(tmp_path, monkeypatch):  # Codex fix (P8e)
+def test_publish_uses_manifest_without_fetching_or_writing_text_manifest(tmp_path, monkeypatch):  # Codex fix (10c review, 16 Nov)
     snapshot = "snap"
     docs = tmp_path / snapshot / "docs"
     docs.mkdir(parents=True)
@@ -32,7 +32,7 @@ def test_publish_uses_manifest_without_fetching_or_writing_text_manifest(tmp_pat
     assert manifest_path.read_text(encoding="utf-8") == "leave unchanged"
 
 
-def test_publish_exits_when_snapshot_manifest_is_missing(tmp_path, monkeypatch):  # Codex fix (P8e)
+def test_publish_exits_when_snapshot_manifest_is_missing(tmp_path, monkeypatch):  # Codex fix (10c review, 16 Nov)
     monkeypatch.setattr(pipeline, "SNAPSHOT_ROOT", tmp_path)
     with pytest.raises(FileNotFoundError, match="missing docs manifest"):
         pipeline.fetch_stage("absent", publish=True)

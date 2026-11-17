@@ -150,9 +150,9 @@ First 40 log lines (complete log):
 }
 ```
 
-### DAG test evidence (P11a)
+### DAG test evidence
 
-run_dag_tests.ps1: 4 passed (ebb9ef7)
+run_dag_tests.ps1: 4 passed (c849f27)
 
 ## Warnings and notes
 

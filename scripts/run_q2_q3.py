@@ -422,7 +422,7 @@ def main() -> int:
         "panel_sha256": digest,
         "code_commit": git_commit(),
         "window_rule_note": (
-            "DEVIATIONS A (commit 92f9631): 30-day results drop t in the window or with a "
+            "DEVIATIONS A (commit 5c718a1): 30-day results drop t in the window or with a "
             "target session in it; Q3 and §7.4 drop window sessions; Q3 Holm is applied "
             "within the primary and ex-window runs."
         ),
@@ -447,7 +447,7 @@ def main() -> int:
         },
     }
     (RESULTS / "q2q3_manifest.json").write_text(
-        json.dumps(manifest, indent=2) + "\n", encoding="utf-8", newline="\n"  # Codex fix (P8e)
+        json.dumps(manifest, indent=2) + "\n", encoding="utf-8", newline="\n"  # Codex fix (10c review, 16 Nov)
     )
 
     print(f"forecasts {len(dates)}, ex-window {int(ex_mask.sum())}, removed {removed}")

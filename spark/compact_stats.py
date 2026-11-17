@@ -1,4 +1,4 @@
-"""Codex-written (P7j, 16 Nov 2026), reviewed by Kakali."""
+"""Codex-written from a brief (16 Nov 2026), reviewed by Kakali."""
 
 import argparse
 from pathlib import Path

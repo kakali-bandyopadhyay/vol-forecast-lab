@@ -1,0 +1,138 @@
+{
+  "description": "Descriptive Clark\u2013West breakdown; no Holm adjustment and not a headline test.",
+  "pair": "M2_vs_M1",
+  "hac_lag_rule": "max(21, floor(4*(T/100)^(2/9)))",
+  "vix_thresholds": {
+    "low_mid": 14.89,
+    "mid_high": 18.57,
+    "vix_date": "forecast date"
+  },
+  "calendar_subperiods": [
+    "2020",
+    "2021-2023",
+    "2024-end"
+  ],
+  "any_cell_n_lt_100": false,
+  "cells": [
+    {
+      "sample": "full",
+      "dimension": "vix_tercile",
+      "regime": "low",
+      "n": 282,
+      "mean_f_t": 3.838540551460786e-07,
+      "t": 1.091906358857269,
+      "p_one_sided": 0.13743713122182172,
+      "small_n": false
+    },
+    {
+      "sample": "full",
+      "dimension": "vix_tercile",
+      "regime": "mid",
+      "n": 552,
+      "mean_f_t": 1.5807139426916525e-07,
+      "t": 1.8101358676233423,
+      "p_one_sided": 0.035137359990233395,
+      "small_n": false
+    },
+    {
+      "sample": "full",
+      "dimension": "vix_tercile",
+      "regime": "high",
+      "n": 869,
+      "mean_f_t": 9.322637747357916e-06,
+      "t": 1.5377316833691375,
+      "p_one_sided": 0.06205711674160711,
+      "small_n": false
+    },
+    {
+      "sample": "full",
+      "dimension": "calendar_subperiod",
+      "regime": "2020",
+      "n": 253,
+      "mean_f_t": 2.8674030180494802e-05,
+      "t": 1.4682627792345613,
+      "p_one_sided": 0.07101642857960734,
+      "small_n": false
+    },
+    {
+      "sample": "full",
+      "dimension": "calendar_subperiod",
+      "regime": "2021-2023",
+      "n": 753,
+      "mean_f_t": 8.802833107277075e-07,
+      "t": 2.077563081947223,
+      "p_one_sided": 0.018874809730920376,
+      "small_n": false
+    },
+    {
+      "sample": "full",
+      "dimension": "calendar_subperiod",
+      "regime": "2024-end",
+      "n": 697,
+      "mean_f_t": 5.444641133409648e-07,
+      "t": 2.1866579133715853,
+      "p_one_sided": 0.014383753081237214,
+      "small_n": false
+    },
+    {
+      "sample": "ex_window",
+      "dimension": "vix_tercile",
+      "regime": "low",
+      "n": 273,
+      "mean_f_t": 7.22516336882556e-07,
+      "t": 4.627737783295073,
+      "p_one_sided": 1.8484083352785985e-06,
+      "small_n": false
+    },
+    {
+      "sample": "ex_window",
+      "dimension": "vix_tercile",
+      "regime": "mid",
+      "n": 539,
+      "mean_f_t": 1.9792342120834105e-07,
+      "t": 2.519078103512698,
+      "p_one_sided": 0.005883127685822239,
+      "small_n": false
+    },
+    {
+      "sample": "ex_window",
+      "dimension": "vix_tercile",
+      "regime": "high",
+      "n": 820,
+      "mean_f_t": 1.3966739314499262e-06,
+      "t": 2.4808838268695186,
+      "p_one_sided": 0.006552853952953055,
+      "small_n": false
+    },
+    {
+      "sample": "ex_window",
+      "dimension": "calendar_subperiod",
+      "regime": "2020",
+      "n": 182,
+      "mean_f_t": 2.235469713255807e-06,
+      "t": 1.5227059749165344,
+      "p_one_sided": 0.06391614123699142,
+      "small_n": false
+    },
+    {
+      "sample": "ex_window",
+      "dimension": "calendar_subperiod",
+      "regime": "2021-2023",
+      "n": 753,
+      "mean_f_t": 8.802833107277075e-07,
+      "t": 2.077563081947223,
+      "p_one_sided": 0.018874809730920376,
+      "small_n": false
+    },
+    {
+      "sample": "ex_window",
+      "dimension": "calendar_subperiod",
+      "regime": "2024-end",
+      "n": 697,
+      "mean_f_t": 5.444641133409648e-07,
+      "t": 2.1866579133715853,
+      "p_one_sided": 0.014383753081237214,
+      "small_n": false
+    }
+  ]
+}

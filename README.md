@@ -14,12 +14,12 @@ Research prototype on public data. Not investment advice; not a trading system.
 
 | Question | Result | Where |
 |---|---|---|
-| Q1 — does HAR-X beat HAR? (Clark–West, the only headline test) | **Detected outside Feb–Apr 2020**: t = 3.14, one-sided p = 0.0009, n = 1,632. Not detected on the full sample (p = 0.0597). The window rule was fixed before any ex-window number existed. | [FINDINGS](FINDINGS.md) Step 7 |
+| Q1 — does HAR-X beat HAR? (Clark–West, the only headline test) | **Detected outside Feb–Apr 2020**: t = 3.14, one-sided p = 0.0009, n = 1,632. Not detected on the full sample (p = 0.0597). The window rule was fixed before any ex-window number existed and after the full-sample result (p = 0.0597) was known. | [FINDINGS](FINDINGS.md) Step 7 |
 | Q1b–Q1d — QLIKE comparisons (HAR-X v HAR, MLP v HAR-X, HAR v GARCH, HAR v persistence) | None detected after the pre-registered Holm adjustment, in either sample | FINDINGS Step 10 |
 | Q2 — implied vs realised | Ex-ante spread positive (t = 7.80); ex-post premium positive outside spring 2020 (t = 7.05), not detected on the full sample | FINDINGS Step 9 |
 | Q3 — event days | CPI overnight variance +37% (95% CI +4% to +80%); FOMC session variance +84% (+30% to +160%) | FINDINGS Step 9 |
 | Retrieval (15 frozen questions) | Fused BM25 + dense recall@5 0.589 vs dense 0.389; cloud path equal to local (266/266 documents, 6,620/6,620 chunks) | FINDINGS 10b–10c |
-| Agent (15 pre-registered questions × 3) | 0.844 (38/45); no unverified number in any answer; USD 0.064 in total | FINDINGS Step 11 |
+| Agent (15 frozen questions × 3) | 0.844 (38/45); no unverified number in any answer; USD 0.064 in total | FINDINGS Step 11 |
 
 Misses are reported as results: hybrid retrieval lost to dense in Step 10b; the MLP did not beat
 HAR-X; the PSI drift rule cannot separate drift from regime variation; two agent-verifier limits are
@@ -55,7 +55,7 @@ open. Every claim, its file, its reproduce command and its commit: [EVIDENCE.md]
 | SPY daily adjusted OHLC | Tiingo | snapshot `20261112T071104Z`, SHA-256 per file in `data/snapshot_manifest.json` |
 | VIX daily close | Cboe (FRED VIXCLS cross-check) | same snapshot |
 | FOMC and CPI calendars | federalreserve.gov, bls.gov — one source URL per row | `data/events/*.csv`, hashes in the pre-registration |
-| FOMC statements (HTML) and minutes (PDF) | federalreserve.gov | `data/text/` manifest; extractor version 1.2 |
+| FOMC statements (HTML) and minutes (PDF) | federalreserve.gov | `results/text/text_manifest.json`; extractor version 1.2 |
 | Embeddings, agent model | OpenAI `text-embedding-3-small`; `gpt-5.4-mini-2026-03-17` | `.env.example`, `results/agent/agent_eval_summary.json` |
 
 The audit (`scripts/audit_snapshot.py`) runs before anything else: 4,241 sessions, 0 missing, 0 OHLC
@@ -104,6 +104,8 @@ Airflow: `docker-compose.airflow.yml`; kind: `scripts/kind_up.ps1` (see `docs/st
 The price data licence does not allow redistribution, so the snapshot is not in the repo (ADR 0003).
 With your own Tiingo key in `.env` (see `.env.example`):
 
+The `/forecast` endpoint and the agent also require the git-ignored `results/forecasts.parquet` series; M4 lookups additionally use `results/mlp_forecasts.parquet`.
+
 ```bash
 python scripts/fetch_data.py         # writes a new snapshot; to match, it must reproduce the hashes in PREREGISTRATION.md
 python scripts/audit_snapshot.py
@@ -136,3 +138,4 @@ written briefs and reviewed before commit; the split per step is in BUILD_GUIDE.
 ## Licence
 
 Code: [MIT](LICENSE). Data are not included; FOMC documents are U.S. government works.
+

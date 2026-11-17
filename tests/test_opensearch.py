@@ -26,7 +26,7 @@ EXPECTED_PROPERTIES = {
 
 def test_mapping_matches_the_contract_field_by_field():
     assert os_index.INDEX == "fomc_chunks_v1"
-    assert os_index.MAPPING["settings"]["index"] == {"number_of_shards": 1, "number_of_replicas": 0}  # Codex fix (P8e)
+    assert os_index.MAPPING["settings"]["index"] == {"number_of_shards": 1, "number_of_replicas": 0}  # Codex fix (10c review, 16 Nov)
     assert os_index.MAPPING["mappings"]["properties"] == EXPECTED_PROPERTIES
 
 

@@ -1,7 +1,7 @@
 # From central-bank documents to governed hybrid search: an evidence-gated data and AI platform
 
 **Tags:** Data · AI · Architecture case study
-**Status (17 Nov 2026):** Steps 0–13 complete and measured; Step 14 write-up in this revision. The Step 10c AWS lake run was completed, evidenced and destroyed on 16 Nov 2026. Every number below comes from committed output files; claim-by-claim checks in `EVIDENCE.md`.
+**Status (17 Nov 2026):** Steps 1–13 complete and measured; Step 14 write-up in this revision. The Step 10c AWS lake run was completed, evidenced and destroyed on 16 Nov 2026. Every number below comes from committed output files; claim-by-claim checks in `EVIDENCE.md`.
 **Code:** vol-forecast-lab · **Diagrams:** `figures/diagrams/platform.svg`, `step10b.svg`, `step10c.svg`
 
 ---
@@ -26,7 +26,7 @@ The same repository holds a pre-registered realised-volatility forecasting study
    - **Redis** search cache and per-client token-bucket rate limiter behind the API.
 3. **Research agent (Step 11).** LangGraph graph whose tools read only computed result files; a copy-only verifier rejects any number not present in a tool output; refuses advice and out-of-range dates; pinned model and a per-run cost cap.
 4. **MLOps (Step 12).** MLflow tracking, snapshot ID on every results table, monthly drift report (PSI on model inputs, QLIKE ratio for degradation).
-5. **Runtime and delivery (Step 13).** FastAPI service in Docker (`/search`, `/forecast`, `/compare`, `/health`, `/metrics`); Airflow 3.4 for orchestration; a local Kubernetes (kind) cluster; CI running tests on Python 3.12 and 3.14, Terraform validate, Docker build, DAG import and manifest validation. Every image and package version is pinned.
+5. **Runtime and delivery (Step 13).** FastAPI service in Docker (`/search`, `/forecast`, `/compare`, `/health`, `/metrics`); Airflow 3.4 for orchestration; a local Kubernetes (kind) cluster; CI running tests on Python 3.12 and 3.14, Terraform validate, Docker build, DAG import and manifest validation. Package versions and service images are pinned; the Lambda base image uses the AWS Python 3.12 tag and is not pinned by digest.
 
 ## Architecture
 

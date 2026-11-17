@@ -467,7 +467,7 @@ def test_uploader_put_metadata_includes_url(tmp_path: Path):
     }
 
 
-def test_write_counters_appends_replay_runs_and_preserves_legacy(tmp_path, monkeypatch):  # Codex fix (P8e)
+def test_write_counters_appends_replay_runs_and_preserves_legacy(tmp_path, monkeypatch):  # Codex fix (10c review, 16 Nov)
     path = tmp_path / "counters.json"
     path.write_text(json.dumps({"indexer": {"processed": 4, "dlq": 1}}), encoding="utf-8")
     stamps = iter(("2026-11-16T00:00:00+00:00", "2026-11-16T00:00:01+00:00"))

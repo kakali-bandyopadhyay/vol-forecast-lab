@@ -97,3 +97,47 @@ that quote an old hash can be translated with the table below.
 | 2026-11-17 | `dfa36f4` | `01350f9` | Step 13 plumbing: Airflow task env (VFL_MLFLOW=0, git safe.directory); DAG tests on Airflo |
 | 2026-11-17 | `eb68dd2` | `d353ace` | Step 11: log last_rejection; draft prompt forbids model arithmetic (A01 smoke) |
 | 2026-11-17 | `f75de27` | `b8ec6be` | CI: skip DAG tests when Airflow is not installed (python-tests jobs) |
+
+## Second rewrite – 17 Nov 2026
+
+**Why.** The AWS account ID appeared in the UTF-16 destroy log.
+
+**What changed.** `results/text/10c_destroy.txt` was removed from history; the log is retained in sanitised form in the current tree. The tag `v0.1-prereg` remains at `8d4805199ceb545d7ae29076c4fbe620ac97d928`.
+
+**Check.** `git log --all --oneline -- results/text/10c_destroy.txt` prints nothing.
+
+## Old → new (30 commits)
+
+| Date | Old | New | Subject |
+|---|---|---|---|
+| 2026-11-17 | `011163b` | `e292c9c` | Step 12: drift monitoring (PSI + QLIKE ratio), run_drift, report; 340 passed |
+| 2026-11-17 | `01350f9` | `3b9768f` | Step 13 plumbing: Airflow task env (VFL_MLFLOW=0, git safe.directory); DAG tests on Airflow's python, DAGS_FOLDER=repo dags; DagBag from dag_processing (Airflow 3.4) |
+| 2026-11-17 | `0574a7a` | `8cd27ea` | Step 13: kind evidence (health 200, drift CronJob job, non-root uid 10001), kind_up rollout per deployment, BUILD_GUIDE Step 13 result + hashes |
+| 2026-11-17 | `2e2ae8e` | `1c56359` | Step 11 fixes: DraftAnswer strict schema (Issue 23), run plumbing (Issue 22), schema test |
+| 2026-11-17 | `2fc8c30` | `0243e03` | Step 11: agent (route/tool/draft/verify graph), deterministic verifier, eval runner |
+| 2026-11-17 | `3028994` | `4878c98` | Step 12: MLflow logging in run_eval/run_mlp (logging only, rerun frame-identical); export_har_inputs train_end manifest; Issue 27 |
+| 2026-11-17 | `39a65cd` | `c9271f1` | BUILD_GUIDE: Step 12 commit hashes, Who (actual), Issue 27 hash |
+| 2026-11-17 | `3c5f466` | `376abe5` | Step 11: agent eval results (87a1523 run) + FINDINGS |
+| 2026-11-16 | `59ff3f6` | `f100594` | 10c-4: OpenSearch BM25 index + RRF fusion; fused recall@5 0.589 vs 0.322 (10b hybrid) |
+| 2026-11-17 | `6593a05` | `fac7239` | BUILD_GUIDE: Issue 28 (CI collection error from airflow/ folder shadowing) |
+| 2026-11-17 | `6d0ede9` | `f328a8f` | Step 13: k8s manifests - vfl-api Deployment + NodePort 30080, vfl-drift monthly CronJob (Forbid, backoff 2), vfl-config; non-root 10001, no privilege escalation, no secrets |
+| 2026-11-16 | `6e5282d` | `a599116` | 10c-3: Spark compaction + stats (Codex P7j, reviewed) with 34/34 pandas parity |
+| 2026-11-16 | `8da6e3e` | `d503e08` | Step 11 eval set (15 q, reviewed) + Step 12 plumbing: stamp_snapshot, export_har_inputs (Codex P8b) |
+| 2026-11-16 | `ae66164` | `ab94e8d` | 10c-5: Redis search cache + token-bucket rate limiter; live hit 37 ms, burst 10 ok / 5x429 |
+| 2026-11-17 | `b3fd292` | `21fa9fe` | BUILD_GUIDE: Lessons approved by author |
+| 2026-11-16 | `b58ae79` | `907bcbd` | BUILD_GUIDE: Issues 12â€“21 (P8 fixes) |
+| 2026-11-17 | `b8ec6be` | `6674b25` | CI: skip DAG tests when Airflow is not installed (python-tests jobs) |
+| 2026-11-17 | `bc38e03` | `984fdf8` | FINDINGS: Step 11 eval results paragraph |
+| 2026-11-17 | `c924dde` | `8b9b744` | P9: ADRs 0001-0010, ARCHITECTURE, EVIDENCE register (31 claims), deployment diagram |
+| 2026-11-17 | `cc60e24` | `d74dce7` | Step 11 close: per-repeat results, Issues 22-26, BUILD_GUIDE hashes |
+| 2026-11-17 | `cde8289` | `5da226d` | BUILD_GUIDE: Step 10c commit hashes |
+| 2026-11-17 | `d353ace` | `87a1523` | Step 11: log last_rejection; draft prompt forbids model arithmetic (A01 smoke) |
+| 2026-11-17 | `d35aad0` | `53efe6c` | Step 14 DoD: test count 341 passed / 3 skipped on 088744f; CI green |
+| 2026-11-16 | `d3876cc` | `479a395` | 10c-2 evidence: Lambda 266/0 errors, text + chunk parity PASS, Athena 134/132 (2020=7), Kafka replay 266 duplicates; destroyed |
+| 2026-11-17 | `df8e020` | `088744f` | Step 14: README, MIT licence, aggregate charts, FINDINGS/case-study refresh, DoD; history rewrite (licence) + hash remap |
+| 2026-11-16 | `e0d8d94` | `d125fb9` | 10c follow-ups (Codex P8c-P8g): DAG test runner, dev requirements, test isolation, cache versioning, BM25 ablation (post-hoc) |
+| 2026-11-17 | `ebb9ef7` | `c849f27` | Step 13: vol_pipeline DAG (manual, branch smoke/snapshot, 6 analysis + 4 document tasks, retries 1) + DAG tests; 4 passed |
+| 2026-11-17 | `ee6fa31` | `7222a43` | CI: importorskip the real Airflow submodule (repo airflow/ folder shadowed the top-level name) |
+| 2026-11-17 | `ef9e8b9` | `67ec25b` | Step 12: snapshot_id stamped on results tables (stamp_snapshot; original columns unchanged; 325 passed) |
+| 2026-11-16 | `fdbd20d` | `543a35d` | P9a: evidence dashboard (Codex, reviewed) + case study with 10c-2 results |
+Labels such as P3 or P8e in commit subjects are the author's internal brief references.

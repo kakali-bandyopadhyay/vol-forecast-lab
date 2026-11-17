@@ -106,7 +106,7 @@ def main(argv: list[str] | None = None) -> int:
     if not args.documents.is_file():
         print(f"FAIL: documents parquet not found: {args.documents}", file=sys.stderr)
         return 1
-    if not args.spark_stats.exists():  # P7j: Spark writes a folder
+    if not args.spark_stats.exists():  # Spark writes a folder
         print(f"FAIL: Spark stats parquet not found: {args.spark_stats}", file=sys.stderr)
         return 1
     documents = pd.read_parquet(args.documents)

@@ -19,8 +19,10 @@ SOURCES = [
     "results/text/retrieval_eval.parquet",
     "results/losses.parquet",
     "results/tests.parquet",
+    "results/tests_ex_window.parquet",
     "results/holm_final.parquet",
     "results/mlp_tests.parquet",
+    "results/mlp_regimes.parquet",
     "results/q2_summary.parquet",
 ]
 OPTIONAL = [
@@ -89,29 +91,47 @@ def _forecasting(root: Path) -> dict[str, Any]:
                              "loss_ratio_vs_har": avg / har if har else None})
 
     tests = _df(root / "results/tests.parquet")
+    tests_ex_window = _df(root / "results/tests_ex_window.parquet")
     holm = _df(root / "results/holm_final.parquet")
     mlp = _df(root / "results/mlp_tests.parquet")
+    mlp_regimes = _df(root / "results/mlp_regimes.parquet")
     q2 = _df(root / "results/q2_summary.parquet")
     cw: list[dict[str, Any]] = []
+    for _, row in tests_ex_window.loc[tests_ex_window.test == "clark_west"].iterrows():
+        cw.append({"pair": str(row["pair"]), "statistic": _scalar(row["statistic"]),
+                   "pvalue": _scalar(row["pvalue"]), "sample": "ex_window",
+                   "headline": True, "source": "tests_ex_window.parquet"})
     for _, row in tests.loc[tests.test == "clark_west"].iterrows():
         cw.append({"pair": str(row.pair), "statistic": _scalar(row.statistic),
                    "pvalue": _scalar(row.pvalue), "sample": "full",
-                   "source": "tests.parquet"})
+                   "headline": False, "source": "tests.parquet"})
     for _, row in mlp.loc[mlp.test == "clark_west"].iterrows():
         cw.append({"pair": str(row.pair), "statistic": _scalar(row.statistic),
                    "pvalue": _scalar(row.pvalue), "sample": str(row.get("sample", "full")),
                    "source": "mlp_tests.parquet"})
-    holm_rows = [{"pair": str(row.pair), "sample": str(row.sample),
+    holm_rows = [{"pair": str(row["pair"]), "sample": str(row["sample"]),
                   "statistic": _scalar(row.statistic), "holm_p": _scalar(row.holm_p),
                   "reject": str(row.decision).lower() == "reject",
-                  "decision": str(row.decision)} for _, row in holm.iterrows()]
+                  "decision": str(row["decision"])} for _, row in holm.iterrows()]
+    model_tests = [{"test": str(row["test"]), "pair": str(row["pair"]),
+                    "sample": str(row["sample"]), "statistic": _scalar(row["statistic"]),
+                    "pvalue": _scalar(row["pvalue"]), "family": str(row["family"])}
+                   for _, row in mlp.iterrows()]
+    if "M4" not in {row["model"] for row in loss_summary} and not mlp_regimes.empty:
+        full_mlp = mlp_regimes.loc[mlp_regimes["sample"] == "full"]
+        n = int(full_mlp["n"].sum())
+        m4_mean = float((full_mlp["n"] * full_mlp["mean_qlike_m4"]).sum() / n)
+        loss_summary.append({"model": "M4", "horizon": "30d", "mean_loss": m4_mean,
+                             "loss_ratio_vs_har": m4_mean / har if har else None})
     return {"loss_by_model_horizon": loss_summary, "clark_west": cw,
-            "holm": holm_rows,
+            "holm": holm_rows, "model_tests": model_tests,
             "available_columns": {
                 "losses.parquet": list(losses.columns),
                 "tests.parquet": list(tests.columns),
+                "tests_ex_window.parquet": list(tests_ex_window.columns),
                 "holm_final.parquet": list(holm.columns),
                 "mlp_tests.parquet": list(mlp.columns),
+                "mlp_regimes.parquet": list(mlp_regimes.columns),
                 "q2_summary.parquet": list(q2.columns),
             },
             "model_mapping": MODEL_MAPPING,
@@ -207,6 +227,23 @@ def build(root: Path = ROOT, output: Path | None = None) -> dict[str, Any]:
             n=("n", "sum"), recall_at_5=("recall_at_5", "mean"),
             mrr_at_10=("mrr_at_10", "mean"))
     best = overall.loc[overall.recall_at_5.idxmax()] if not overall.empty else None
+    release_comparison = None
+    best_recall = float(best["recall_at_5"]) if best is not None else None
+    best_mode = str(best["mode"]) if best is not None else None
+    ten_c_path = root / "results/text/retrieval_eval_10c.parquet"
+    if ten_c_path.exists():
+        ten_c = _df(ten_c_path)
+        ten_c_overall = ten_c.loc[ten_c["gold_doc_type"].astype(str).str.lower() == "all"]
+        dense_10b = overall.loc[overall["mode"].astype(str) == "dense"]
+        fused_10c = ten_c_overall.loc[ten_c_overall["mode"].astype(str) == "fused_os"]
+        if not dense_10b.empty and not fused_10c.empty:
+            dense_row, fused_row = dense_10b.iloc[0], fused_10c.iloc[0]
+            release_comparison = {
+                "10b_dense": {"label": "10b dense", "recall_at_5": float(dense_row["recall_at_5"])},
+                "10c_fused": {"label": "10c fused", "recall_at_5": float(fused_row["recall_at_5"])},
+            }
+            best_recall = float(fused_row["recall_at_5"])
+            best_mode = "fused (10c)"
     counts = manifest.get("counts", {})
     corpus_counts = counts.get("extract", {})
     chunk_counts = counts.get("chunk", {})
@@ -247,8 +284,10 @@ def build(root: Path = ROOT, output: Path | None = None) -> dict[str, Any]:
                 retrieval.gold_doc_type.astype(str).str.lower() != "all"],
                 ["mode", "gold_doc_type"]),
             "question_grid": question_grid,
-            "best_mode": str(best["mode"]) if best is not None else None,
-            "best_recall_at_5": float(best["recall_at_5"]) if best is not None else None,
+            "best_mode": best_mode,
+            "best_recall_at_5": best_recall,
+            "best_mode_label": best_mode,
+            "release_comparison": release_comparison,
             "question_count": question_count,
         },
         "forecasting": _forecasting(root),

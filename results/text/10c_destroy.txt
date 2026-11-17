@@ -1,0 +1,766 @@
+Sanitised 17 Nov 2026: account ID, user, bucket suffix and request IDs redacted; colour codes removed.
+random_id.vfl_bucket_suffix: Refreshing state... [id=H39r]
+data.aws_caller_identity.current: Reading...
+aws_cloudwatch_log_group.vfl_extract: Refreshing state... [id=/aws/lambda/vfl-extract]
+aws_iam_role.vfl_extract: Refreshing state... [id=vfl-extract-role]
+aws_s3_bucket.vfl_docs: Refreshing state... [id=vfl-docs-<suffix>]
+aws_glue_catalog_database.vfl_docs: Refreshing state... [id=<ACCOUNT_ID>:vfl_docs]
+aws_ecr_repository.vfl_extract: Refreshing state... [id=vfl-extract]
+data.aws_caller_identity.current: Read complete after 0s [id=<ACCOUNT_ID>]
+aws_ecr_repository_policy.vfl_extract: Refreshing state... [id=vfl-extract]
+aws_ecr_lifecycle_policy.vfl_extract: Refreshing state... [id=vfl-extract]
+aws_lambda_function.vfl_extract[0]: Refreshing state... [id=vfl-extract]
+aws_s3_bucket_public_access_block.vfl_docs: Refreshing state... [id=vfl-docs-<suffix>]
+aws_s3_bucket_versioning.vfl_docs: Refreshing state... [id=vfl-docs-<suffix>]
+aws_iam_role_policy.vfl_extract: Refreshing state... [id=vfl-extract-role:vfl-extract-policy]
+aws_lambda_permission.vfl_s3_invoke[0]: Refreshing state... [id=vfl-allow-s3-invoke]
+aws_athena_workgroup.vfl_docs: Refreshing state... [id=vfl-wg]
+aws_s3_bucket_lifecycle_configuration.vfl_docs: Refreshing state... [id=vfl-docs-<suffix>]
+aws_s3_bucket_server_side_encryption_configuration.vfl_docs: Refreshing state... [id=vfl-docs-<suffix>]
+aws_glue_catalog_table.vfl_documents_clean: Refreshing state... [id=<ACCOUNT_ID>:vfl_docs:vfl_documents_clean]
+aws_s3_bucket_notification.vfl_raw_objects[0]: Refreshing state... [id=vfl-docs-<suffix>]
+
+Terraform used the selected providers to generate the following execution
+plan. Resource actions are indicated with the following symbols:
+  - destroy
+
+Terraform will perform the following actions:
+
+  # aws_athena_workgroup.vfl_docs will be destroyed
+  - resource "aws_athena_workgroup" "vfl_docs" {
+      - arn           = "arn:aws:athena:us-east-1:<ACCOUNT_ID>:workgroup/vfl-wg" -> null
+      - force_destroy = true -> null
+      - id            = "vfl-wg" -> null
+      - name          = "vfl-wg" -> null
+      - region        = "us-east-1" -> null
+      - state         = "ENABLED" -> null
+      - tags          = {} -> null
+      - tags_all      = {
+          - "managed_by" = "terraform"
+          - "project"    = "vol-forecast-lab"
+        } -> null
+        # (1 unchanged attribute hidden)
+
+      - configuration {
+          - bytes_scanned_cutoff_per_query          = 104857600 -> null
+          - enable_minimum_encryption_configuration = false -> null
+          - enforce_workgroup_configuration         = true -> null
+          - publish_cloudwatch_metrics_enabled      = true -> null
+          - requester_pays_enabled                  = false -> null
+            # (1 unchanged attribute hidden)
+
+          - engine_version {
+              - effective_engine_version = "Athena engine version 3" -> null
+              - selected_engine_version  = "Athena engine version 3" -> null
+            }
+
+          - result_configuration {
+              - output_location       = "s3://vfl-docs-<suffix>/athena-results/" -> null
+                # (1 unchanged attribute hidden)
+            }
+        }
+    }
+
+  # aws_cloudwatch_log_group.vfl_extract will be destroyed
+  - resource "aws_cloudwatch_log_group" "vfl_extract" {
+      - arn                         = "arn:aws:logs:us-east-1:<ACCOUNT_ID>:log-group:/aws/lambda/vfl-extract" -> null
+      - deletion_protection_enabled = false -> null
+      - id                          = "/aws/lambda/vfl-extract" -> null
+      - log_group_class             = "STANDARD" -> null
+      - name                        = "/aws/lambda/vfl-extract" -> null
+      - region                      = "us-east-1" -> null
+      - retention_in_days           = 7 -> null
+      - skip_destroy                = false -> null
+      - tags                        = {} -> null
+      - tags_all                    = {
+          - "managed_by" = "terraform"
+          - "project"    = "vol-forecast-lab"
+        } -> null
+        # (2 unchanged attributes hidden)
+    }
+
+  # aws_ecr_lifecycle_policy.vfl_extract will be destroyed
+  - resource "aws_ecr_lifecycle_policy" "vfl_extract" {
+      - id          = "vfl-extract" -> null
+      - policy      = jsonencode(
+            {
+              - rules = [
+                  - {
+                      - action       = {
+                          - type = "expire"
+                        }
+                      - description  = "Keep the last 3 images"
+                      - rulePriority = 1
+                      - selection    = {
+                          - countNumber = 3
+                          - countType   = "imageCountMoreThan"
+                          - tagStatus   = "any"
+                        }
+                    },
+                ]
+            }
+        ) -> null
+      - region      = "us-east-1" -> null
+      - registry_id = "<ACCOUNT_ID>" -> null
+      - repository  = "vfl-extract" -> null
+    }
+
+  # aws_ecr_repository.vfl_extract will be destroyed
+  - resource "aws_ecr_repository" "vfl_extract" {
+      - arn                  = "arn:aws:ecr:us-east-1:<ACCOUNT_ID>:repository/vfl-extract" -> null
+      - force_delete         = true -> null
+      - id                   = "vfl-extract" -> null
+      - image_tag_mutability = "IMMUTABLE" -> null
+      - name                 = "vfl-extract" -> null
+      - region               = "us-east-1" -> null
+      - registry_id          = "<ACCOUNT_ID>" -> null
+      - repository_url       = "<ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com/vfl-extract" -> null
+      - tags                 = {} -> null
+      - tags_all             = {
+          - "managed_by" = "terraform"
+          - "project"    = "vol-forecast-lab"
+        } -> null
+
+      - encryption_configuration {
+          - encryption_type = "AES256" -> null
+            # (1 unchanged attribute hidden)
+        }
+
+      - image_scanning_configuration {
+          - scan_on_push = true -> null
+        }
+    }
+
+  # aws_ecr_repository_policy.vfl_extract will be destroyed
+  - resource "aws_ecr_repository_policy" "vfl_extract" {
+      - id          = "vfl-extract" -> null
+      - policy      = jsonencode(
+            {
+              - Statement = [
+                  - {
+                      - Action    = [
+                          - "ecr:BatchGetImage",
+                          - "ecr:GetDownloadUrlForLayer",
+                        ]
+                      - Condition = {
+                          - StringLike = {
+                              - "aws:sourceArn" = "arn:aws:lambda:us-east-1:<ACCOUNT_ID>:function:vfl-extract"
+                            }
+                        }
+                      - Effect    = "Allow"
+                      - Principal = {
+                          - Service = "lambda.amazonaws.com"
+                        }
+                      - Sid       = "VflLambdaPull"
+                    },
+                ]
+              - Version   = "2012-10-17"
+            }
+        ) -> null
+      - region      = "us-east-1" -> null
+      - registry_id = "<ACCOUNT_ID>" -> null
+      - repository  = "vfl-extract" -> null
+    }
+
+  # aws_glue_catalog_database.vfl_docs will be destroyed
+  - resource "aws_glue_catalog_database" "vfl_docs" {
+      - arn          = "arn:aws:glue:us-east-1:<ACCOUNT_ID>:database/vfl_docs" -> null
+      - catalog_id   = "<ACCOUNT_ID>" -> null
+      - id           = "<ACCOUNT_ID>:vfl_docs" -> null
+      - name         = "vfl_docs" -> null
+      - parameters   = {} -> null
+      - region       = "us-east-1" -> null
+      - tags         = {} -> null
+      - tags_all     = {
+          - "managed_by" = "terraform"
+          - "project"    = "vol-forecast-lab"
+        } -> null
+        # (2 unchanged attributes hidden)
+
+      - create_table_default_permission {
+          - permissions = [
+              - "ALL",
+            ] -> null
+
+          - principal {
+              - data_lake_principal_identifier = "IAM_ALLOWED_PRINCIPALS" -> null
+            }
+        }
+    }
+
+  # aws_glue_catalog_table.vfl_documents_clean will be destroyed
+  - resource "aws_glue_catalog_table" "vfl_documents_clean" {
+      - arn                = "arn:aws:glue:us-east-1:<ACCOUNT_ID>:table/vfl_docs/vfl_documents_clean" -> null
+      - catalog_id         = "<ACCOUNT_ID>" -> null
+      - database_name      = "vfl_docs" -> null
+      - id                 = "<ACCOUNT_ID>:vfl_docs:vfl_documents_clean" -> null
+      - name               = "vfl_documents_clean" -> null
+      - parameters         = {
+          - "EXTERNAL"                   = "TRUE"
+          - "classification"             = "parquet"
+          - "projection.doc_type.type"   = "enum"
+          - "projection.doc_type.values" = "statement,minutes"
+          - "projection.enabled"         = "true"
+          - "projection.year.range"      = "2010,2030"
+          - "projection.year.type"       = "integer"
+          - "storage.location.template"  = "s3://vfl-docs-<suffix>/clean/year=${year}/doc_type=${doc_type}/"
+        } -> null
+      - region             = "us-east-1" -> null
+      - retention          = 0 -> null
+      - table_type         = "EXTERNAL_TABLE" -> null
+        # (4 unchanged attributes hidden)
+
+      - partition_keys {
+          - name       = "year" -> null
+          - parameters = {} -> null
+          - type       = "string" -> null
+            # (1 unchanged attribute hidden)
+        }
+      - partition_keys {
+          - name       = "doc_type" -> null
+          - parameters = {} -> null
+          - type       = "string" -> null
+            # (1 unchanged attribute hidden)
+        }
+
+      - storage_descriptor {
+          - additional_locations      = [] -> null
+          - bucket_columns            = [] -> null
+          - compressed                = false -> null
+          - input_format              = "org.apache.hadoop.hive.ql.io.parquet.MapredParquetInputFormat" -> null
+          - location                  = "s3://vfl-docs-<suffix>/clean/" -> null
+          - number_of_buckets         = 0 -> null
+          - output_format             = "org.apache.hadoop.hive.ql.io.parquet.MapredParquetOutputFormat" -> null
+          - parameters                = {} -> null
+          - stored_as_sub_directories = false -> null
+
+          - columns {
+              - name       = "doc_id" -> null
+              - parameters = {} -> null
+              - type       = "string" -> null
+                # (1 unchanged attribute hidden)
+            }
+          - columns {
+              - name       = "event_date" -> null
+              - parameters = {} -> null
+              - type       = "date" -> null
+                # (1 unchanged attribute hidden)
+            }
+          - columns {
+              - name       = "url" -> null
+              - parameters = {} -> null
+              - type       = "string" -> null
+                # (1 unchanged attribute hidden)
+            }
+          - columns {
+              - name       = "sha256" -> null
+              - parameters = {} -> null
+              - type       = "string" -> null
+                # (1 unchanged attribute hidden)
+            }
+          - columns {
+              - name       = "text" -> null
+              - parameters = {} -> null
+              - type       = "string" -> null
+                # (1 unchanged attribute hidden)
+            }
+          - columns {
+              - name       = "n_chars" -> null
+              - parameters = {} -> null
+              - type       = "int" -> null
+                # (1 unchanged attribute hidden)
+            }
+          - columns {
+              - name       = "page_count" -> null
+              - parameters = {} -> null
+              - type       = "int" -> null
+                # (1 unchanged attribute hidden)
+            }
+          - columns {
+              - name       = "extractor_version" -> null
+              - parameters = {} -> null
+              - type       = "string" -> null
+                # (1 unchanged attribute hidden)
+            }
+          - columns {
+              - name       = "extracted_at" -> null
+              - parameters = {} -> null
+              - type       = "timestamp" -> null
+                # (1 unchanged attribute hidden)
+            }
+          - columns {
+              - name       = "votes_against" -> null
+              - parameters = {} -> null
+              - type       = "array<string>" -> null
+                # (1 unchanged attribute hidden)
+            }
+          - columns {
+              - name       = "vote_tally" -> null
+              - parameters = {} -> null
+              - type       = "string" -> null
+                # (1 unchanged attribute hidden)
+            }
+          - columns {
+              - name       = "blocks_dropped" -> null
+              - parameters = {} -> null
+              - type       = "int" -> null
+                # (1 unchanged attribute hidden)
+            }
+          - columns {
+              - name       = "paragraph_texts" -> null
+              - parameters = {} -> null
+              - type       = "array<string>" -> null
+                # (1 unchanged attribute hidden)
+            }
+          - columns {
+              - name       = "paragraph_pages" -> null
+              - parameters = {} -> null
+              - type       = "array<int>" -> null
+                # (1 unchanged attribute hidden)
+            }
+
+          - ser_de_info {
+              - name                  = "vfl-parquet-serde" -> null
+              - parameters            = {} -> null
+              - serialization_library = "org.apache.hadoop.hive.ql.io.parquet.serde.ParquetHiveSerDe" -> null
+            }
+        }
+    }
+
+  # aws_iam_role.vfl_extract will be destroyed
+  - resource "aws_iam_role" "vfl_extract" {
+      - arn                   = "arn:aws:iam::<ACCOUNT_ID>:role/vfl-extract-role" -> null
+      - assume_role_policy    = jsonencode(
+            {
+              - Statement = [
+                  - {
+                      - Action    = "sts:AssumeRole"
+                      - Effect    = "Allow"
+                      - Principal = {
+                          - Service = "lambda.amazonaws.com"
+                        }
+                    },
+                ]
+              - Version   = "2012-10-17"
+            }
+        ) -> null
+      - create_date           = "2026-11-16T10:15:45Z" -> null
+      - force_detach_policies = false -> null
+      - id                    = "vfl-extract-role" -> null
+      - managed_policy_arns   = [] -> null
+      - max_session_duration  = 3600 -> null
+      - name                  = "vfl-extract-role" -> null
+      - path                  = "/" -> null
+      - tags                  = {} -> null
+      - tags_all              = {
+          - "managed_by" = "terraform"
+          - "project"    = "vol-forecast-lab"
+        } -> null
+      - unique_id             = "AROA5IU7X7FZ2HH5WX3MD" -> null
+        # (3 unchanged attributes hidden)
+
+      - inline_policy {
+          - name   = "vfl-extract-policy" -> null
+          - policy = jsonencode(
+                {
+                  - Statement = [
+                      - {
+                          - Action   = [
+                              - "s3:GetObject",
+                            ]
+                          - Effect   = "Allow"
+                          - Resource = "arn:aws:s3:::vfl-docs-<suffix>/raw/*"
+                        },
+                      - {
+                          - Action   = [
+                              - "s3:PutObject",
+                            ]
+                          - Effect   = "Allow"
+                          - Resource = "arn:aws:s3:::vfl-docs-<suffix>/clean/*"
+                        },
+                      - {
+                          - Action   = [
+                              - "logs:CreateLogStream",
+                              - "logs:PutLogEvents",
+                            ]
+                          - Effect   = "Allow"
+                          - Resource = "arn:aws:logs:us-east-1:<ACCOUNT_ID>:log-group:/aws/lambda/vfl-extract:*"
+                        },
+                    ]
+                  - Version   = "2012-10-17"
+                }
+            ) -> null
+        }
+    }
+
+  # aws_iam_role_policy.vfl_extract will be destroyed
+  - resource "aws_iam_role_policy" "vfl_extract" {
+      - id          = "vfl-extract-role:vfl-extract-policy" -> null
+      - name        = "vfl-extract-policy" -> null
+      - policy      = jsonencode(
+            {
+              - Statement = [
+                  - {
+                      - Action   = [
+                          - "s3:GetObject",
+                        ]
+                      - Effect   = "Allow"
+                      - Resource = "arn:aws:s3:::vfl-docs-<suffix>/raw/*"
+                    },
+                  - {
+                      - Action   = [
+                          - "s3:PutObject",
+                        ]
+                      - Effect   = "Allow"
+                      - Resource = "arn:aws:s3:::vfl-docs-<suffix>/clean/*"
+                    },
+                  - {
+                      - Action   = [
+                          - "logs:CreateLogStream",
+                          - "logs:PutLogEvents",
+                        ]
+                      - Effect   = "Allow"
+                      - Resource = "arn:aws:logs:us-east-1:<ACCOUNT_ID>:log-group:/aws/lambda/vfl-extract:*"
+                    },
+                ]
+              - Version   = "2012-10-17"
+            }
+        ) -> null
+      - role        = "vfl-extract-role" -> null
+        # (1 unchanged attribute hidden)
+    }
+
+  # aws_lambda_function.vfl_extract[0] will be destroyed
+  - resource "aws_lambda_function" "vfl_extract" {
+      - architectures                  = [
+          - "x86_64",
+        ] -> null
+      - arn                            = "arn:aws:lambda:us-east-1:<ACCOUNT_ID>:function:vfl-extract" -> null
+      - code_sha256                    = "34fbbb29e0ff102467801a158a8bf1b5214c25d319c6ef458fded548acefde13" -> null
+      - function_name                  = "vfl-extract" -> null
+      - id                             = "vfl-extract" -> null
+      - image_uri                      = "<ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com/vfl-extract@sha256:34fbbb29e0ff102467801a158a8bf1b5214c25d319c6ef458fded548acefde13" -> null
+      - invoke_arn                     = "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:<ACCOUNT_ID>:function:vfl-extract/invocations" -> null
+      - last_modified                  = "2026-11-16T10:15:55.375+0000" -> null
+      - layers                         = [] -> null
+      - memory_size                    = 1024 -> null
+      - package_type                   = "Image" -> null
+      - publish                        = false -> null
+      - qualified_arn                  = "arn:aws:lambda:us-east-1:<ACCOUNT_ID>:function:vfl-extract:$LATEST" -> null
+      - qualified_invoke_arn           = "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:<ACCOUNT_ID>:function:vfl-extract:$LATEST/invocations" -> null
+      - region                         = "us-east-1" -> null
+      - reserved_concurrent_executions = -1 -> null
+      - response_streaming_invoke_arn  = "arn:aws:apigateway:us-east-1:lambda:path/2021-11-15/functions/arn:aws:lambda:us-east-1:<ACCOUNT_ID>:function:vfl-extract/response-streaming-invocations" -> null
+      - role                           = "arn:aws:iam::<ACCOUNT_ID>:role/vfl-extract-role" -> null
+      - skip_destroy                   = false -> null
+      - source_code_size               = 0 -> null
+      - tags                           = {} -> null
+      - tags_all                       = {
+          - "managed_by" = "terraform"
+          - "project"    = "vol-forecast-lab"
+        } -> null
+      - timeout                        = 60 -> null
+      - version                        = "$LATEST" -> null
+        # (9 unchanged attributes hidden)
+
+      - environment {
+          - variables = {
+              - "CLEAN_PREFIX" = "clean/"
+            } -> null
+        }
+
+      - ephemeral_storage {
+          - size = 512 -> null
+        }
+
+      - logging_config {
+          - log_format            = "Text" -> null
+          - log_group             = "/aws/lambda/vfl-extract" -> null
+            # (2 unchanged attributes hidden)
+        }
+
+      - tracing_config {
+          - mode = "PassThrough" -> null
+        }
+    }
+
+  # aws_lambda_permission.vfl_s3_invoke[0] will be destroyed
+  - resource "aws_lambda_permission" "vfl_s3_invoke" {
+      - action                 = "lambda:InvokeFunction" -> null
+      - function_name          = "vfl-extract" -> null
+      - id                     = "vfl-allow-s3-invoke" -> null
+      - principal              = "s3.amazonaws.com" -> null
+      - region                 = "us-east-1" -> null
+      - source_account         = "<ACCOUNT_ID>" -> null
+      - source_arn             = "arn:aws:s3:::vfl-docs-<suffix>" -> null
+      - statement_id           = "vfl-allow-s3-invoke" -> null
+        # (5 unchanged attributes hidden)
+    }
+
+  # aws_s3_bucket.vfl_docs will be destroyed
+  - resource "aws_s3_bucket" "vfl_docs" {
+      - arn                         = "arn:aws:s3:::vfl-docs-<suffix>" -> null
+      - bucket                      = "vfl-docs-<suffix>" -> null
+      - bucket_domain_name          = "vfl-docs-<suffix>.s3.amazonaws.com" -> null
+      - bucket_namespace            = "global" -> null
+      - bucket_region               = "us-east-1" -> null
+      - bucket_regional_domain_name = "vfl-docs-<suffix>.s3.us-east-1.amazonaws.com" -> null
+      - force_destroy               = true -> null
+      - hosted_zone_id              = "Z3AQBSTGFYJSTF" -> null
+      - id                          = "vfl-docs-<suffix>" -> null
+      - object_lock_enabled         = false -> null
+      - region                      = "us-east-1" -> null
+      - request_payer               = "BucketOwner" -> null
+      - tags                        = {} -> null
+      - tags_all                    = {
+          - "managed_by" = "terraform"
+          - "project"    = "vol-forecast-lab"
+        } -> null
+        # (3 unchanged attributes hidden)
+
+      - grant {
+          - id          = "769c69670281c5554d34a79c2c8043187056d39ad257d23eef08c34d8c2eed90" -> null
+          - permissions = [
+              - "FULL_CONTROL",
+            ] -> null
+          - type        = "CanonicalUser" -> null
+            # (1 unchanged attribute hidden)
+        }
+
+      - lifecycle_rule {
+          - abort_incomplete_multipart_upload_days = 0 -> null
+          - enabled                                = true -> null
+          - id                                     = "vfl-expire-noncurrent-versions" -> null
+          - tags                                   = {} -> null
+            # (1 unchanged attribute hidden)
+
+          - noncurrent_version_expiration {
+              - days = 7 -> null
+            }
+        }
+      - lifecycle_rule {
+          - abort_incomplete_multipart_upload_days = 1 -> null
+          - enabled                                = true -> null
+          - id                                     = "vfl-abort-incomplete-uploads" -> null
+          - tags                                   = {} -> null
+            # (1 unchanged attribute hidden)
+        }
+
+      - server_side_encryption_configuration {
+          - rule {
+              - bucket_key_enabled = false -> null
+
+              - apply_server_side_encryption_by_default {
+                  - sse_algorithm     = "AES256" -> null
+                    # (1 unchanged attribute hidden)
+                }
+            }
+        }
+
+      - versioning {
+          - enabled    = true -> null
+          - mfa_delete = false -> null
+        }
+    }
+
+  # aws_s3_bucket_lifecycle_configuration.vfl_docs will be destroyed
+  - resource "aws_s3_bucket_lifecycle_configuration" "vfl_docs" {
+      - bucket                                 = "vfl-docs-<suffix>" -> null
+      - id                                     = "vfl-docs-<suffix>" -> null
+      - region                                 = "us-east-1" -> null
+      - transition_default_minimum_object_size = "all_storage_classes_128K" -> null
+        # (1 unchanged attribute hidden)
+
+      - rule {
+          - id     = "vfl-expire-noncurrent-versions" -> null
+          - status = "Enabled" -> null
+            # (1 unchanged attribute hidden)
+
+          - filter {
+                # (1 unchanged attribute hidden)
+            }
+
+          - noncurrent_version_expiration {
+              - noncurrent_days = 7 -> null
+            }
+        }
+      - rule {
+          - id     = "vfl-abort-incomplete-uploads" -> null
+          - status = "Enabled" -> null
+            # (1 unchanged attribute hidden)
+
+          - abort_incomplete_multipart_upload {
+              - days_after_initiation = 1 -> null
+            }
+
+          - filter {
+                # (1 unchanged attribute hidden)
+            }
+        }
+    }
+
+  # aws_s3_bucket_notification.vfl_raw_objects[0] will be destroyed
+  - resource "aws_s3_bucket_notification" "vfl_raw_objects" {
+      - bucket      = "vfl-docs-<suffix>" -> null
+      - eventbridge = false -> null
+      - id          = "vfl-docs-<suffix>" -> null
+      - region      = "us-east-1" -> null
+
+      - lambda_function {
+          - events              = [
+              - "s3:ObjectCreated:*",
+            ] -> null
+          - filter_prefix       = "raw/" -> null
+          - id                  = "tf-s3-lambda-20261116101617894900000001" -> null
+          - lambda_function_arn = "arn:aws:lambda:us-east-1:<ACCOUNT_ID>:function:vfl-extract" -> null
+            # (1 unchanged attribute hidden)
+        }
+    }
+
+  # aws_s3_bucket_public_access_block.vfl_docs will be destroyed
+  - resource "aws_s3_bucket_public_access_block" "vfl_docs" {
+      - block_public_acls       = true -> null
+      - block_public_policy     = true -> null
+      - bucket                  = "vfl-docs-<suffix>" -> null
+      - id                      = "vfl-docs-<suffix>" -> null
+      - ignore_public_acls      = true -> null
+      - region                  = "us-east-1" -> null
+      - restrict_public_buckets = true -> null
+    }
+
+  # aws_s3_bucket_server_side_encryption_configuration.vfl_docs will be destroyed
+  - resource "aws_s3_bucket_server_side_encryption_configuration" "vfl_docs" {
+      - bucket                = "vfl-docs-<suffix>" -> null
+      - id                    = "vfl-docs-<suffix>" -> null
+      - region                = "us-east-1" -> null
+        # (1 unchanged attribute hidden)
+
+      - rule {
+          - blocked_encryption_types = [
+              - "SSE-C",
+            ] -> null
+          - bucket_key_enabled       = false -> null
+
+          - apply_server_side_encryption_by_default {
+              - sse_algorithm     = "AES256" -> null
+                # (1 unchanged attribute hidden)
+            }
+        }
+    }
+
+  # aws_s3_bucket_versioning.vfl_docs will be destroyed
+  - resource "aws_s3_bucket_versioning" "vfl_docs" {
+      - bucket                = "vfl-docs-<suffix>" -> null
+      - id                    = "vfl-docs-<suffix>" -> null
+      - region                = "us-east-1" -> null
+        # (1 unchanged attribute hidden)
+
+      - versioning_configuration {
+          - mfa_delete = "Disabled" -> null
+          - status     = "Enabled" -> null
+        }
+    }
+
+  # random_id.vfl_bucket_suffix will be destroyed
+  - resource "random_id" "vfl_bucket_suffix" {
+      - b64_std     = "H39r" -> null
+      - b64_url     = "H39r" -> null
+      - byte_length = 3 -> null
+      - dec         = "2064235" -> null
+      - hex         = "<suffix>" -> null
+      - id          = "H39r" -> null
+    }
+
+Plan: 0 to add, 0 to change, 18 to destroy.
+
+Changes to Outputs:
+  - bucket_name        = "vfl-docs-<suffix>" -> null
+  - ecr_repository_url = "<ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com/vfl-extract" -> null
+  - lambda_name        = "vfl-extract" -> null
+  - workgroup_name     = "vfl-wg" -> null
+aws_iam_role_policy.vfl_extract: Destroying... [id=vfl-extract-role:vfl-extract-policy]
+aws_ecr_lifecycle_policy.vfl_extract: Destroying... [id=vfl-extract]
+aws_s3_bucket_versioning.vfl_docs: Destroying... [id=vfl-docs-<suffix>]
+aws_ecr_repository_policy.vfl_extract: Destroying... [id=vfl-extract]
+aws_s3_bucket_public_access_block.vfl_docs: Destroying... [id=vfl-docs-<suffix>]
+aws_athena_workgroup.vfl_docs: Destroying... [id=vfl-wg]
+aws_s3_bucket_server_side_encryption_configuration.vfl_docs: Destroying... [id=vfl-docs-<suffix>]
+aws_s3_bucket_notification.vfl_raw_objects[0]: Destroying... [id=vfl-docs-<suffix>]
+aws_glue_catalog_table.vfl_documents_clean: Destroying... [id=<ACCOUNT_ID>:vfl_docs:vfl_documents_clean]
+aws_s3_bucket_lifecycle_configuration.vfl_docs: Destroying... [id=vfl-docs-<suffix>]
+aws_athena_workgroup.vfl_docs: Destruction complete after 1s
+aws_iam_role_policy.vfl_extract: Destruction complete after 1s
+aws_ecr_repository_policy.vfl_extract: Destruction complete after 1s
+aws_glue_catalog_table.vfl_documents_clean: Destruction complete after 1s
+aws_ecr_lifecycle_policy.vfl_extract: Destruction complete after 1s
+aws_glue_catalog_database.vfl_docs: Destroying... [id=<ACCOUNT_ID>:vfl_docs]
+aws_s3_bucket_public_access_block.vfl_docs: Destruction complete after 1s
+aws_ecr_repository.vfl_extract: Destroying... [id=vfl-extract]
+aws_s3_bucket_lifecycle_configuration.vfl_docs: Destruction complete after 1s
+aws_s3_bucket_server_side_encryption_configuration.vfl_docs: Destruction complete after 1s
+aws_s3_bucket_versioning.vfl_docs: Destruction complete after 1s
+aws_ecr_repository.vfl_extract: Destruction complete after 0s
+aws_s3_bucket_notification.vfl_raw_objects[0]: Destruction complete after 2s
+aws_lambda_permission.vfl_s3_invoke[0]: Destroying... [id=vfl-allow-s3-invoke]
+aws_lambda_permission.vfl_s3_invoke[0]: Destruction complete after 1s
+aws_lambda_function.vfl_extract[0]: Destroying... [id=vfl-extract]
+aws_s3_bucket.vfl_docs: Destroying... [id=vfl-docs-<suffix>]
+aws_s3_bucket.vfl_docs: Destruction complete after 3s
+random_id.vfl_bucket_suffix: Destroying... [id=H39r]
+random_id.vfl_bucket_suffix: Destruction complete after 0s
+aws_lambda_function.vfl_extract[0]: Destruction complete after 5s
+aws_cloudwatch_log_group.vfl_extract: Destroying... [id=/aws/lambda/vfl-extract]
+aws_iam_role.vfl_extract: Destroying... [id=vfl-extract-role]
+aws_iam_role.vfl_extract: Destruction complete after 1s
+aws_cloudwatch_log_group.vfl_extract: Destruction complete after 2s
+ Error: deleting Glue Catalog Database (<ACCOUNT_ID>:vfl_docs): operation error Glue: DeleteDatabase, https response error StatusCode: 400, RequestID: <REQUEST_ID>, AccessDeniedException: User: arn:aws:iam::<ACCOUNT_ID>:user/<BUILD_USER> is not authorized to perform: glue:DeleteDatabase on resource: 
+arn:aws:glue:us-east-1:<ACCOUNT_ID>:userDefinedFunction/vfl_docs/* because no identity-based policy allows the glue:DeleteDatabase action
+ 
+ 
+
+data.aws_caller_identity.current: Reading...
+aws_glue_catalog_database.vfl_docs: Refreshing state... [id=<ACCOUNT_ID>:vfl_docs]
+data.aws_caller_identity.current: Read complete after 0s [id=<ACCOUNT_ID>]
+
+Terraform used the selected providers to generate the following execution
+plan. Resource actions are indicated with the following symbols:
+  - destroy
+
+Terraform will perform the following actions:
+
+  # aws_glue_catalog_database.vfl_docs will be destroyed
+  - resource "aws_glue_catalog_database" "vfl_docs" {
+      - arn          = "arn:aws:glue:us-east-1:<ACCOUNT_ID>:database/vfl_docs" -> null
+      - catalog_id   = "<ACCOUNT_ID>" -> null
+      - id           = "<ACCOUNT_ID>:vfl_docs" -> null
+      - name         = "vfl_docs" -> null
+      - parameters   = {} -> null
+      - region       = "us-east-1" -> null
+      - tags         = {} -> null
+      - tags_all     = {
+          - "managed_by" = "terraform"
+          - "project"    = "vol-forecast-lab"
+        } -> null
+        # (2 unchanged attributes hidden)
+
+      - create_table_default_permission {
+          - permissions = [
+              - "ALL",
+            ] -> null
+
+          - principal {
+              - data_lake_principal_identifier = "IAM_ALLOWED_PRINCIPALS" -> null
+            }
+        }
+    }
+
+Plan: 0 to add, 0 to change, 1 to destroy.
+
+Changes to Outputs:
+  - lambda_name    = "vfl-extract" -> null
+  - workgroup_name = "vfl-wg" -> null
+aws_glue_catalog_database.vfl_docs: Destroying... [id=<ACCOUNT_ID>:vfl_docs]
+aws_glue_catalog_database.vfl_docs: Destruction complete after 1s
+
+Destroy complete! Resources: 1 destroyed.
+

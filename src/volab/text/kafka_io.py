@@ -12,7 +12,7 @@ RAW_EVENT = "raw"
 CLEAN_EVENT = "clean"
 DOC_TYPES = frozenset({"statement", "minutes"})
 EVENTS = frozenset({RAW_EVENT, CLEAN_EVENT})
-DEFAULT_BOOTSTRAP = "127.0.0.1:9092"  # Codex fix (P8e)
+DEFAULT_BOOTSTRAP = "127.0.0.1:9092"  # Codex fix (10c review, 16 Nov)
 DEFAULT_DLQ_TOPIC = "docs.dlq"
 
 
@@ -232,3 +232,4 @@ def consume(
     finally:
         if created:
             consumer.close()
+

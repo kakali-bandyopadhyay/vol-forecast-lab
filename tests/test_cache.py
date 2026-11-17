@@ -34,13 +34,13 @@ def test_query_key_includes_k_and_mode():
     assert cache.make_key("rates", None, None, None, 5, "bm25") != base
 
 
-def test_query_key_includes_index_version(monkeypatch):  # Codex fix (P8e)
+def test_query_key_includes_index_version(monkeypatch):  # Codex fix (10c review, 16 Nov)
     base = cache.make_key("rates", None, None, None, 5, "hybrid")
     monkeypatch.setattr(cache, "INDEX_VERSION", "v2")
     assert cache.make_key("rates", None, None, None, 5, "hybrid") != base
 
 
-def test_flush_search_cache_preserves_rate_limit_keys(redis_client):  # Codex fix (P8e)
+def test_flush_search_cache_preserves_rate_limit_keys(redis_client):  # Codex fix (10c review, 16 Nov)
     redis_client.set("vfl:search:first", "1")
     redis_client.set("vfl:search:second", "2")
     redis_client.set("vfl:ratelimit:client", "3")

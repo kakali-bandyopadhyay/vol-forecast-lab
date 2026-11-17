@@ -12,7 +12,7 @@ HITS_KEY = "vfl:metrics:hits"
 MISSES_KEY = "vfl:metrics:misses"
 RATE_LIMITED_KEY = "vfl:metrics:rate_limited"
 RATE_LIMIT_PREFIX = "vfl:ratelimit:"
-INDEX_VERSION = os.getenv("VFL_INDEX_VERSION", "v1")  # Codex fix (P8e)
+INDEX_VERSION = os.getenv("VFL_INDEX_VERSION", "v1")  # Codex fix (10c review, 16 Nov)
 
 TOKEN_BUCKET_LUA = """
 local key = KEYS[1]
@@ -63,13 +63,13 @@ def make_key(
         "" if doc_type is None else str(doc_type),
         str(k),
         str(mode),
-        INDEX_VERSION,  # Codex fix (P8e)
+        INDEX_VERSION,  # Codex fix (10c review, 16 Nov)
     ]
     return "vfl:search:" + hashlib.sha256("|".join(parts).encode("utf-8")).hexdigest()
 
 
 def flush_search_cache(client) -> int:
-    """Delete search response keys using Redis SCAN, returning the deleted count.  # Codex fix (P8e)"""
+    """Delete search response keys using Redis SCAN, returning the deleted count.  # Codex fix (10c review, 16 Nov)"""
     deleted = 0
     batch: list[str] = []
     for key in client.scan_iter(match="vfl:search:*", count=500):
@@ -134,3 +134,4 @@ def get_metrics(client) -> dict[str, Any]:
         "hit_rate": hits / total if total else 0.0,
         "rate_limited": int(client.get(RATE_LIMITED_KEY) or 0),
     }
+

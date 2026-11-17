@@ -10,6 +10,11 @@ before anything else runs; the snapshot ID is stamped into every results table a
 Raw and snapshot folders are git-ignored, and so are per-date result series (forecasts, losses, HAR inputs; removed from history on 17 Nov 2026, `docs/history_rewrite.md`). Public outputs (FINDINGS, dashboard) carry statistics and
 aggregates only — never price, return, realised-variance or forecast series.
 
+**Second rewrite (17 Nov 2026).** The 67 ex-dividend-day rows remain in commits before this release
+so tag `v0.1-prereg` is never moved (PREREGISTRATION §12). Their retention is disclosed here; those
+rows have been removed from the current tree. `results/drift_report.parquet` and figure 2 (monthly
+QLIKE ratio and PSI) remain as aggregates that cannot be inverted to prices or VIX.
+
 **Alternatives rejected.** Fetch-on-run (results drift with vendor revisions); committing the data
 (licence breach).
 

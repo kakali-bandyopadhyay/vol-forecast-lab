@@ -12,7 +12,7 @@ from volab.text import index as qdrant_index
 INDEX = "fomc_chunks_v1"
 
 MAPPING = {
-    "settings": {"index": {"number_of_shards": 1, "number_of_replicas": 0}},  # Codex fix (P8e)
+    "settings": {"index": {"number_of_shards": 1, "number_of_replicas": 0}},  # Codex fix (10c review, 16 Nov)
     "mappings": {
         "properties": {
             "chunk_id": {"type": "keyword"},
@@ -133,3 +133,4 @@ def rrf(rankings: list[list[str]], k: int = 60) -> list[tuple[str, float]]:
                 order += 1
             scores[chunk_id] = scores.get(chunk_id, 0.0) + 1.0 / (k + rank)
     return sorted(scores.items(), key=lambda item: (-item[1], first_seen[item[0]]))
+

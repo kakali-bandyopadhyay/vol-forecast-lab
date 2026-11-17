@@ -14,7 +14,7 @@ from the repo (AWS rows needed a live account on 16 Nov 2026 and cannot be re-ru
 | R1 | Test set | 1,703 forecasts, 82 refit blocks, 2020-01-02 → 2026-10-12 | `results/eval_manifest.json` | `python scripts/run_eval.py` | `7775f9d` / `2b5358f` |
 | R2 | Q1 headline: VIX-implied variance adds information beyond HAR outside Feb–Apr 2020 | Clark–West t = 3.14, one-sided p = 0.0009, n = 1,632 | `results/tests_ex_window.parquet` | `run_eval.py`; window rule in `prereg/DEVIATIONS.md` (`5c718a1`) | `7775f9d` / `2b5358f`; `76ddb6d` / `11f25f8` |
 | R3 | Q1 full sample: not detected | t = 1.557, p = 0.0597 | `results/tests.parquet` | as R2 | `7775f9d` / `2b5358f` |
-| R4 | Spring 2020 dominates MSE | 71 forecasts (4%) carry 92% of HAR's squared error | `results/window_rule.parquet` | as R2 | `76ddb6d` / `11f25f8` |
+| R4 | Spring 2020 dominates MSE | 71 forecasts (4%) carry 92% of HAR's squared error and 91% of HAR-X's | `results/loss_summary.json`, `results/losses.parquet` | `run_eval.py`; window rule in `prereg/DEVIATIONS.md` | `76ddb6d` / `11f25f8` |
 | R5 | Harness detects a one-session leak | RV_{t+1} in M1 cuts QLIKE by 10.5% | FINDINGS Step 7 (leaky forecasts not written) | `planted_leak_drop()` in `scripts/run_eval.py` (manifest field `planted_leak_qlike_drop`); synthetic test with shuffled placebo in `tests/test_stats.py` | `7775f9d` / `2b5358f` |
 | R6 | No DM comparison detected after the final Holm family | Holm p: M2 v M1 1.000, M4 v M2 1.000, M1 v M3 1.000, M1 v M0 0.107 (full) | `results/holm_final.parquet` | `python scripts/run_holm.py` | `a79e370` / `9127253` |
 | R7 | GARCH(1,1) all folds converged | 82/82, max α+β = 0.974 | `results/garch_fits.parquet` | `run_eval.py` | `5948af1` / `d622b82` |
@@ -30,28 +30,28 @@ from the repo (AWS rows needed a live account on 16 Nov 2026 and cannot be re-ru
 |---|---|---|---|---|---|
 | P1 | Corpus | 134 statements + 132 minutes = 266 docs → 6,620 chunks, 1.50M tokens; 2 DQ flags (1 known gap, 1 not yet released) | `results/text/text_manifest.json`, `dq_flags.parquet` | `python scripts/run_text_pipeline.py` | `f8b2891` |
 | P2 | Extraction is deterministic | fresh extraction reproduces `documents.parquet` exactly | FINDINGS 10b | re-run extract, compare hash | `5ca9321` |
-| P3 | Index is idempotent | Qdrant 6,620 then 0 upserts; OpenSearch 6,620 created → 6,620 updated | FINDINGS 10b, 10c-4 | second run of the indexer | 10b / `59ff3f6` |
-| P4 | Fused BM25 + dense beats either alone (15 frozen questions) | recall@5 / hit@5 / MRR@10: fused 0.589 / 0.667 / 0.402; dense 0.389 / 0.467 / 0.286; BM25 0.367 / 0.400 / 0.288 | `results/text/retrieval_eval_10c.parquet` | `python scripts/run_eval_10c.py` (load `.env`; check `_count` = 6,620 before and after) | `59ff3f6` |
+| P3 | Index is idempotent | Qdrant 6,620 then 0 upserts; OpenSearch 6,620 created → 6,620 updated | FINDINGS 10b, 10c-4 | second run of the indexer | 10b / `f100594` |
+| P4 | Fused BM25 + dense scored higher (n = 15 questions, no test; second design on the same frozen set) | recall@5 / hit@5 / MRR@10: fused 0.589 / 0.667 / 0.402; dense 0.389 / 0.467 / 0.286; BM25 0.367 / 0.400 / 0.288 | `results/text/retrieval_eval_10c.parquet` | `python scripts/run_eval_10c.py` (load `.env`; check `_count` = 6,620 before and after) | `f100594` |
 | P5 | Step 10b hybrid lost to dense (reported miss) | recall@5 0.322 vs 0.389 | `results/text/retrieval_eval.parquet` | `run_text_pipeline.py` eval stage | `f8b2891` |
 | P6 | Kafka: replay suppresses every duplicate | 266 published; indexer 266, DLQ 0; replay 266 suppressed, 0 re-uploaded | `results/text/10c_kafka.json` | `python scripts/run_kafka_consumers.py`; `tests/test_kafka.py` | `068cdae` |
-| P7 | Cloud path equals local path | Lambda 266 / 0 errors; text parity 266/266; chunk parity 6,620 = 6,620 | `results/text/10c_evidence.json` | `python scripts/collect_10c_evidence.py` (live AWS) | `d3876cc` |
-| P8 | Athena cost bounded | ≤ 20,748 bytes per query (billed at the 10 MB minimum); 34 partitions | `results/text/10c_athena.json` | `python scripts/run_athena.py` (live AWS) | `d3876cc` |
-| P9 | Nothing left running | destroy output; `terraform state list` empty | `results/text/10c_destroy.txt` | — | `d3876cc` |
-| P10 | Spark matches pandas | 34/34 groups PASS (counts/dates exact, mean/median ≤ 1e-9) | `results/text/10c_spark_stats.parquet` | `scripts/run_spark.ps1`, `python scripts/check_spark_parity.py` | `6e5282d` |
-| P11 | Cache and limiter work | miss 4,013 ms → hit 37 ms; burst 15 → 10 allowed, 5 × 429; hit_rate 0.917 | FINDINGS 10c-5 | `python scripts/measure_cache_latency.py` | `ae66164` |
+| P7 | Cloud path equals local path | Lambda 266 / 0 errors; text parity 266/266; chunk parity 6,620 = 6,620 | `results/text/10c_evidence.json` | `python scripts/collect_10c_evidence.py` (live AWS) | `479a395` |
+| P8 | Athena cost bounded | ≤ 20,748 bytes per query (billed at the 10 MB minimum); 34 partitions | `results/text/10c_athena.json` | `python scripts/run_athena.py` (live AWS) | `479a395` |
+| P9 | Nothing left running | destroy output; `terraform state list` empty | `results/text/10c_destroy.txt` | — | `479a395` |
+| P10 | Spark matches pandas | 34/34 groups PASS (counts/dates exact, mean/median ≤ 1e-9) | `results/text/10c_spark_stats.parquet` | `scripts/run_spark.ps1`, `python scripts/check_spark_parity.py` | `a599116` |
+| P11 | Cache and limiter work | miss 4,013 ms → hit 37 ms; burst 15 → 10 allowed, 5 × 429; hit_rate 0.917 | FINDINGS 10c-5 | `python scripts/measure_cache_latency.py` | `ab94e8d` |
 
 ## 3. Agent, MLOps, orchestration
 
 | # | Claim | Value | Evidence file | Reproduce / check | Commit |
 |---|---|---|---|---|---|
-| A1 | Agent accuracy (15 pre-registered questions × 3) | 0.844 (38/45); tool choice 45/45; refusals 6/6 | `results/agent/agent_eval.parquet`, `agent_eval_summary.json` | `python scripts/run_agent_eval.py` (OpenAI key; costs ~USD 0.06) | `d353ace`, `3c5f466` |
-| A2 | No unverified number reached an answer | 0 of 45 | as A1 | as A1 | `3c5f466` |
-| A3 | Agent cost and latency | USD 0.064 total; p50 4.1 s, p95 6.9 s | as A1 | as A1 | `3c5f466` |
-| M1 | Drift: model degradation rule | 11 of 79 month-ends degraded; latest (2026-10) not | `results/drift_report.parquet`, `drift_summary.json` | `python scripts/run_drift.py` | `011163b` |
-| M2 | Drift: PSI cannot separate drift from regime variation (reported limit) | 40–78 of 78 month-ends flagged; 46–100% inside training | as M1 | as M1 | `011163b` |
-| O1 | DAG failure rule works | 4 tests passed; forced audit failure → 5 downstream `upstream_failed` | `tests/test_dag_vol_pipeline.py` | `scripts/run_dag_tests.ps1` | `ebb9ef7` |
-| O2 | Manifests valid | kubeconform 4/4 (Kubernetes 1.37.0), also in CI | `docs/step13_evidence.md` | see command in that file | `0574a7a` |
-| O3 | API serves from kind; pod runs non-root | `/health` 200; uid 10001; drift job Complete with the same 11 months as M1 | `docs/step13_evidence.md` | `scripts/kind_up.ps1` | `0574a7a` |
+| A1 | Agent accuracy (15 pre-registered questions × 3) | 0.844 (38/45); tool choice 45/45; refusals 6/6 | `results/agent/agent_eval.parquet`, `agent_eval_summary.json` | `python scripts/run_agent_eval.py` (OpenAI key; costs ~USD 0.06) | `87a1523`, `376abe5` |
+| A2 | No unverified number reached an answer | 0 of 45 | as A1 | as A1 | `376abe5` |
+| A3 | Agent cost and latency | USD 0.064 total; p50 4.1 s, p95 6.9 s | as A1 | as A1 | `376abe5` |
+| M1 | Drift: model degradation rule | 11 of 79 month-ends degraded; latest (2026-10) not | `results/drift_report.parquet`, `drift_summary.json` | `python scripts/run_drift.py` | `e292c9c` |
+| M2 | Drift: PSI cannot separate drift from regime variation (reported limit) | 40–78 of 78 month-ends flagged; 46–100% inside training | as M1 | as M1 | `e292c9c` |
+| O1 | DAG failure rule works | 4 tests passed; forced audit failure → 5 downstream `upstream_failed` | `tests/test_dag_vol_pipeline.py` | `scripts/run_dag_tests.ps1` | `c849f27` |
+| O2 | Manifests valid | kubeconform 4/4 (Kubernetes 1.37.0), also in CI | `docs/step13_evidence.md` | see command in that file | `8cd27ea` |
+| O3 | API serves from kind; pod runs non-root | `/health` 200; uid 10001; drift job Complete with the same 11 months as M1 | `docs/step13_evidence.md` | `scripts/kind_up.ps1` | `8cd27ea` |
 
 ## 4. Boundaries (not claimed)
 

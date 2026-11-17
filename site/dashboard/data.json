@@ -1,11 +1,11 @@
 {
   "schema_version": 1,
-  "built_at": "2026-11-16T10:45:08+00:00",
-  "commit": "85a9862",
+  "built_at": "2026-11-17T11:43:06+00:00",
+  "commit": "21fa9fe",
   "provenance": [
     {
       "file": "results/text/text_manifest.json",
-      "sha256": "b67fe7160f12aeb03010600ebf5d4fd02c281992d24b12d41ba07c17f48be72a"
+      "sha256": "15da63ba8c6c11e80bc398de365ef60ec98c13a75facccc033ff9a46e039d86a"
     },
     {
       "file": "results/text/dq_flags.parquet",
@@ -17,11 +17,15 @@
     },
     {
       "file": "results/losses.parquet",
-      "sha256": "7ca4b40900f79131ceface5366a1fec98bbdaeae34756192af65aaf03b75f955"
+      "sha256": "dbe7672e279b75df9a6e710b5652f0ed8068612ce6af482c96e99c3a94b96fb0"
     },
     {
       "file": "results/tests.parquet",
-      "sha256": "c2ffbf308dfad826b2b61ea30843d0739ece977ad144d0cdbbaba931bd9a1a54"
+      "sha256": "b5ae335802505a41c186d697e1171844f23b3a2664048bd9a2ecd5c006728383"
+    },
+    {
+      "file": "results/tests_ex_window.parquet",
+      "sha256": "5bde7c328d914bf2eaf35317096319838f1b4f32bb1607a8245279c5c42b84ee"
     },
     {
       "file": "results/holm_final.parquet",
@@ -32,8 +36,12 @@
       "sha256": "975ea9c8c036fbc888a60748f1e4c837456b2a806a3f498d37386082d7aa7255"
     },
     {
+      "file": "results/mlp_regimes.parquet",
+      "sha256": "5b7c14a760c95f8831c0caed8ddc3fcb6c5c6f82a5e2ea2f5febcb1a39e1f641"
+    },
+    {
       "file": "results/q2_summary.parquet",
-      "sha256": "13f85c0b215f24bbe471bc997996ccf7f52e3356d8ccea97ec3fc87deca738b3"
+      "sha256": "fd8110e16c02b11573e76bacc9b2ef086f8555baf21cb129be397903c8387bfc"
     },
     {
       "file": "data/text/documents.parquet",
@@ -62,6 +70,10 @@
     {
       "file": "results/text/10c_evidence.json",
       "sha256": "e7c28a0a55eb6012dc599aeb64b0bd728b361ec905a6280b6efe9b0f4cd0c623"
+    },
+    {
+      "file": "results/text/retrieval_eval_10c.parquet",
+      "sha256": "6f07264bf901e31d6696f1d333b14dbc8c9b429326bb957c40d3c67895557ef8"
     }
   ],
   "corpus": {
@@ -512,8 +524,19 @@
         }
       ]
     },
-    "best_mode": "dense",
-    "best_recall_at_5": 0.3888888888888889,
+    "best_mode": "fused (10c)",
+    "best_recall_at_5": 0.5888888888888889,
+    "best_mode_label": "fused (10c)",
+    "release_comparison": {
+      "10b_dense": {
+        "label": "10b dense",
+        "recall_at_5": 0.3888888888888889
+      },
+      "10c_fused": {
+        "label": "10c fused",
+        "recall_at_5": 0.5888888888888889
+      }
+    },
     "question_count": 15
   },
   "forecasting": {
@@ -541,21 +564,36 @@
         "horizon": "30d",
         "mean_loss": 0.3958479527069618,
         "loss_ratio_vs_har": 0.957855940403772
+      },
+      {
+        "model": "M4",
+        "horizon": "30d",
+        "mean_loss": 0.4146647478828503,
+        "loss_ratio_vs_har": 1.0033880163317443
       }
     ],
     "clark_west": [
       {
         "pair": "M2_vs_M1",
+        "statistic": 3.1355058952409123,
+        "pvalue": 0.0008577899011475977,
+        "sample": "ex_window",
+        "headline": true,
+        "source": "tests_ex_window.parquet"
+      },
+      {
+        "pair": "M2_vs_M1",
         "statistic": 1.5574129261662608,
         "pvalue": 0.05968623957011934,
         "sample": "full",
+        "headline": false,
         "source": "tests.parquet"
       }
     ],
     "holm": [
       {
         "pair": "M2_vs_M1",
-        "sample": "<bound method NDFrame.sample of pair                   M2_vs_M1\nsample                     full\nstatistic               0.33598\nraw_p                  0.736886\nholm_p                      1.0\ndecision           not rejected\nsign                   positive\nheadline_sample            full\nName: 0, dtype: object>",
+        "sample": "full",
         "statistic": 0.33597951099342954,
         "holm_p": 1.0,
         "reject": false,
@@ -563,7 +601,7 @@
       },
       {
         "pair": "M4_vs_M2",
-        "sample": "<bound method NDFrame.sample of pair                   M4_vs_M2\nsample                     full\nstatistic              -0.19027\nraw_p                  0.849097\nholm_p                      1.0\ndecision           not rejected\nsign                   negative\nheadline_sample            full\nName: 1, dtype: object>",
+        "sample": "full",
         "statistic": -0.19027040582816176,
         "holm_p": 1.0,
         "reject": false,
@@ -571,7 +609,7 @@
       },
       {
         "pair": "M1_vs_M3",
-        "sample": "<bound method NDFrame.sample of pair                   M1_vs_M3\nsample                     full\nstatistic              0.833146\nraw_p                  0.404762\nholm_p                      1.0\ndecision           not rejected\nsign                   positive\nheadline_sample            full\nName: 2, dtype: object>",
+        "sample": "full",
         "statistic": 0.8331464457992809,
         "holm_p": 1.0,
         "reject": false,
@@ -579,7 +617,7 @@
       },
       {
         "pair": "M1_vs_M0",
-        "sample": "<bound method NDFrame.sample of pair                   M1_vs_M0\nsample                     full\nstatistic             -2.214821\nraw_p                  0.026772\nholm_p                 0.107089\ndecision           not rejected\nsign                   negative\nheadline_sample            full\nName: 3, dtype: object>",
+        "sample": "full",
         "statistic": -2.214821416033124,
         "holm_p": 0.10708929862137805,
         "reject": false,
@@ -587,7 +625,7 @@
       },
       {
         "pair": "M2_vs_M1",
-        "sample": "<bound method NDFrame.sample of pair                   M2_vs_M1\nsample                ex_window\nstatistic             -1.477548\nraw_p                  0.139529\nholm_p                 0.280711\ndecision           not rejected\nsign                   negative\nheadline_sample            full\nName: 4, dtype: object>",
+        "sample": "ex_window",
         "statistic": -1.4775481368292387,
         "holm_p": 0.2807106879081387,
         "reject": false,
@@ -595,7 +633,7 @@
       },
       {
         "pair": "M4_vs_M2",
-        "sample": "<bound method NDFrame.sample of pair                   M4_vs_M2\nsample                ex_window\nstatistic             -1.910944\nraw_p                  0.056012\nholm_p                 0.224047\ndecision           not rejected\nsign                   negative\nheadline_sample            full\nName: 5, dtype: object>",
+        "sample": "ex_window",
         "statistic": -1.9109441272088628,
         "holm_p": 0.22404704586984947,
         "reject": false,
@@ -603,7 +641,7 @@
       },
       {
         "pair": "M1_vs_M3",
-        "sample": "<bound method NDFrame.sample of pair                   M1_vs_M3\nsample                ex_window\nstatistic              1.362475\nraw_p                  0.173048\nholm_p                 0.280711\ndecision           not rejected\nsign                   positive\nheadline_sample            full\nName: 6, dtype: object>",
+        "sample": "ex_window",
         "statistic": 1.3624748712865369,
         "holm_p": 0.2807106879081387,
         "reject": false,
@@ -611,11 +649,45 @@
       },
       {
         "pair": "M1_vs_M0",
-        "sample": "<bound method NDFrame.sample of pair                   M1_vs_M0\nsample                ex_window\nstatistic             -1.676858\nraw_p                   0.09357\nholm_p                 0.280711\ndecision           not rejected\nsign                   negative\nheadline_sample            full\nName: 7, dtype: object>",
+        "sample": "ex_window",
         "statistic": -1.676858120082687,
         "holm_p": 0.2807106879081387,
         "reject": false,
         "decision": "not rejected"
+      }
+    ],
+    "model_tests": [
+      {
+        "test": "diebold_mariano",
+        "pair": "M4_vs_M2",
+        "sample": "full",
+        "statistic": -0.19027040582816176,
+        "pvalue": 0.8490972427398964,
+        "family": "Q1c"
+      },
+      {
+        "test": "mincer_zarnowitz",
+        "pair": "M4",
+        "sample": "full",
+        "statistic": 2.1069744709594667,
+        "pvalue": 0.3487195590690396,
+        "family": "calibration"
+      },
+      {
+        "test": "diebold_mariano",
+        "pair": "M4_vs_M2",
+        "sample": "ex_window",
+        "statistic": -1.9109441272088628,
+        "pvalue": 0.05601176146746237,
+        "family": "Q1c"
+      },
+      {
+        "test": "mincer_zarnowitz",
+        "pair": "M4",
+        "sample": "ex_window",
+        "statistic": 2.631342260736799,
+        "pvalue": 0.26829420241681295,
+        "family": "calibration"
       }
     ],
     "available_columns": {
@@ -623,9 +695,18 @@
         "model",
         "date",
         "qlike",
-        "squared_error"
+        "squared_error",
+        "snapshot_id"
       ],
       "tests.parquet": [
+        "test",
+        "pair",
+        "statistic",
+        "pvalue",
+        "family",
+        "snapshot_id"
+      ],
+      "tests_ex_window.parquet": [
         "test",
         "pair",
         "statistic",
@@ -650,6 +731,14 @@
         "pvalue",
         "family"
       ],
+      "mlp_regimes.parquet": [
+        "sample",
+        "regime",
+        "n",
+        "mean_qlike_m2",
+        "mean_qlike_m4",
+        "difference_m4_minus_m2"
+      ],
       "q2_summary.parquet": [
         "variable",
         "sample",
@@ -660,7 +749,8 @@
         "median",
         "share_positive",
         "hac_t",
-        "p_two_sided"
+        "p_two_sided",
+        "snapshot_id"
       ]
     },
     "model_mapping": [
@@ -1005,6 +1095,91 @@
           "start": "2026-11-16T10:17:50.723924+00:00",
           "status": "PASS"
         }
+      },
+      "retrieval_eval_10c.parquet": {
+        "rows": 9,
+        "columns": [
+          "mode",
+          "gold_doc_type",
+          "n",
+          "recall_at_5",
+          "hit_at_5",
+          "mrr_at_10"
+        ],
+        "records": [
+          {
+            "mode": "bm25_os",
+            "gold_doc_type": "minutes",
+            "n": 7,
+            "recall_at_5": 0.6428571428571429,
+            "hit_at_5": 0.7142857142857143,
+            "mrr_at_10": 0.5285714285714286
+          },
+          {
+            "mode": "bm25_os",
+            "gold_doc_type": "statement",
+            "n": 8,
+            "recall_at_5": 0.125,
+            "hit_at_5": 0.125,
+            "mrr_at_10": 0.07738095238095238
+          },
+          {
+            "mode": "dense",
+            "gold_doc_type": "minutes",
+            "n": 7,
+            "recall_at_5": 0.5476190476190476,
+            "hit_at_5": 0.7142857142857143,
+            "mrr_at_10": 0.501360544217687
+          },
+          {
+            "mode": "dense",
+            "gold_doc_type": "statement",
+            "n": 8,
+            "recall_at_5": 0.25,
+            "hit_at_5": 0.25,
+            "mrr_at_10": 0.09841269841269841
+          },
+          {
+            "mode": "fused_os",
+            "gold_doc_type": "minutes",
+            "n": 7,
+            "recall_at_5": 0.8333333333333333,
+            "hit_at_5": 1.0,
+            "mrr_at_10": 0.719047619047619
+          },
+          {
+            "mode": "fused_os",
+            "gold_doc_type": "statement",
+            "n": 8,
+            "recall_at_5": 0.375,
+            "hit_at_5": 0.375,
+            "mrr_at_10": 0.125
+          },
+          {
+            "mode": "bm25_os",
+            "gold_doc_type": "all",
+            "n": 15,
+            "recall_at_5": 0.36666666666666664,
+            "hit_at_5": 0.4,
+            "mrr_at_10": 0.28793650793650793
+          },
+          {
+            "mode": "dense",
+            "gold_doc_type": "all",
+            "n": 15,
+            "recall_at_5": 0.3888888888888889,
+            "hit_at_5": 0.4666666666666667,
+            "mrr_at_10": 0.28645502645502646
+          },
+          {
+            "mode": "fused_os",
+            "gold_doc_type": "all",
+            "n": 15,
+            "recall_at_5": 0.5888888888888889,
+            "hit_at_5": 0.6666666666666666,
+            "mrr_at_10": 0.4022222222222222
+          }
+        ]
       }
     }
   }

@@ -1,0 +1,15 @@
+{
+  "section": "PREREGISTRATION \u00a79.5",
+  "training_end": "2015-12-31",
+  "n": 1510,
+  "mean_rv_primary": 0.00010536717653888188,
+  "mean_r_squared": 9.963342287621385e-05,
+  "mean_rv_primary_over_mean_r_squared": 1.0575484962490123,
+  "mean_cross_term": 5.026025377148184e-06,
+  "cross_term_share_of_mean_r_squared": 0.050445174240300844,
+  "definitions": {
+    "rv_primary": "r_on^2 + Garman-Klass",
+    "r_squared": "(r_on + r_oc)^2",
+    "cross_term": "2*r_on*r_oc"
+  }
+}

@@ -138,7 +138,7 @@ def _manifest_files(snapshot: str) -> dict[str, Any]:
 
 
 def fetch_stage(snapshot: str, *, publish: bool = False) -> dict[str, Any]:
-    if publish:  # Codex fix (P8e)
+    if publish:  # Codex fix (10c review, 16 Nov)
         files = _manifest_files(snapshot)
     else:
         files = fetch_documents(snapshot).get("files", {})
@@ -363,3 +363,4 @@ def run_stage(stage: str, snapshot: str = DEFAULT_SNAPSHOT, *, publish: bool = F
     if stage == "fetch":
         return fetch_stage(snapshot, publish=publish)
     return STAGES[stage](snapshot)
+

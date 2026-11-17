@@ -37,7 +37,7 @@ full sample", not "no incremental information"; the ex-window interval excludes 
 
 **§8 reading for the headline.** Outside Feb–Apr 2020, VIX-implied variance adds out-of-sample
 information beyond lagged realised variance at the 30-day horizon. On the full sample that
-information is not detected. The window rule was fixed and pushed (DEVIATIONS, commit `5c718a1`)
+information is not detected. The window rule was fixed and pushed (DEVIATIONS B, commit `5c718a1`)
 after the full-sample p = 0.0597 was known and before any ex-window number was computed.
 
 **Why the window matters this much.** The 71 removed forecasts are 4% of the test set but carry
@@ -90,6 +90,10 @@ written to any result file and the real specification is untouched. The evaluati
 the degenerate-input guards and the Holm removal: every M0–M2 statistic and p-value is unchanged,
 to zero difference, against a local scratch copy of the pre-fix table.
 
+**Integrity (§9.5), training window:** n = 1,510; mean(RV primary)/mean(r²) = 1.057548; the mean
+cross-term 2·r_on·r_oc as a share of mean r² = 0.050445 (5.0445%). Values are in
+`results/proxy_check.json`.
+
 **Holm:** applied once, after Step 10, across the four §5.5 Diebold–Mariano tests (Q1b M2 vs M1, Q1c M4 vs M2, Q1d M1 vs M3 and M1 vs M0), separately in the full and ex-window samples (DEVIATIONS P). Final decisions are in the Step 10 section and `results/holm_final.parquet`. Q3's four §7.3 tests use Holm within the primary and ex-window runs; Q2 is not a Holm family.
 
 **Feb–Apr 2020 (§8).** The rule removes 71 forecasts — t in the window, or a target session in it
@@ -97,11 +101,30 @@ to zero difference, against a local scratch copy of the pre-fix table.
 tests are `results/tests_ex_window.parquet`. The headline moves to the ex-window sample for Q1,
 MZ M2, HAR vs persistence, and the ex-post premium; Q3 decisions are the same in both runs.
 
+**§8 regime breakdown (descriptive; no Holm adjustment; not a headline test).** Clark–West for
+M2 vs M1, using VIX on the forecast date and the §5.5 HAC lag rule. No cell has n < 100.
+
+| Sample | Grouping | Regime | n | Mean f_t | t | One-sided p | n < 100 |
+|---|---|---|---:|---:|---:|---:|---|
+| full | VIX tercile | low | 282 | 3.83854 × 10⁻⁷ | 1.0919 | 0.137437 | no |
+| full | VIX tercile | mid | 552 | 1.58071 × 10⁻⁷ | 1.8101 | 0.0351374 | no |
+| full | VIX tercile | high | 869 | 9.32264 × 10⁻⁶ | 1.5377 | 0.0620571 | no |
+| full | Calendar | 2020 | 253 | 2.86740 × 10⁻⁵ | 1.4683 | 0.0710164 | no |
+| full | Calendar | 2021–2023 | 753 | 8.80283 × 10⁻⁷ | 2.0776 | 0.0188748 | no |
+| full | Calendar | 2024–end | 697 | 5.44464 × 10⁻⁷ | 2.1867 | 0.0143838 | no |
+| ex-window | VIX tercile | low | 273 | 7.22516 × 10⁻⁷ | 4.6277 | 1.84841 × 10⁻⁶ | no |
+| ex-window | VIX tercile | mid | 539 | 1.97923 × 10⁻⁷ | 2.5191 | 0.00588313 | no |
+| ex-window | VIX tercile | high | 820 | 1.39667 × 10⁻⁶ | 2.4809 | 0.00655285 | no |
+| ex-window | Calendar | 2020 | 182 | 2.23547 × 10⁻⁶ | 1.5227 | 0.0639161 | no |
+| ex-window | Calendar | 2021–2023 | 753 | 8.80283 × 10⁻⁷ | 2.0776 | 0.0188748 | no |
+| ex-window | Calendar | 2024–end | 697 | 5.44464 × 10⁻⁷ | 2.1867 | 0.0143838 | no |
+Values are in `results/q1_regimes.json`.
+
 ### Step 8 — Q1d: HAR vs GARCH(1,1) on QLIKE
 
 M3 is a constant-mean GARCH(1,1) on daily close-to-close percent returns; its 30-day forecast is
 the sum of the 1- to N_t-step-ahead conditional variance forecasts ÷ 10,000. The mean model is the
-`arch` constant mean (DEVIATIONS, 2026-11-14). All 82 folds converged, none at the α+β bound,
+`arch` constant mean (DEVIATIONS A, 2026-11-14). All 82 folds converged, none at the α+β bound,
 maximum α+β = 0.974, and there were no other warnings.
 
 **Not detected.** Diebold–Mariano on QLIKE gives t = 0.833, raw p = 0.405, so a QLIKE difference
@@ -138,7 +161,7 @@ target. This is not a leak.
 | Q2 ex-post premium, mean | positive, not significant (t = 1.06, p = 0.288) | positive, significant (t = 7.05) | ex-window |
 | Q3, four Holm tests | see below | same four decisions | full |
 
-Source: `results/window_rule.parquet` for the Step 9 rows; the four Diebold–Mariano rows are the final §5.5 Holm family from `results/holm_final.parquet` (Step 10, DEVIATIONS A.5 and P). Decisions use Holm-adjusted p-values; raw p-values are shown for reference.
+Source: `results/window_rule.parquet` for the Step 9 rows; the four Diebold–Mariano rows are the final §5.5 Holm family from `results/holm_final.parquet` (Step 10, DEVIATIONS B.5 and P). Decisions use Holm-adjusted p-values; raw p-values are shown for reference.
 
 **Q2 — implied versus realised (§6).** 30-day total variance, decimal; test-period dates.
 
@@ -245,7 +268,7 @@ M4 is worse than HAR-X in the low-VIX tercile in both samples, so the DEVIATIONS
 
 **Data quality.** 2 flags: `minutes_missing` 2012-10-24 (the known gap above); `not_yet_released` 2026-10-28 (info). No other flags.
 
-**Index.** Qdrant v1.20.1, dense (text-embedding-3-small, 1,536 d) + keyword vectors (IDF weighting in Qdrant), fused by reciprocal rank fusion. Each chunk is indexed with a contextual header (document type and meeting date), because the eval questions name meetings and the chunk text carries no date; chunk text, chunk_ids and labels are unchanged; decided before the first index run. Idempotence: the successful index run upserted 6,620; the second run upserted 0, unchanged 6,620.
+**Index.** Qdrant server v1.20.1 (client 1.20.0), dense (text-embedding-3-small, 1,536 d) + keyword vectors (IDF weighting in Qdrant), fused by reciprocal rank fusion. Each chunk is indexed with a contextual header (document type and meeting date), because the eval questions name meetings and the chunk text carries no date; chunk text, chunk_ids and labels are unchanged; decided before the first index run. Idempotence: the successful index run upserted 6,620; the second run upserted 0, unchanged 6,620.
 
 **Retrieval evaluation (15 questions labelled before any embedding; 8 statement, 7 minutes; no filters).**
 
@@ -278,11 +301,11 @@ Result as measured: retrieval is weak on the statement questions, and fusion wit
 
 ### 10c-3 Spark compaction (16 Nov 2026)
 
-- Job: `spark/compact_stats.py` (Codex-written P7j, reviewed by Kakali); run in Docker `spark:4.1.2-java21-python3` (no local Java/winutils).
+- Job: `spark/compact_stats.py` (Codex-written from a brief, reviewed by Kakali); run in Docker `apache/spark:4.3.0-python3` via `scripts/run_spark.ps1` (no local Java/winutils).
 - Result: 266 docs → 34 (year, doc_type) groups; one curated file per group; exact median (`percentile`, not approx).
 - Parity vs pandas (`documents.parquet`): 34/34 PASS (counts/dates exact, mean/median ≤1e-9) → `results/text/10c_spark_stats.parquet`.
 - Fix: `check_spark_parity` accepted only a file; Spark writes `stats.parquet` as a folder (`.exists()`).
-- Note: the wrong-type test passed on any exception (the stub passed it); assertion narrowed in `e0d8d94` (BUILD_GUIDE Issue 21).
+- Note: the wrong-type test passed on any exception (the stub passed it); assertion narrowed in `d125fb9` (BUILD_GUIDE Issue 21).
 
 ### 10c-4 OpenSearch BM25 + RRF fusion (16 Nov 2026)
 
@@ -295,25 +318,25 @@ Result as measured: retrieval is weak on the statement questions, and fusion wit
 
 ### 10c-5 Redis cache + rate limiter (16 Nov 2026)
 
-- `cache.py` (Kakali): key = sha256 of the normalised query (lower-case, whitespace collapsed) + date_from/date_to/doc_type/k/mode, TTL 3600 s; hit/miss/rate-limited counters on `/metrics`; atomic Lua token bucket (capacity 10, refill 5/s) keyed by client IP. Tests Codex (P7f); API wiring Codex, with Claude fixes (fixed test clock, fail-open on Redis errors, 0.25 s timeouts).
+- `cache.py` (Kakali): key = sha256 of the normalised query (lower-case, whitespace collapsed) + date_from/date_to/doc_type/k/mode, TTL 3600 s; hit/miss/rate-limited counters on `/metrics`; atomic Lua token bucket (capacity 10, refill 5/s) keyed by client IP. Tests and API wiring Codex, with Claude fixes (fixed test clock, fail-open on Redis errors, 0.25 s timeouts).
 - Live (Docker redis 7.4.12): miss 4,013 ms (includes cold start) → hit 37 ms for a case/spacing variant; 15-request burst → 10 allowed, 5 × 429; `/metrics` hits 11, misses 1, hit_rate 0.917, rate_limited 5.
 - Tests: 13 passed (cache + API); full suite 249 passed, 1 skipped (excl. test_text.py).
-- Caveats: rate limit is per IP, so clients behind one NAT share a bucket. Fixed after this run in `e0d8d94`: the cache key now includes `VFL_INDEX_VERSION` (results were up to 1 h stale after a reindex) and fakeredis moved to `requirements-dev.txt` (BUILD_GUIDE Issues 18–19).
+- Caveats: rate limit is per IP, so clients behind one NAT share a bucket. Fixed after this run in `d125fb9`: the cache key now includes `VFL_INDEX_VERSION` (results were up to 1 h stale after a reindex) and fakeredis moved to `requirements-dev.txt` (BUILD_GUIDE Issues 18–19).
 - Incident: the first API rate-limit test used the real clock and failed 2/15 runs (a token refilled if 11 requests took > 0.2 s); fixed with an injected clock (15/15).
 
-**Step 11 process note.** The first live run at `2fc8c30` was invalid: 39 of 45 attempts hit the OpenAI schema error, and no A01–A13 answers were seen. Re-run at the new commit.
+**Step 11 process note.** The first live run at `0243e03` was invalid: 39 of 45 attempts hit the OpenAI schema error, and no A01–A13 answers were seen. Re-run at the new commit.
 
 **Step 11 A01 smoke note.** A single-question smoke run showed A01 was refused ("could not verify") after two drafts. The draft prompt was changed after the A01 smoke runs; only A01's outcome had been seen at that point, not the full eval. The change forbids model-side arithmetic and tells a retry to remove the rejected item.
 
-**Step 11 – agent eval (pre-registered set, 15 questions × 3 repeats, gpt-5.4-mini-2026-03-17, commit d353ace).** Headline accuracy = exact_match AND refusal_correct (a correct refusal scores exact = True): **0.844 (38/45)**. Tool choice 45/45; refusals 6/6 (advice guard, out-of-range date); forecast lookups 15/15; model comparisons 9/9; event effects 7/9; p-values 1/6. Cost USD 0.064 in total (0.0014 per attempt; list prices as of 2026-11-17); latency p50 4.1 s, p95 6.9 s.
+**Step 11 – agent eval (frozen question set, commit `e01ca2957f00ba90bdc43d6bebff40e8fa9c01e9`, 15 questions × 3 repeats, gpt-5.4-mini-2026-03-17, run commit 87a1523).** Questions A06–A08 use “return” where the study measures variance; they remain unchanged in the frozen set. Headline accuracy = exact_match AND refusal_correct (a correct refusal scores exact = True): **0.844 (38/45)**. Tool choice 45/45; refusals 6/6 (advice guard, out-of-range date); forecast lookups 15/15; model comparisons 9/9; event effects 7/9; p-values 1/6. Cost USD 0.064 in total (0.0014 per attempt; list prices as of 2026-11-17); latency p50 4.1 s, p95 6.9 s.
 
 Errors: 2 answers reported the log-scale coefficient (beta) instead of the effect – both values are in the tool output, so the copy-only verifier accepted them; 5 p-value answers ignored the 3 dp rule – 3 were refused after two drafts ("could not verify"), 2 gave the correct value at 6 significant figures and scored as not exact. No number absent from the tool output reached a final answer.
 
-By repeat (pre-registered: each reported separately): repeat 0 = 13/15, repeat 1 = 14/15, repeat 2 = 11/15; tool choice 15/15 in each; cost USD 0.020 / 0.023 / 0.020.
+By repeat (each reported separately for the frozen question set): repeat 0 = 13/15, repeat 1 = 14/15, repeat 2 = 11/15; tool choice 15/15 in each; cost USD 0.020 / 0.023 / 0.020.
 
 Not fixed: the two verifier limits above (wrong field accepted; p-value precision not enforced) are left open (BUILD_GUIDE Issues 25–26). Fixing them and re-running the same 15 questions would be tuning on the test set, so 0.844 stands as the result.
 
-Process: an earlier run at 2fc8c30 was invalid (structured-output schema rejected by the API; no A01–A13 answers were seen); the reported run is at d353ace.
+Process: an earlier run at 0243e03 was invalid (structured-output schema rejected by the API; no A01–A13 answers were seen); the reported run is at 87a1523.
 
 **Step 12 – drift monitoring.** QLIKE ratio M2/M1 (63 sessions; degraded = 3 consecutive month-ends > 1.10): degraded at 11 of 79 month-ends (2020-06…09, 2021-03, 2021-07…10, 2024-10, 2026-05); latest (2026-10) not degraded. PSI of the four HAR inputs (training deciles to 2019-12-02; trailing 126 sessions, BUILD_GUIDE Issue 27; threshold 0.25) flagged 40–78 of 78 month-ends. A post-hoc check found 126-session windows inside the training period also exceed 0.25 in 46–100% of cases: for persistent regressors this PSI rule cannot separate drift from normal regime variation. Reported as a limit, not tuned; a block-bootstrap null threshold tested on later data would be the fix.
 
@@ -339,7 +362,7 @@ recorded before results.
   reported whatever it is. See `splits.early_stop_split`.
 
 - **FOMC minutes for 2012-10-24 are missing.** The Fed publishes an HTML minutes page but the
-  PDF URL returns 404. The DQ `minutes_missing` flag remains; it is 1 of 133 meetings and no
+  PDF URL returns 404. The DQ `minutes_missing` flag remains; it is 1 of 134 scheduled dates and no
   retrieval result depends on it.
 
 - **The agent's `search_fomc` answers cannot be fully verified.** The verifier cannot check dates

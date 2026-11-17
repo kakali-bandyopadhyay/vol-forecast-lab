@@ -202,18 +202,7 @@ def check_ex_dividend(spy, first, last) -> dict:
 
     dev_bp = dev * 1e4
     fails = dev_bp > DIV_TOL_BP
-    rows = [
-        {
-            "date": iso(d),
-            "div": round(float(div.loc[d]), 6),
-            "adj_ratio": round(float(adj_ratio.loc[d]), 8),
-            "raw_net": round(float(raw_net.loc[d]), 8),
-            "dev_bp": round(float(dev_bp.loc[d]), 3),
-            "pass": bool(not fails.loc[d]),
-        }
-        for d in div_days
-    ]
-    return {
+    result = {
         "rule": f"adjusted overnight ratio matches the raw gap net of the dividend within {DIV_TOL_BP} bp",
         "convention": convention,
         "tolerance_bp": DIV_TOL_BP,
@@ -222,8 +211,13 @@ def check_ex_dividend(spy, first, last) -> dict:
         "fails": int(fails.sum()),
         "max_dev_bp": round(float(dev_bp.max()), 3) if len(dev_bp) else None,
         "max_dev_bp_form_b_diagnostic": round(float(dev_b.max() * 1e4), 3) if len(dev_b) else None,
-        "rows": rows,
     }
+    if fails.any():
+        result["rows"] = [
+            {"date": iso(d), "dev_bp": round(float(dev_bp.loc[d]), 3)}
+            for d in div_days if fails.loc[d]
+        ]
+    return result
 
 
 def check_event_rows(cal, sessions) -> dict:

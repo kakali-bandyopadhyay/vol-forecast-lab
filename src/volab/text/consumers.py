@@ -77,12 +77,12 @@ def _save_state(path: Path, state: dict[str, Any]) -> None:
 
 
 def write_counters(name: str, counts: dict[str, int], *, path: Path = COUNTERS_PATH) -> None:
-    """Append one run of counters for a consumer role.  # Codex fix (P8e)"""
+    """Append one run of counters for a consumer role.  # Codex fix (10c review, 16 Nov)"""
     all_counts = _load_state(path)
     role_runs = all_counts.get(name, {})
     if role_runs and not all(isinstance(value, dict) for value in role_runs.values()):
         role_runs = {"legacy": role_runs}
-    role_runs[datetime.now(timezone.utc).isoformat()] = {key: int(value) for key, value in counts.items()}  # Codex fix (P8e)
+    role_runs[datetime.now(timezone.utc).isoformat()] = {key: int(value) for key, value in counts.items()}  # Codex fix (10c review, 16 Nov)
     all_counts[name] = role_runs
     _save_state(path, all_counts)
 
@@ -293,3 +293,4 @@ def run_consumer(
     )
     write_counters(counters_name or topic, counts)
     return counts
+
