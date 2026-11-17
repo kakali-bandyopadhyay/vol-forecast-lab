@@ -5,6 +5,7 @@ from __future__ import annotations
 from datetime import timedelta
 
 import pytest
+pytest.importorskip("airflow")  # python-tests jobs have no Airflow; dag-import job runs these
 from airflow.dag_processing.dagbag import DagBag
 
 pytestmark = pytest.mark.airflow
