@@ -20,6 +20,10 @@ x-airflow-common: &airflow-common
     VFL_PYTHON: /opt/vfl-venv/bin/python
     VFL_REPO: /opt/vfl
     PYTHONPATH: /opt/vfl/src:/opt/vfl
+    VFL_MLFLOW: "0"  # repo is mounted read-only; no MLflow writes from Airflow tasks
+    GIT_CONFIG_COUNT: "1"  # run_holm checks git status; mounted .git has a different owner
+    GIT_CONFIG_KEY_0: safe.directory
+    GIT_CONFIG_VALUE_0: /opt/vfl
   volumes:
     - .:/opt/vfl:ro
     - ./dags:/opt/airflow/dags:ro

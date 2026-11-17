@@ -86,6 +86,7 @@ jobs:
       - name: Import DAG files with Airflow
         env:
           AIRFLOW_VERSION: "3.4.0"
+          AIRFLOW__CORE__LOAD_EXAMPLES: "False"
           PYTHONPATH: src:.
         run: |
           set -euo pipefail
@@ -98,9 +99,9 @@ jobs:
           constraint_url="https://raw.githubusercontent.com/apache/airflow/constraints-${AIRFLOW_VERSION}/constraints-3.12.txt"
           python -m pip install "apache-airflow==${AIRFLOW_VERSION}" --constraint "${constraint_url}"
           python - <<'PY'
-          from airflow.models import DagBag
+          from airflow.dag_processing.dagbag import DagBag
 
-          bag = DagBag(dag_folder="dags", include_examples=False)
+          bag = DagBag(dag_folder="dags")  # Airflow 3.4 dropped include_examples; LOAD_EXAMPLES=False above
           if bag.import_errors:
               details = "\n".join(f"{path}: {error}" for path, error in bag.import_errors.items())
               raise SystemExit(f"DAG import errors:\n{details}")
@@ -111,6 +112,7 @@ jobs:
           if ((${#dag_tests[@]} > 0)); then
             export AIRFLOW_HOME="$RUNNER_TEMP/airflow"
             export AIRFLOW__CORE__LOAD_EXAMPLES=False
+            export AIRFLOW__CORE__DAGS_FOLDER="$GITHUB_WORKSPACE/dags"
             export VFL_PYTHON="$(which python)"
             export VFL_REPO="$GITHUB_WORKSPACE"
             airflow db migrate

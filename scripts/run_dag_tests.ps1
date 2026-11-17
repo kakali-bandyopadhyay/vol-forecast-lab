@@ -20,11 +20,12 @@ $dockerArgs = @(
     "--workdir", "/opt/vfl",
     "--env", "AIRFLOW_HOME=/tmp/airflow",
     "--env", "AIRFLOW__CORE__LOAD_EXAMPLES=False",
+    "--env", "AIRFLOW__CORE__DAGS_FOLDER=/opt/vfl/dags",
     "--env", "VFL_PYTHON=/opt/vfl-venv/bin/python",
     "--env", "VFL_REPO=/opt/vfl",
     $image,
     "bash", "-lc",
-    'mkdir -p "$AIRFLOW_HOME" && airflow db migrate && "$VFL_PYTHON" -m pip install pytest==9.2.0 && "$VFL_PYTHON" -m pytest -q -m airflow tests/test_dag*.py'
+    'mkdir -p "$AIRFLOW_HOME" && airflow db migrate && python -m pip install pytest==9.2.0 && python -m pytest -q -p no:cacheprovider -m airflow tests/test_dag*.py'
 )
 
 & docker @dockerArgs
