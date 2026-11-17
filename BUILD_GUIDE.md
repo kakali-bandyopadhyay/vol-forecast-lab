@@ -409,7 +409,7 @@ advance.
 
 ## Lessons
 
-_Draft by Claude from the issues table and FINDINGS, 17 Nov 2026 — author to edit or approve._
+_Drafted by Claude from the issues table and FINDINGS; approved by the author, 17 Nov 2026._
 
 - **Fix the reading rule before the number exists.** The Feb–Apr 2020 rule was written after the
   full-sample p = 0.0597 was known but before any ex-window number, and made symmetric so it could
