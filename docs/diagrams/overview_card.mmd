@@ -1,0 +1,12 @@
+%%{init: {"theme": "base", "themeVariables": {"fontSize": "20px", "fontFamily": "Segoe UI, Arial, sans-serif", "primaryColor": "#eef1fb", "primaryBorderColor": "#2e3a87", "lineColor": "#2e3a87", "primaryTextColor": "#1b1f4b"}}}%%
+flowchart TB
+  D["Public data<br/>SPY · VIX · FOMC documents"]
+  F["Forecasting study<br/>pre-registered, walk-forward<br/>HAR · HAR-X · GARCH · MLP"]
+  P["Document pipeline<br/>Kafka → AWS lake → Spark"]
+  E["Evidence<br/>Clark–West · Holm · evidence register"]
+  S["Search<br/>OpenSearch + Qdrant · Redis"]
+  A["LangGraph agent<br/>copies only verified numbers"]
+  O["MLflow · drift · Airflow · kind"]
+  D --> F --> E --> A
+  D --> P --> S --> A
+  F -.-> O

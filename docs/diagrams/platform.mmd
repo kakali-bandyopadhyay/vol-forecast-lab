@@ -5,8 +5,8 @@ flowchart LR
     VENV["/opt/vfl-venv<br/>separate Python environment"]
     AF --> VENV
     subgraph Kind[kind cluster]
-      DEP[API Deployment<br/>planned – Step 13]
-      CRON[drift CronJob<br/>planned – Step 13]
+      DEP[API Deployment]
+      CRON[drift CronJob]
     end
     API -.image loaded into.-> DEP
     subgraph Compose[docker-compose.platform.yml]
@@ -19,10 +19,10 @@ flowchart LR
     SPARK[PySpark container<br/>compact_stats]
     PIPE --> K
     PIPE --> Q
-    PIPE -.planned 10c-4.-> OS
+    PIPE --> OS
     API --> Q
-    API -.planned 10c-4.-> OS
-    API -.planned 10c-5.-> RD
+    API --> OS
+    API --> RD
   end
   subgraph AWS[AWS Terraform]
     RAW[(S3 raw/)]
