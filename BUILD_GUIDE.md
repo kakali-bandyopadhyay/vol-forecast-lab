@@ -365,13 +365,13 @@ advance.
 | Item | Target | Actual |
 |---|---|---|
 | Pre-registration tagged before first fit | yes | yes — `v0.1-prereg` on `8d48051`, first fit `3522c47` |
-| Tests passing | all | _n_ (measured at DoD on the release commit) |
+| Tests passing | all | 341 passed, 3 skipped (Airflow DAG, PySpark, OpenSearch not running) on `df8e020`, Windows, Python 3.14 venv; CI green on `df8e020` |
 | Q1 (Clark–West) | pre-committed reading applied | yes — symmetric §8 window rule; headline ex-window p = 0.0009, full p = 0.0597 shown beside it |
 | Leakage checks | all pass | yes — planted leak cuts QLIKE 10.5% (placebo < 2% on synthetic); MLP shuffled target 0.785 > M0 0.509; information sets end the session before each refit |
 | Agent eval, 3 runs | reported separately | yes — 13/15, 14/15, 11/15 (0.844 overall) |
 | DAG run + kind deployment | working | yes on the fixture — DAG tests 4 passed; `/health` 200; drift job Complete. Full snapshot DAG run not executed |
 | Deviations logged | every one | 10 dated entries in DEVIATIONS (A–S clarifications, one correction S); 27 issues in this guide |
-| Clean-clone test | pass | _see DoD_ |
+| Clean-clone test | pass | pass — Linux VM clean clone (282 passed, smoke run passed) and CI clean install on `df8e020`; `docs/dod_checklist.md` |
 
 ## Issues and fixes
 
