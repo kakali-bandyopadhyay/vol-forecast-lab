@@ -1,0 +1,14 @@
+# Runtime settings for the local kind deployment. No secrets belong here.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vfl-config
+data:
+  # Used by the drift CronJob. api/app.py hard-codes its own results path; this
+  # value does not redirect the API.
+  RESULTS_DIR: "/app/results"
+  PSI_THRESHOLD: "0.25"
+  QLIKE_RATIO_THRESHOLD: "1.10"
+  QLIKE_RATIO_MONTHS: "3"
+  # The image's /app is not writable by appuser, so disable MLflow there.
+  VFL_MLFLOW: "0"

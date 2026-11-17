@@ -1,0 +1,45 @@
+# code_commit reads "unknown" inside the image because the image has no .git.
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: vfl-drift
+  labels:
+    app: vfl-drift
+spec:
+  schedule: "0 6 1 * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      template:
+        metadata:
+          labels:
+            app: vfl-drift
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: drift
+              image: vol-forecast-lab:local
+              imagePullPolicy: Never
+              command: ["python", "scripts/run_drift.py", "--out-dir", "/out"]
+              envFrom:
+                - configMapRef:
+                    name: vfl-config
+              volumeMounts:
+                - name: output
+                  mountPath: /out
+              resources:
+                requests:
+                  cpu: 100m
+                  memory: 256Mi
+                limits:
+                  cpu: 500m
+                  memory: 512Mi
+              securityContext:
+                runAsNonRoot: true
+                runAsUser: 10001
+                allowPrivilegeEscalation: false
+          volumes:
+            - name: output
+              emptyDir: {}
