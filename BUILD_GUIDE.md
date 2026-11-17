@@ -79,7 +79,8 @@ flowchart TD
 
 ```
 vol-forecast-lab/
-  README.md  BUILD_GUIDE.md  FINDINGS.md  CASE_STUDY.md  LICENSE
+  README.md  BUILD_GUIDE.md  FINDINGS.md  ARCHITECTURE.md  EVIDENCE.md  LICENSE
+  docs/case-study.md  docs/adr/  docs/step13_evidence.md  figures/diagrams/  figures/results/
   prereg/PREREGISTRATION.md  prereg/DEVIATIONS.md
   data/SOURCES.md  data/snapshot_manifest.json  data/audit.json
   data/events/fomc.csv  data/events/cpi.csv  data/events/unscheduled.csv
@@ -105,8 +106,8 @@ exchange-calendars, pyarrow, mlflow, langgraph, langchain-openai, langsmith, pyd
 uvicorn, pytest). `.gitignore`: `.env`, `.venv`, `data/raw`, `data/snapshots`, `mlruns`, `*.db`.
 MIT licence. `prereg/DEVIATIONS.md` header.
 **Who.** AI-drafted plumbing, reviewed.
-**Result.** `python -m pytest` runs. Actual: _fill_.
-**Committed.** _hash_
+**Result.** `python -m pytest` runs. Actual: count not recorded at Step 0; suite count at release is in the Scorecard.
+**Committed.** `8436b2d`
 
 ## Step 1 — Data pull, snapshot, audit (2 h)
 
@@ -114,8 +115,8 @@ MIT licence. `prereg/DEVIATIONS.md` header.
 each file, writes the manifest, never overwrites. `audit_snapshot.py` runs PREREGISTRATION §2.4
 and writes `data/audit.json`, including the list of dates excluded under §2.3 (no forward-fill).
 **Who.** Fetch = AI-drafted. Audit rules = author.
-**Result.** _sessions, violations, VIX mismatches, excluded dates_.
-**Committed.** _hash_
+**Result.** 4,241 sessions (2010-01-04 → 2026-11-11); 0 missing, 0 OHLC violations, 0 zero-range days, 0 VIX mismatches; 33 VIX non-session rows excluded by the session join (no forward-fill); ex-dividend 67/67; FOMC 134/134, CPI 200/200 event rows on sessions.
+**Committed.** `c6823b3` (fetch + snapshot) / `9139789` (audit)
 
 ## Step 2 — Event calendars (1 h)
 
@@ -123,7 +124,7 @@ and writes `data/audit.json`, including the list of dates excluded under §2.3 (
 **Who.** Author (Gemini may draft the list; every row checked against its source page).
 **Tests.** Every date is a session; every row has a URL; CPI rows are 08:30 ET; FOMC rows fall
 inside the regular session; same-day CPI+FOMC dates listed.
-**Committed.** _hash_
+**Committed.** `2268c95` (calendars) / `9c2acd7` (review fixes) / `1c087a7` (in_event_sample) / `fbe56a3` (15 tests)
 
 ## Step 3 — RV proxies and 30-day targets (2 h)
 
@@ -141,7 +142,7 @@ inside the regular session; same-day CPI+FOMC dates listed.
 | Excluded session inside window | one session flagged missing | target dropped, logged |
 | Zero-range day | O=H=L=C | GK = 0, not NaN |
 
-**Committed.** _hash_
+**Committed.** `06af64a`
 
 ## Step 4 — Freeze the pre-registration (1 h)
 
@@ -149,7 +150,7 @@ inside the regular session; same-day CPI+FOMC dates listed.
 thresholds — the last two from the training window only). Commit, `git tag v0.1-prereg`, push the
 tag. Optional OSF registration.
 **Rule.** No model fitted and no test-period number looked at before this commit.
-**Committed.** _hash_ / tag _hash_
+**Committed.** `8d48051` / tag `v0.1-prereg` (tag object `21e59e3`), before the first fit (`3522c47`)
 
 ## Step 5 — Walk-forward splitter (1.5 h)
 
@@ -283,8 +284,11 @@ pandas statistics equal. OpenSearch: date filter respected; mapping applied. Red
 query is a cache hit; rate limiter rejects over the limit.
 **Cost guardrails.** Budget alert before `terraform apply`; Athena bytes-scanned limit; S3 lifecycle;
 everything destroyed after the evidence run, with the destroy output saved in FINDINGS.
-**Result.** Kafka messages processed _n_ / duplicates suppressed _n_; Lambda runs _n_ / errors _n_;
-Athena query cost _$x_; recall@5 BM25 / vector / fused _x / x / x_; cache hit rate _x_.
+**Result.** Kafka: 266 published, indexer processed 266, DLQ 0; replay 266 duplicates suppressed, 0
+re-uploaded. Lambda 266 runs / 0 errors; text parity 266/266, chunk parity 6,620 = 6,620. Athena
+≤ 20,748 bytes scanned per query (billed at the 10 MB minimum; cost < USD 0.01). Spark vs pandas
+34/34. recall@5 BM25 / vector / fused 0.367 / 0.389 / 0.589. Cache hit rate 0.917 (miss 4,013 ms →
+hit 37 ms); burst of 15 → 10 allowed, 5 × 429. Destroyed 16 Nov 2026 (`results/text/10c_destroy.txt`).
 **Committed.** `f52709c` (10c-1 Kafka) / `5a76abc`, `e5a22b4` (10c-2 Lambda/Athena + evidence) / `c381703` (10c-3 Spark) / `9adbf4a` (10c-4 OpenSearch) / `13a0922` (10c-5 Redis – 10c complete) / `d0e9aba` (follow-ups).
 
 ## Step 11 — Research agent: LangGraph + LangSmith (4 h)
@@ -335,13 +339,17 @@ Actual (2026-11-17): drift.py + tests and MLflow wiring in run_eval/run_mlp = au
 ## Step 14 — Write-up and release (3 h)
 
 **What.** `FINDINGS.md` (every pre-registered result, misses first-class, deviations referenced);
-`CASE_STUDY.md` (one page); README (provenance, definitions, assumptions, quickstart on the fixture,
+`docs/case-study.md` (one page); README (provenance, definitions, assumptions, quickstart on the fixture,
 how to reproduce the headline, boundary statement, diagrams). Four charts: forecast comparison;
 calibration / errors over time; implied vs realised spread; event variance split. Summary numbers:
 test size, HAR-X incremental result, calibration, mean ex-post premium, event estimates with CIs.
 **Definition of done before public.** Clean clone → fresh venv → install, tests, quickstart;
 all-commit history scan; `git log --all --oneline -- .env` empty; tracked-file check; independent
 review; About + topics; MIT. Optional short recording (title card on the first frame).
+**Result (17 Nov 2026).** README.md, LICENSE (MIT), `scripts/make_charts.py` + `tests/test_make_charts.py`
+(Claude-drafted plumbing, reviewed) writing four aggregate-only charts to `figures/results/` and
+`results/loss_summary.json`; FINDINGS, case study and this guide refreshed. DoD: see Scorecard and
+`docs/dod_checklist.md`.
 **Committed.** _hash_ — then public.
 
 ## Stretch — JAX (1.5 h, only after Step 14)
@@ -356,14 +364,14 @@ advance.
 
 | Item | Target | Actual |
 |---|---|---|
-| Pre-registration tagged before first fit | yes | |
-| Tests passing | all | _n_ |
-| Q1 (Clark–West) | pre-committed reading applied | |
-| Leakage checks | all pass | |
-| Agent eval, 3 runs | reported separately | |
-| DAG run + kind deployment | working | |
-| Deviations logged | every one | _n_ |
-| Clean-clone test | pass | |
+| Pre-registration tagged before first fit | yes | yes — `v0.1-prereg` on `8d48051`, first fit `3522c47` |
+| Tests passing | all | _n_ (measured at DoD on the release commit) |
+| Q1 (Clark–West) | pre-committed reading applied | yes — symmetric §8 window rule; headline ex-window p = 0.0009, full p = 0.0597 shown beside it |
+| Leakage checks | all pass | yes — planted leak cuts QLIKE 10.5% (placebo < 2% on synthetic); MLP shuffled target 0.785 > M0 0.509; information sets end the session before each refit |
+| Agent eval, 3 runs | reported separately | yes — 13/15, 14/15, 11/15 (0.844 overall) |
+| DAG run + kind deployment | working | yes on the fixture — DAG tests 4 passed; `/health` 200; drift job Complete. Full snapshot DAG run not executed |
+| Deviations logged | every one | 10 dated entries in DEVIATIONS (A–S clarifications, one correction S); 27 issues in this guide |
+| Clean-clone test | pass | _see DoD_ |
 
 ## Issues and fixes
 
@@ -382,7 +390,7 @@ advance.
 | 11 | First index run: one upsert of 6,620 points (215 MB JSON) exceeded Qdrant's 32 MB request limit; eval then ran on an empty collection | No batching on upsert; eval did not check the index | Author: upserts in slices of 256; eval_stage refuses unless the collection count equals the chunk count; empty-index eval outputs deleted before inspection (FINDINGS) | `2f87c6a` |
 | 12 | 10c-4 opensearch_index: batched bulk (500), refresh wait_for, raise on failed items, rrf unrounded (Claude review; typed by Kakali) | Single bulk request could hit the 10 s timeout; refresh/flaky search; failed items counted as updated; rounded RRF scores | `index_chunks_os` batches at 500, refreshes on the last batch, raises on any failed item; `rrf` returns unrounded scores | `9adbf4a` |
 | 13 | run_eval_10c: BM25 search was called without the OpenSearch client (Claude fix) | Default `bm25_search` was `search_bm25` without a bound client | Creates `OpenSearch(127.0.0.1:9200)` and binds it to `search_bm25` when no search is injected | `9adbf4a` |
-| 14 | Verifier number regex matched digits inside model IDs ("M2", "M0–M3"), so almost every correct answer would be rejected; non-ISO dates ("2 January 2020") were number-checked | P8a contract regex had no left boundary; only YYYY-MM-DD dates are stripped | Codex fix (P8a addendum): `NUMBER_TOKEN = (?<![A-Za-z\d.])-?\d+(?:\.\d+)?(?:[eE][-+]?\d+)?`, one object shared by verifier and `score_exact`; +5 contract tests; author draft prompt writes ISO dates, `:.6g` numbers, p-values to 3 dp | pending (author code; tests/test_agent.py) |
+| 14 | Verifier number regex matched digits inside model IDs ("M2", "M0–M3"), so almost every correct answer would be rejected; non-ISO dates ("2 January 2020") were number-checked | P8a contract regex had no left boundary; only YYYY-MM-DD dates are stripped | Codex fix (P8a addendum): `NUMBER_TOKEN = (?<![A-Za-z\d.])-?\d+(?:\.\d+)?(?:[eE][-+]?\d+)?`, one object shared by verifier and `score_exact`; +5 contract tests; author draft prompt writes ISO dates, `:.6g` numbers, p-values to 3 dp | `2b6b011` (author code; tests/test_agent.py) |
 | 15 | Live `fomc_chunks_v1` held 6,623 docs: 3 test docs (`old`, `in`, `new`, each written 4×) | Docker OpenSearch test indexed into the live index | Codex fix (P8d): test uses `fomc_chunks_test` (deleted in `finally`) and asserts the v1 count is unchanged; `run_eval_10c` exits unless OpenSearch and Qdrant counts == chunks; 3 docs deleted by hand → 6,620; replicas 0 → green | `d0e9aba` |
 | 16 | `test_search_returns_index_results` failed only with Docker up: fake search never called | API tests used the real Redis client, so a cached response was served | Codex fix (P8g): autouse fakeredis per test + `lru_cache` clears in setup/teardown; search test runs twice; 265 passed ×2 | `d0e9aba` |
 | 17 | BM25 ablation failed: ImportError `_metrics`, then ModuleNotFoundError when run as a file | Codex guessed a function name; running a file puts `scripts/` (not the repo root) on `sys.path` | Codex fix (P8f): imports `_filters` from `scripts.run_eval_10c`, `_metrics` from `volab.text.pipeline`; real-import test; run as `python -m scripts.run_bm25_ablation` | `d0e9aba` |
@@ -396,10 +404,30 @@ advance.
 | 25 | A06 r2, A08 r2 reported `beta` (log-scale coefficient) instead of `effect` | Verifier checks that a number is present in the tool output, not that it is the right field; `event_effect` returns both | Open – not fixed. A fix (field-aware verifier or dropping coefficient-scale columns) would be post-hoc and needs new held-out questions to test | open |
 | 26 | 5 of 6 p-value answers ignored the 3 dp rule (3 refused, 2 correct at 6 s.f. scored not exact) | Rule only in the prompt; the verifier accepts 6 s.f. for any field | Open – not fixed. Fix = accept p-values only at 3 dp; same post-hoc caveat as Issue 25 | open |
 | 27 | Monthly PSI on calendar-month rows (~21 sessions, 10 training-decile bins, ε = 1e-6) would flag drift almost every month | Small samples leave decile bins empty; each empty bin adds ~1.15 to PSI. Null simulation (iid, no drift, 20k draws): n = 21 → median PSI 1.42, 88% of months > 0.25; n = 63 → 0.14, 12%; n = 126 → 0.07, ~0% | Author decision 2026-11-17, before any drift code or run: PSI still computed monthly, but at each month-end on the trailing 126 sessions (not the calendar month's rows); deciles, ε and the 0.25 threshold unchanged. Deviation from the Step 12 "monthly PSI" wording | `a923d9b` (applied in `9ea3f71`) |
+| 28 | CI python-tests (3.12, 3.14) failed at collection on the first push of Step 13: `ModuleNotFoundError: airflow.dag_processing` in `tests/test_dag_vol_pipeline.py` | The test imported Airflow at module level; `-m "not airflow"` deselects only after import. A first `importorskip("airflow")` did not skip, because the repo's `airflow/` folder (Dockerfile) on `pythonpath = src .` resolves as a namespace package | `pytest.importorskip("airflow.dag_processing.dagbag")` before the import; python-tests skip the file, dag-import (real Airflow) still runs the 4 tests | `f75de27`, `8077aa5` |
 
 ## Lessons
 
-_fill_
+_Draft by Claude from the issues table and FINDINGS, 17 Nov 2026 — author to edit or approve._
+
+- **Fix the reading rule before the number exists.** The Feb–Apr 2020 rule was written after the
+  full-sample p = 0.0597 was known but before any ex-window number, and made symmetric so it could
+  have cut either way. It decided the headline.
+- **Say what drives an average.** 71 forecasts (4%) carried 92% of HAR's squared error; without
+  that line the full-sample comparison reads as a statement about 2020–2026 when it is about one
+  spring.
+- **Prove each check can fail.** A planted one-session leak had to cut QLIKE and a shuffled placebo
+  had not to; the MLP shuffled-target run had to lose to persistence; the eval refuses an
+  incomplete index. Each guard caught, or was built after, a real failure (Issues 11, 15).
+- **Small evals give direction, not rankings.** With 15 questions one answer moves hit@5 by
+  6.7 pp; single-document-type gold sets made statement retrieval look worse than it was.
+- **A verifier that checks presence does not check meaning** (Issues 25–26). Left open rather than
+  tuned on the test set.
+- **AI-drafted plumbing needs the same review as author code.** Fakes that returned fields real APIs
+  never return, a word-split Compose command and a missing budget alert all came from briefs that
+  were not checked against the rules first (Issues 1–4).
+- **Cost controls go in before the resources they watch.** Separate budget root with
+  `prevent_destroy`, Athena scan cutoff, same-day destroy with the output kept.
 
 ## Next
 
