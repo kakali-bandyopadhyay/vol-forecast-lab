@@ -40,7 +40,10 @@ if ($manifests.Count -gt 0) {
         kubectl apply -f $manifest.FullName
         if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
     }
-    kubectl rollout status deploy --all --timeout=120s
+    foreach ($deployment in @(kubectl get deploy -o name)) {
+        kubectl rollout status $deployment --timeout=120s
+        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+    }
     if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
     $health = curl.exe --fail --show-error --silent http://127.0.0.1:30080/health
     $curlExitCode = $LASTEXITCODE

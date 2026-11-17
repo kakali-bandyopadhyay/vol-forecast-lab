@@ -325,10 +325,12 @@ Actual (2026-11-17): drift.py + tests and MLflow wiring in run_eval/run_mlp = au
   drift report; a `ConfigMap` for paths and thresholds. No secrets in manifests.
 - CI adds a DAG import test and `kubectl apply --dry-run=client` on the manifests.
 **Who.** Author: DAG graph and failure rules, manifests, tests. AI-drafted: Compose file, FastAPI wrapper.
+**Who (actual).** Author: `dags/vol_pipeline.py`, `tests/test_dag_vol_pipeline.py`, `k8s/*.yaml`. Claude: plumbing (compose VFL_MLFLOW=0 + git safe.directory; run_dag_tests.ps1 on Airflow's python with DAGS_FOLDER; CI DagBag for Airflow 3.4; kind_up rollout loop), two test lines at her request (DagBag 3.4 call; document-task "success" assertion proving the stubs ran), manifest review + hardening suggestions. Codex: harness fix (pip in venv), DagBag import path, P11b evidence runs (`docs/step13_evidence.md`).
+**Result.** DAG tests 4 passed (forced audit failure → 5 downstream `upstream_failed`, smoke branch skipped, document stubs succeeded). kubeconform 4/4 valid (k8s 1.37.0). kind: `/health` 200 `{"status":"ok","version":"0.1.0"}` on 127.0.0.1:30080; `kubectl create job --from=cronjob/vfl-drift drift-test` Complete, summary in logs: 11 degraded month-ends (as Step 12), latest PSI month 2026-11 flags rv_m and iv_ps, latest QLIKE month 2026-10 not degraded. Full snapshot run (`use_snapshot=true`) not executed here.
 **Tests.** DAG has the six analysis tasks in order and the four document tasks in order; failed audit → downstream `upstream_failed`;
 `/health` returns 200 in kind; `kubectl create job --from=cronjob/...` writes a drift report.
 **Boundary (README).** Local orchestration and a local cluster; not a production deployment.
-**Committed.** _hash_
+**Committed.** `dfa36f4` (plumbing) / `c4ec305` (DAG + tests) / `0da8854` (manifests) / evidence: `git log -- docs/step13_evidence.md`
 
 ## Step 14 — Write-up and release (3 h)
 
