@@ -4,7 +4,7 @@
     "layers": 1,
     "weight_decay": 0.001
   },
-  "code_commit": "eb8bb23445148d2ebb865840f565eccd46968be0",
+  "code_commit": "92498f0bad17c40d4b08b96b0dd68be530622e0e",
   "torch_version": "2.15.0+cpu",
   "n_folds": 7,
   "n_forecasts": 1703,

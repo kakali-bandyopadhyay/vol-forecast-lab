@@ -29,5 +29,5 @@
   },
   "embedding_model": "text-embedding-3-small",
   "qdrant_version": "1.20.0",
-  "code_commit": "2f87c6a2baa56a3a99cfd5e0d6756d9c7c070a69"
+  "code_commit": "b87a70cec3ff6e3f75363ecba7fbe69cc6de2b9f"
 }

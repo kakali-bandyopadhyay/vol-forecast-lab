@@ -3,15 +3,17 @@
 What the build actually found, as distinct from what the pre-registration predicted. Numbers here
 come from committed scripts; anything not yet computed is absent rather than estimated.
 
-**Status:** Steps 1–10 complete (forecasting core). Q1's headline moves to the ex-window sample;
-Q1b–Q1d are not detected after the final Holm adjustment; Q2 and Q3 are reported below.
+**Status (17 Nov 2026):** Steps 1–13 complete; Step 14 (write-up and release) in this revision.
+Forecasting core: Q1's headline moves to the ex-window sample; Q1b–Q1d are not detected after the
+final Holm adjustment; Q2 and Q3 are reported below. Platform: Step 10b document pipeline, Step 10c
+platform slice (Kafka, AWS lake run on 16 Nov 2026 then destroyed, Spark, OpenSearch, Redis),
+Step 11 agent, Step 12 MLOps and drift, Step 13 Airflow DAG and kind deployment. Claim-by-claim
+evidence: `EVIDENCE.md`.
 
-**Platform (P3, scaffolding only — no results):** local Compose services (Kafka, OpenSearch, Redis,
-Qdrant; versions pinned), a Spark runner, an API skeleton, the FOMC document fetcher, and Terraform
-for the AWS data lake plus a separate, already-applied USD 10/month budget guardrail. The data-lake
-stack has been planned (15 resources) but not applied. Every author-owned module (Lambda handler,
-extraction, chunking, indexing, Kafka I/O, cache, Spark job) is still a stub, so nothing in this file
-comes from the platform yet; Steps 10b and 10c will add those results here.
+**Charts (Step 14).** `figures/results/fig1–fig4` (forecast comparison, errors over time, implied vs
+realised by year, event variance split), built by `scripts/make_charts.py` from aggregates only
+(ADR 0003). Ex-window mean QLIKE, descriptive: M0 0.284, M1 0.217, M2 0.199, M3 0.199, M4 0.178
+(`results/loss_summary.json`); no ranking claim beyond the Holm table.
 
 ---
 
@@ -35,7 +37,7 @@ full sample", not "no incremental information"; the ex-window interval excludes 
 
 **§8 reading for the headline.** Outside Feb–Apr 2020, VIX-implied variance adds out-of-sample
 information beyond lagged realised variance at the 30-day horizon. On the full sample that
-information is not detected. The window rule was fixed and pushed (DEVIATIONS, commit `92f9631`)
+information is not detected. The window rule was fixed and pushed (DEVIATIONS, commit `5c718a1`)
 after the full-sample p = 0.0597 was known and before any ex-window number was computed.
 
 **Why the window matters this much.** The 71 removed forecasts are 4% of the test set but carry
@@ -197,9 +199,9 @@ hours before the statement — not the announcement window.
 
 **Model.** M4 per §4.3 and DEVIATIONS I–S: log of M2's four inputs, standardised on the fit block; log per-session target, standardised on the fit block (S); ReLU network, full-batch Adam, early stopping on the last 20% of each training window; three seeds averaged in levels after the exp(ŷ + s²/2) back-transform; re-trained once per calendar year.
 
-**Implementation fix before the test run (DEVIATIONS S).** The first selection run trained on the unscaled log target and produced validation QLIKE of 4.8–7.8 for every configuration. The target was standardised, a regression test added, and selection re-run. No test-period M4 number existed before the fix (`9181046` rule, `0c35af5` code).
+**Implementation fix before the test run (DEVIATIONS S).** The first selection run trained on the unscaled log target and produced validation QLIKE of 4.8–7.8 for every configuration. The target was standardised, a regression test added, and selection re-run. No test-period M4 number existed before the fix (`53c830e` rule, `92b8154` code).
 
-**Selection (validation 2016-01-04 → 2019-11-29, 985 dates, 216 trainings).** Chosen: 32 hidden units, one layer, weight decay 1e-3 – validation QLIKE 0.2650 (runner-up, same network with weight decay 1e-4: +1.6e-5; tie-break not used). One-layer 32-unit networks beat two-layer (0.280) and smaller networks (0.293–0.302); weight decay barely mattered. No training hit the 3,000-epoch cap. Committed (`eb8bb23`) before any test forecast.
+**Selection (validation 2016-01-04 → 2019-11-29, 985 dates, 216 trainings).** Chosen: 32 hidden units, one layer, weight decay 1e-3 – validation QLIKE 0.2650 (runner-up, same network with weight decay 1e-4: +1.6e-5; tie-break not used). One-layer 32-unit networks beat two-layer (0.280) and smaller networks (0.293–0.302); weight decay barely mattered. No training hit the 3,000-epoch cap. Committed (`92498f0`) before any test forecast.
 
 **Integrity (§9.4).** Shuffled-target MLP: mean QLIKE 0.785 vs M0 0.509 – loses to M0, check passed. Test run: 7 folds, 1,703 forecasts on the M1 dates, none floored, no cap hits (best epochs 27–414).
 
@@ -229,7 +231,7 @@ M4 is worse than HAR-X in the low-VIX tercile in both samples, so the DEVIATIONS
 
 **Change from Step 9.** M1 vs M0 was provisionally "rejected, favours HAR" on raw p (0.027) with the headline on the ex-window sample. After Holm it is not detected in either sample, so the headline moves to the full sample. The other two provisional rows are unchanged. The Q1 headline (Clark–West, ex-window, p = 0.0009) is outside the Holm family and does not change.
 
-**Files.** `results/mlp_selection.parquet`, `mlp_select_manifest.json`, `mlp_forecasts.parquet`, `mlp_test_manifest.json`, `mlp_tests.parquet`, `mlp_regimes.parquet`, `holm_final.parquet`, `holm_manifest.json`.
+**Files.** `results/mlp_selection.parquet`, `mlp_select_manifest.json`, `mlp_forecasts.parquet` (local only, git-ignored under the data licence — `docs/history_rewrite.md`), `mlp_test_manifest.json`, `mlp_tests.parquet`, `mlp_regimes.parquet`, `holm_final.parquet`, `holm_manifest.json`.
 
 ### Step 10b — Unstructured-data pipeline: FOMC statements and minutes
 
@@ -261,13 +263,26 @@ Result as measured: retrieval is weak on the statement questions, and fusion wit
 
 **Limitations.** One officer-list chunk remains at the end of 2024+ minutes; "forwardlooking" ×7 left by the hyphen rule; short fragments ("Core PCE inflation" ×29, the secretary's name ×18) merge into neighbouring chunks. Eval set is small (15) and single-labelled; a future eval should label every chunk that answers a question, across document types – as a new, separately committed set.
 
+### 10c-1/10c-2 Kafka and AWS serverless lake (AWS run 16 Nov 2026)
+
+- Kafka (local, KRaft): 266 documents published; indexer processed 266, DLQ 0; replay of all 266 →
+  266 duplicates suppressed, 0 re-uploaded (`results/text/10c_kafka.json`).
+- Lambda `vfl-extract` (container image): 266 invocations, 0 errors. Text parity lake vs local
+  266/266 identical; chunk parity 6,620 rebuilt = 6,620 stored, row for row
+  (`results/text/10c_evidence.json`).
+- Athena: 134 statements / 132 minutes across 34 partitions; partition check 7 rows (2020
+  statements); at most 20,748 bytes scanned per query, billed at the 10 MB minimum
+  (`results/text/10c_athena.json`).
+- Everything except the budget stack destroyed the same day; both destroy attempts kept in
+  `results/text/10c_destroy.txt` (the first stopped on a missing Glue permission).
+
 ### 10c-3 Spark compaction (16 Nov 2026)
 
 - Job: `spark/compact_stats.py` (Codex-written P7j, reviewed by Kakali); run in Docker `spark:4.1.2-java21-python3` (no local Java/winutils).
 - Result: 266 docs → 34 (year, doc_type) groups; one curated file per group; exact median (`percentile`, not approx).
 - Parity vs pandas (`documents.parquet`): 34/34 PASS (counts/dates exact, mean/median ≤1e-9) → `results/text/10c_spark_stats.parquet`.
 - Fix: `check_spark_parity` accepted only a file; Spark writes `stats.parquet` as a folder (`.exists()`).
-- Note: the wrong-type test passes on any exception (the stub passed it); narrow the assertion in P8.
+- Note: the wrong-type test passed on any exception (the stub passed it); assertion narrowed in `e0d8d94` (BUILD_GUIDE Issue 21).
 
 ### 10c-4 OpenSearch BM25 + RRF fusion (16 Nov 2026)
 
@@ -283,14 +298,14 @@ Result as measured: retrieval is weak on the statement questions, and fusion wit
 - `cache.py` (Kakali): key = sha256 of the normalised query (lower-case, whitespace collapsed) + date_from/date_to/doc_type/k/mode, TTL 3600 s; hit/miss/rate-limited counters on `/metrics`; atomic Lua token bucket (capacity 10, refill 5/s) keyed by client IP. Tests Codex (P7f); API wiring Codex, with Claude fixes (fixed test clock, fail-open on Redis errors, 0.25 s timeouts).
 - Live (Docker redis 7.4.12): miss 4,013 ms (includes cold start) → hit 37 ms for a case/spacing variant; 15-request burst → 10 allowed, 5 × 429; `/metrics` hits 11, misses 1, hit_rate 0.917, rate_limited 5.
 - Tests: 13 passed (cache + API); full suite 249 passed, 1 skipped (excl. test_text.py).
-- Caveats: cached results can be up to 1 h stale after a reindex (key has no index version); rate limit is per IP, so clients behind one NAT share a bucket; fakeredis is in runtime requirements (no dev file yet).
+- Caveats: rate limit is per IP, so clients behind one NAT share a bucket. Fixed after this run in `e0d8d94`: the cache key now includes `VFL_INDEX_VERSION` (results were up to 1 h stale after a reindex) and fakeredis moved to `requirements-dev.txt` (BUILD_GUIDE Issues 18–19).
 - Incident: the first API rate-limit test used the real clock and failed 2/15 runs (a token refilled if 11 requests took > 0.2 s); fixed with an injected clock (15/15).
 
-**Step 11 process note.** The first live run at `2b6b011` was invalid: 39 of 45 attempts hit the OpenAI schema error, and no A01–A13 answers were seen. Re-run at the new commit.
+**Step 11 process note.** The first live run at `2fc8c30` was invalid: 39 of 45 attempts hit the OpenAI schema error, and no A01–A13 answers were seen. Re-run at the new commit.
 
 **Step 11 A01 smoke note.** A single-question smoke run showed A01 was refused ("could not verify") after two drafts. The draft prompt was changed after the A01 smoke runs; only A01's outcome had been seen at that point, not the full eval. The change forbids model-side arithmetic and tells a retry to remove the rejected item.
 
-**Step 11 – agent eval (pre-registered set, 15 questions × 3 repeats, gpt-5.4-mini-2026-03-17, commit eb68dd2).** Headline accuracy = exact_match AND refusal_correct (a correct refusal scores exact = True): **0.844 (38/45)**. Tool choice 45/45; refusals 6/6 (advice guard, out-of-range date); forecast lookups 15/15; model comparisons 9/9; event effects 7/9; p-values 1/6. Cost USD 0.064 in total (0.0014 per attempt; list prices as of 2026-11-17); latency p50 4.1 s, p95 6.9 s.
+**Step 11 – agent eval (pre-registered set, 15 questions × 3 repeats, gpt-5.4-mini-2026-03-17, commit d353ace).** Headline accuracy = exact_match AND refusal_correct (a correct refusal scores exact = True): **0.844 (38/45)**. Tool choice 45/45; refusals 6/6 (advice guard, out-of-range date); forecast lookups 15/15; model comparisons 9/9; event effects 7/9; p-values 1/6. Cost USD 0.064 in total (0.0014 per attempt; list prices as of 2026-11-17); latency p50 4.1 s, p95 6.9 s.
 
 Errors: 2 answers reported the log-scale coefficient (beta) instead of the effect – both values are in the tool output, so the copy-only verifier accepted them; 5 p-value answers ignored the 3 dp rule – 3 were refused after two drafts ("could not verify"), 2 gave the correct value at 6 significant figures and scored as not exact. No number absent from the tool output reached a final answer.
 
@@ -298,9 +313,15 @@ By repeat (pre-registered: each reported separately): repeat 0 = 13/15, repeat 1
 
 Not fixed: the two verifier limits above (wrong field accepted; p-value precision not enforced) are left open (BUILD_GUIDE Issues 25–26). Fixing them and re-running the same 15 questions would be tuning on the test set, so 0.844 stands as the result.
 
-Process: an earlier run at 2b6b011 was invalid (structured-output schema rejected by the API; no A01–A13 answers were seen); the reported run is at eb68dd2.
+Process: an earlier run at 2fc8c30 was invalid (structured-output schema rejected by the API; no A01–A13 answers were seen); the reported run is at d353ace.
 
 **Step 12 – drift monitoring.** QLIKE ratio M2/M1 (63 sessions; degraded = 3 consecutive month-ends > 1.10): degraded at 11 of 79 month-ends (2020-06…09, 2021-03, 2021-07…10, 2024-10, 2026-05); latest (2026-10) not degraded. PSI of the four HAR inputs (training deciles to 2019-12-02; trailing 126 sessions, BUILD_GUIDE Issue 27; threshold 0.25) flagged 40–78 of 78 month-ends. A post-hoc check found 126-session windows inside the training period also exceed 0.25 in 46–100% of cases: for persistent regressors this PSI rule cannot separate drift from normal regime variation. Reported as a limit, not tuned; a block-bootstrap null threshold tested on later data would be the fix.
+
+**Step 13 – Airflow DAG and local Kubernetes.** DAG tests 4 passed (a forced audit failure leaves 5
+downstream tasks `upstream_failed`; the document stubs run). kubeconform 4/4 valid (Kubernetes
+1.37.0). In kind: `/health` 200 on 127.0.0.1:30080; pod runs as uid 10001; a job created from the
+drift CronJob completed with the same 11 degraded month-ends as Step 12. The full snapshot DAG run
+(`use_snapshot=true`) was not executed. Evidence: `docs/step13_evidence.md`.
 
 ---
 
@@ -330,4 +351,4 @@ recorded before results.
 
 ---
 
-_Results are added per step as they are computed._
+_Final for the Step 14 release (17 Nov 2026). Later changes are dated entries._

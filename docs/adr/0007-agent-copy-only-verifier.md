@@ -20,6 +20,6 @@ reached a final answer. Two limits stay open: the verifier checks presence, not 
 `beta` instead of `effect`), and does not enforce p-value precision (Issues 25–26). Fixing them on the
 same questions would be tuning on the test set.
 
-**Evidence.** `results/agent/` eval files at `eb68dd2`; FINDINGS Step 11.
+**Evidence.** `results/agent/` eval files at `d353ace`; FINDINGS Step 11.
 
 **Revisit if.** A field-aware verifier is built — evaluate it on a new held-out question set.

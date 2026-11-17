@@ -152,7 +152,7 @@ First 40 log lines (complete log):
 
 ### DAG test evidence (P11a)
 
-run_dag_tests.ps1: 4 passed (c4ec305)
+run_dag_tests.ps1: 4 passed (ebb9ef7)
 
 ## Warnings and notes
 

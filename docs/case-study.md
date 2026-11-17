@@ -1,8 +1,8 @@
 # From central-bank documents to governed hybrid search: an evidence-gated data and AI platform
 
 **Tags:** Data · AI · Architecture case study
-**Status (16 Nov 2026):** Steps 0–10b complete and measured. Step 10c Kafka + AWS lake run completed, evidenced and destroyed on 16 Nov 2026; Spark, OpenSearch and Redis parts pending. Every number below comes from committed output files.
-**Code:** vol-forecast-lab (private until release) · **Diagrams:** `figures/diagrams/platform.svg`, `step10b.svg`, `step10c.svg`
+**Status (17 Nov 2026):** Steps 0–13 complete and measured; Step 14 write-up in this revision. The Step 10c AWS lake run was completed, evidenced and destroyed on 16 Nov 2026. Every number below comes from committed output files; claim-by-claim checks in `EVIDENCE.md`.
+**Code:** vol-forecast-lab · **Diagrams:** `figures/diagrams/platform.svg`, `step10b.svg`, `step10c.svg`
 
 ---
 
@@ -10,7 +10,7 @@
 
 Rates and volatility desks read every FOMC statement and set of minutes, but the text sits in PDFs and HTML pages that no system can query by meeting, by date or by who dissented. I wanted one pipeline that turns those documents into searchable, auditable data — and that I could prove behaves the same way every time it runs, at a known cost.
 
-The same repository holds a pre-registered realised-volatility forecasting study (HAR-X vs HAR, Clark–West test). The document pipeline is designed so that FOMC text can later feed those models as event features.
+The same repository holds a pre-registered realised-volatility forecasting study (HAR-X vs HAR, Clark–West test). Its headline: VIX-implied variance adds information beyond HAR outside Feb–Apr 2020 (Clark–West p = 0.0009), not detected on the full sample (p = 0.0597) — see `FINDINGS.md`. The document pipeline is kept separate from the models by design: retrieval and citation only, no text features.
 
 ## What I built
 
@@ -18,13 +18,15 @@ The same repository holds a pre-registered realised-volatility forecasting study
    - Corpus: **134 statements and 132 minutes = 266 documents → 6,620 chunks, 1.50M tokens.**
    - Index: Qdrant with dense embeddings (text-embedding-3-small) plus a keyword vector with server-side IDF, fused with reciprocal rank fusion (RRF). Each chunk carries a contextual header (document type + meeting date).
    - Idempotent: a full re-run upserts **6,620, then 0**.
-2. **Platform slice (Step 10c, built and tested offline; AWS run pending).**
+2. **Platform slice (Step 10c, done; AWS run 16 Nov 2026, destroyed the same day).**
    - **Kafka** topics `docs.raw`, `docs.clean`, `docs.dlq`: idempotent producer (`acks=all`), manual commits, three attempts then dead-letter queue.
    - **AWS serverless lake** via Terraform: S3 `raw/ → clean/ → curated/`, an extraction Lambda shipped as a container image from ECR, Glue table with partition projection, Athena workgroup with a 100 MB scan cutoff.
    - **PySpark** compaction and statistics, checked against pandas.
    - **OpenSearch** BM25 fused with Qdrant dense results (RRF, k = 60), rerun on the same frozen questions.
    - **Redis** search cache and per-client token-bucket rate limiter behind the API.
-3. **Runtime and delivery.** FastAPI service in Docker (`/search`, `/forecast`, `/compare`, `/health`, `/metrics`); Airflow 3.4 for orchestration; a local Kubernetes (kind) cluster; CI running tests on Python 3.12 and 3.14, Terraform validate, Docker build, DAG import and manifest validation. Every image and package version is pinned.
+3. **Research agent (Step 11).** LangGraph graph whose tools read only computed result files; a copy-only verifier rejects any number not present in a tool output; refuses advice and out-of-range dates; pinned model and a per-run cost cap.
+4. **MLOps (Step 12).** MLflow tracking, snapshot ID on every results table, monthly drift report (PSI on model inputs, QLIKE ratio for degradation).
+5. **Runtime and delivery (Step 13).** FastAPI service in Docker (`/search`, `/forecast`, `/compare`, `/health`, `/metrics`); Airflow 3.4 for orchestration; a local Kubernetes (kind) cluster; CI running tests on Python 3.12 and 3.14, Terraform validate, Docker build, DAG import and manifest validation. Every image and package version is pinned.
 
 ## Architecture
 
@@ -73,8 +75,11 @@ Documents enter once, are published as events, land raw in S3, are extracted by 
 | Lambda invocations / errors | 266 / 0 |
 | Athena: 134 statements / 132 minutes across 34 partitions; 2020 statements = 7 rows; ≤ 20,748 bytes scanned per query (billed at the 10 MB minimum) | PASS |
 | Text parity (266/266 identical) and chunk parity (6,620 rebuilt = 6,620 stored, row for row) | PASS |
-| Recall@5: OpenSearch BM25 / dense / fused | _pending_ |
-| Cache hit rate | _pending_ |
+| Recall@5 on the same 15 frozen questions: OpenSearch BM25 / dense / fused | 0.367 / 0.389 / **0.589** (MRR@10 0.288 / 0.286 / 0.402) |
+| Redis cache and limiter | miss 4,013 ms → hit 37 ms; hit rate 0.917; burst of 15 → 10 allowed, 5 × 429 |
+| Spark compaction vs pandas | 34/34 groups equal |
+
+**Step 11 agent — 15 pre-registered questions × 3 repeats:** accuracy 0.844 (38/45); tool choice 45/45; refusals 6/6; no unverified number reached an answer; USD 0.064 in total, p50 4.1 s.
 
 ## What failed, and why
 
@@ -83,6 +88,8 @@ Documents enter once, are published as events, land raw in S3, are extracted by 
 - **Test doubles that lie.** A fake S3 returned a field the real listing API never returns, so a checkpoint test passed against behaviour production would not have. Fixed by making fakes match the real API.
 - **A policy that can create cannot always destroy.** Teardown stopped on the Glue database: deleting it also needs permission on its user-defined functions. Fixed the build user's policy, finished the destroy, and kept both attempts in `10c_destroy.txt`.
 - **Two Windows-specific traps in the image push.** PowerShell re-encodes piped passwords (ECR login 400), and Docker Desktop pushes an image index with attestations that Lambda rejects. Both fixed in the build script.
+- **The verifier checks presence, not meaning.** Two answers reported a log-scale coefficient instead of the effect (both numbers were in the tool output), and p-value rounding was enforced only by the prompt. Left open: fixing and re-running the same questions would be tuning on the test set.
+- **A drift rule that always fires.** PSI on 126-session windows flags most month-ends even inside the training period, so for persistent inputs it cannot separate drift from regime change. Reported as a limit, not tuned.
 - **Known data gap.** The 24 Oct 2012 minutes exist only as HTML in the source; recorded as a known gap rather than patched.
 
 ## What changes at bank scale
@@ -102,4 +109,4 @@ Design, decisions, author code (extraction, chunking, indexing, Kafka producer a
 
 ## Next
 
-Run the 10c AWS evidence and fill the table above; research agent with tracing and a hard cost cap; MLOps tracking; Airflow DAG and Kubernetes deployment; public release.
+Label retrieval gold sets across document types (new, separately committed set); a field-aware agent verifier tested on new held-out questions; a block-bootstrap null for the PSI threshold; intraday data for announcement-window effects; a managed deployment of the DAG and services.

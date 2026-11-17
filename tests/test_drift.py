@@ -84,7 +84,12 @@ def test_qlike_ratio_matches_hand_computed_month_value() -> None:
 
 
 def test_qlike_ratio_first_three_months_are_nan_for_a_63_session_window() -> None:
-    losses = pd.read_parquet(REPO / "results" / "losses.parquet")
+    # Skip added at the author's request (17 Nov 2026): losses.parquet is a per-date series kept
+    # local and git-ignored under the data licence (ADR 0003), so a public clone does not have it.
+    path = REPO / "results" / "losses.parquet"
+    if not path.exists():
+        pytest.skip("results/losses.parquet is local only (licence, ADR 0003)")
+    losses = pd.read_parquet(path)
     actual = drift.qlike_ratio(losses, window=63)
     early = actual[actual["month"].isin(["2020-01", "2020-02", "2020-03"])]
     assert len(early) == 3

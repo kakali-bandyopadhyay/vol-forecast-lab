@@ -13,5 +13,5 @@
   "latency_p95_s": 6.945189120003487,
   "model": "gpt-5.4-mini-2026-03-17",
   "price_source_date": "2026-11-17",
-  "git_head": "eb68dd205c2660a6ce1949618bda3a3365629870"
+  "git_head": "d353ace112a2adb1aa551230473ec0c343ef3870"
 }

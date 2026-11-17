@@ -6,7 +6,7 @@
   },
   "config_id": "h32_l1_wd0.001",
   "validation_mean_qlike": 0.26502531406633306,
-  "code_commit": "0c35af58ec17c043e82e847bee215295311bff96",
+  "code_commit": "92b81542fa2cf4b1be8793ab58917de550f87f29",
   "torch_version": "2.15.0+cpu",
   "n_configs": 18,
   "n_seeds": 3,

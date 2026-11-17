@@ -18,7 +18,7 @@ specification search); hold-out set only (does not stop changing the test after 
 two verifier limits stay open rather than being tuned on the test set (BUILD_GUIDE Issues 25–26), and
 §8's pre-committed wording for Q1c was overridden only towards a weaker claim. One rule — the
 Feb–Apr 2020 window rule — was fixed after the full-sample Clark–West p = 0.0597 was known; it was
-pushed (`92f9631`) before any ex-window number was computed, and FINDINGS says so.
+pushed (`5c718a1`) before any ex-window number was computed, and FINDINGS says so.
 
 **Evidence.** Tag `v0.1-prereg`; DEVIATIONS entries dated before each affected run (I–S before any M4
 forecast); FINDINGS process notes on the invalid first agent run and the A01 smoke change.

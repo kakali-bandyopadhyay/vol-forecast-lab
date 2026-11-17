@@ -27,7 +27,7 @@
     1.1003211248346032e-05
   ],
   "clark_west_interval_note": "mean f_t and mean +/- 1.96 HAC standard errors; f_t > 0 favours M2",
-  "code_commit": "9eb2155c6f019612b042c2932f1236880bc5af66",
+  "code_commit": "5948af109c8f6c7e913f4ea05a9494ed2bbe6429",
   "dm_convention": "d = loss(first) - loss(second); negative favours the first model",
   "holm_family": "deferred; 3 of 4 \u00a75.5 tests present; DM p-values are raw"
 }

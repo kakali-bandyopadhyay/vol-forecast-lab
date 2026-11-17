@@ -1,7 +1,7 @@
 {
   "panel_sha256": "e5b8a91420e396696d6ae0ee821232e04f5111bc31ab82637ac5b965c367fe41",
-  "code_commit": "5168a0b00b3f114b8250a8353a92703f46ef2986",
-  "window_rule_note": "DEVIATIONS A (commit 92f9631): 30-day results drop t in the window or with a target session in it; Q3 and \u00a77.4 drop window sessions; Q3 Holm is applied within the primary and ex-window runs.",
+  "code_commit": "76ddb6d33b95011bc9ce1be2500b4725931e327b",
+  "window_rule_note": "DEVIATIONS A (commit 5c718a1): 30-day results drop t in the window or with a target session in it; Q3 and \u00a77.4 drop window sessions; Q3 Holm is applied within the primary and ex-window runs.",
   "window": {
     "start": "2020-02-15",
     "end": "2020-04-30",

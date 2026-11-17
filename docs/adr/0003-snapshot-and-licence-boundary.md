@@ -7,7 +7,7 @@ licence that does not allow redistribution of row-level data.
 
 **Decision.** Every pull is written to a snapshot with a SHA-256 manifest; the audit task checks it
 before anything else runs; the snapshot ID is stamped into every results table and the drift report.
-Raw and snapshot folders are git-ignored. Public outputs (FINDINGS, dashboard) carry statistics and
+Raw and snapshot folders are git-ignored, and so are per-date result series (forecasts, losses, HAR inputs; removed from history on 17 Nov 2026, `docs/history_rewrite.md`). Public outputs (FINDINGS, dashboard) carry statistics and
 aggregates only — never price, return, realised-variance or forecast series.
 
 **Alternatives rejected.** Fetch-on-run (results drift with vendor revisions); committing the data
