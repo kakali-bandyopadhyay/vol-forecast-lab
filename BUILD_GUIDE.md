@@ -327,7 +327,7 @@ retention; everything destroyed the same day.
 R4 poison rejected 3 times → DLQ 1; R5 config change + redrive → written 267, DLQ 0; R6 same poison
 → duplicate. Lambda errors 0 throughout. Latency p50 11 s / p95 17 s (1 s resolution). Destroyed
 18 Nov 2026 (`results/text/10d_destroy.txt`). Details: FINDINGS "Step 10d".
-**Committed.** _(commit hash added after push)_
+**Committed.** `2a4b668` (Step 10d – registry, live-run evidence, FINDINGS/BUILD_GUIDE).
 
 ## Step 11 — Research agent: LangGraph + LangSmith (4 h)
 
@@ -445,9 +445,9 @@ advance.
 | 28 | CI python-tests (3.12, 3.14) failed at collection on the first push of Step 13: `ModuleNotFoundError: airflow.dag_processing` in `tests/test_dag_vol_pipeline.py` | The test imported Airflow at module level; `-m "not airflow"` deselects only after import. A first `importorskip("airflow")` did not skip, because the repo's `airflow/` folder (Dockerfile) on `pythonpath = src .` resolves as a namespace package | `pytest.importorskip("airflow.dag_processing.dagbag")` before the import; python-tests skip the file, dag-import (real Airflow) still runs the 4 tests | `6674b25`, `7222a43` |
 | 29 | Four per-date series derived from licensed prices/VIX were tracked (`results/forecasts.parquet`, `mlp_forecasts.parquet`, `har_inputs.parquet`, `losses.parquet`), against ADR 0003 | Result files committed wholesale from Step 7 on; the boundary was checked for the dashboard only | Found at the Step 14 DoD. Author decision 17 Nov: `git filter-repo --invert-paths` on the four paths, `.gitignore`, hashes from Step 7 on remapped in docs and manifests (`docs/history_rewrite.md`), force-push; `test_drift` skips when `losses.parquet` is absent (at the author's request); charts read `results/loss_summary.json` | `088744f` (remapped `df8e020`) |
 | 30 | Independent review (17 Nov): account ID remained in the UTF-16 destroy log after a text-only secret scan; ex-dividend rows remained in `audit.json`; dashboard used the wrong `row.sample` access; two pre-registered items were missing from FINDINGS | UTF-16 log was not decoded by the scan; audit output retained raw rows; pandas `.sample` shadowed the result column; regime and proxy analyses had not been reported | Account/user/bucket/request IDs redacted and logs sanitised; audit stores summary and failing dates only; dashboard fixed and rebuilt; §8 regimes and §9.5 proxy check computed and reported, with a dated DEVIATIONS entry; P12 text and brief labels corrected | Release commit (not yet committed) |
-| 31 | First `terraform destroy` of `infra/eventdriven` removed 6 of 13 resources, then AccessDenied on `lambda:GetEventSourceMapping` | The provider's delete waiter polls the mapping after it is gone; IAM then evaluates the call against `*`, not the mapping ARN | `lambda:GetEventSourceMapping` added to the read-only `*` statement of the deploy user's `vfl-build-eventdriven` policy; second destroy removed the remaining 7; runbook R7 notes it | Step 10d commit |
-| 32 | Sanitiser failed with UnicodeDecodeError on the destroy log | Windows PowerShell 5.1 `Tee-Object` writes UTF-16 | Raw log re-saved as UTF-8 (no BOM) before `--sanitise-file`; `-no-color` on destroy; both in runbook R7 | Step 10d commit |
-| 33 | 13 AI-written plumbing tests (publisher 6, collector 4, Terraform 3) | P14 brief items (allowed by the authorship rule for plumbing) | Kept; reviewed line by line (Claude, 18 Nov 2026) | Step 10d commit |
+| 31 | First `terraform destroy` of `infra/eventdriven` removed 6 of 13 resources, then AccessDenied on `lambda:GetEventSourceMapping` | The provider's delete waiter polls the mapping after it is gone; IAM then evaluates the call against `*`, not the mapping ARN | `lambda:GetEventSourceMapping` added to the read-only `*` statement of the deploy user's `vfl-build-eventdriven` policy; second destroy removed the remaining 7; runbook R7 notes it | `2a4b668` |
+| 32 | Sanitiser failed with UnicodeDecodeError on the destroy log | Windows PowerShell 5.1 `Tee-Object` writes UTF-16 | Raw log re-saved as UTF-8 (no BOM) before `--sanitise-file`; `-no-color` on destroy; both in runbook R7 | `2a4b668` |
+| 33 | 13 AI-written plumbing tests (publisher 6, collector 4, Terraform 3) | P14 brief items (allowed by the authorship rule for plumbing) | Kept; reviewed line by line (Claude, 18 Nov 2026) | `2a4b668` |
 
 ## Lessons
 

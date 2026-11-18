@@ -42,7 +42,7 @@ open. Every claim, its file, its reproduce command and its commit: [EVIDENCE.md]
 ## Diagrams and charts
 
 - Research pipeline: [`figures/diagrams/overall.svg`](figures/diagrams/overall.svg)
-- Platform: [`platform.svg`](figures/diagrams/platform.svg) · document pipeline [`step10b.svg`](figures/diagrams/step10b.svg) · platform slice [`step10c.svg`](figures/diagrams/step10c.svg) · deployment [`deployment.svg`](figures/diagrams/deployment.svg)
+- Platform: [`platform.svg`](figures/diagrams/platform.svg) · document pipeline [`step10b.svg`](figures/diagrams/step10b.svg) · platform slice [`step10c.svg`](figures/diagrams/step10c.svg) · deployment [`deployment.svg`](figures/diagrams/deployment.svg) · event-driven registry [`eventdriven.svg`](figures/diagrams/eventdriven.svg)
 - Charts (aggregates only): [forecast comparison](figures/results/fig1_forecast_comparison.svg) ·
   [errors over time](figures/results/fig2_errors_over_time.svg) ·
   [implied vs realised by year](figures/results/fig3_spread_premium_by_year.svg) ·
