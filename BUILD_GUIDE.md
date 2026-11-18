@@ -291,6 +291,44 @@ re-uploaded. Lambda 266 runs / 0 errors; text parity 266/266, chunk parity 6,620
 hit 37 ms); burst of 15 → 10 allowed, 5 × 429. Destroyed 16 Nov 2026 (`results/text/10c_destroy.txt`).
 **Committed.** `068cdae` (10c-1 Kafka) / `28cfb9b`, `479a395` (10c-2 Lambda/Athena + evidence) / `a599116` (10c-3 Spark) / `f100594` (10c-4 OpenSearch) / `ab94e8d` (10c-5 Redis – 10c complete) / `d125fb9` (follow-ups).
 
+## Step 10d — Event-driven document registry: SNS, SQS, Lambda, DynamoDB (8–10 h, estimate)
+
+**What.** One registration event per Step 10b document (266), delivered at least once and written
+effectively once: SNS → SQS → Lambda → DynamoDB, with a dead-letter queue and a tested redrive.
+
+**Why.** Step 10c ran a batch lake; production platforms also take documents as events. This step
+tests the three things that break event pipelines – duplicates, poison messages and replay – with
+evidence for each, in its own Terraform root so the 10c state is never touched.
+
+```mermaid
+flowchart LR
+  D[(documents.parquet<br/>266 docs)] --> P[publish_doc_events.py]
+  P -->|document.registered v1| T[SNS topic<br/>vfl-doc-events]
+  T -->|raw delivery| Q[SQS queue<br/>vfl-doc-registry]
+  Q -->|event source mapping<br/>batch 10, partial failures| L[Lambda<br/>vfl-doc-registry]
+  L -->|conditional put| DB[(DynamoDB<br/>vfl-doc-registry)]
+  Q -->|after 3 receives| DLQ[SQS DLQ<br/>vfl-doc-registry-dlq]
+  DLQ -.->|redrive| Q
+  L --> CW[CloudWatch Logs<br/>1 JSON line per record]
+```
+
+| Part | Detail | Who | Hours |
+|---|---|---|---|
+| 10d-1 Terraform root `infra/eventdriven` + runbook | SNS topic; standard SQS queue (SSE-SQS, visibility 60 s = 6 × Lambda timeout) and DLQ (maxReceiveCount 3); raw delivery; queue policy scoped by `aws:SourceArn`; DynamoDB on demand; Lambda python3.13, 128 MB, 10 s; event source mapping (batch 10, 1 s window, `ReportBatchItemFailures`, maximum concurrency 2); DLQ-depth alarm; 7-day logs; role limited to 7 actions on named ARNs; CI `fmt`/`validate` | AI (Codex), reviewed line by line | 3–4 (10d-1 + 10d-2) |
+| 10d-2 Publisher + evidence collector | `publish_doc_events.py`: SNS `PublishBatch` in tens, raw SQS duplicate, deterministic v2 poison event, JSONL manifest. `collect_eventdriven_evidence.py`: table count, queue depths, Logs Insights outcome counts, Lambda metrics, nearest-rank latency, account-ID sanitiser | AI (Codex), reviewed line by line | |
+| 10d-3 Handler | Schema version checked against `ACCEPTED_SCHEMA_VERSIONS`; conditional put on `doc_id` + `sha256`; outcome written / duplicate / rejected; one JSON log line per record; partial batch response | Author | 2 |
+| 10d-4 Live run R0–R7 | Identity + budget check, apply, publish, republish + raw duplicate, poison, config fix + redrive, poison again, destroy | Author (Claude guided) | 1–2 |
+
+**Tests.** Handler: 13 author tests. Plumbing: 13 AI-written tests (publisher 6, collector 4,
+Terraform 3 – Issue 33). CI: `terraform fmt -check` and `validate` for `infra/eventdriven`.
+**Cost guardrails.** Budget stack checked at R0 (USD 10/month); DynamoDB on demand; 7-day log
+retention; everything destroyed the same day.
+**Result.** R2 written 266; R3 duplicate 267 (266 republished + 1 raw duplicate), 0 new writes;
+R4 poison rejected 3 times → DLQ 1; R5 config change + redrive → written 267, DLQ 0; R6 same poison
+→ duplicate. Lambda errors 0 throughout. Latency p50 11 s / p95 17 s (1 s resolution). Destroyed
+18 Nov 2026 (`results/text/10d_destroy.txt`). Details: FINDINGS "Step 10d".
+**Committed.** _(commit hash added after push)_
+
 ## Step 11 — Research agent: LangGraph + LangSmith (4 h)
 
 **What.** Tools read only `results/*.parquet`: `get_forecast(as_of, model)`, `compare_models(start,
@@ -406,8 +444,10 @@ advance.
 | 27 | Monthly PSI on calendar-month rows (~21 sessions, 10 training-decile bins, ε = 1e-6) would flag drift almost every month | Small samples leave decile bins empty; each empty bin adds ~1.15 to PSI. Null simulation (iid, no drift, 20k draws): n = 21 → median PSI 1.42, 88% of months > 0.25; n = 63 → 0.14, 12%; n = 126 → 0.07, ~0% | Author decision 2026-11-17, before any drift code or run: PSI still computed monthly, but at each month-end on the trailing 126 sessions (not the calendar month's rows); deciles, ε and the 0.25 threshold unchanged. Deviation from the Step 12 "monthly PSI" wording | `4878c98` (applied in `e292c9c`) |
 | 28 | CI python-tests (3.12, 3.14) failed at collection on the first push of Step 13: `ModuleNotFoundError: airflow.dag_processing` in `tests/test_dag_vol_pipeline.py` | The test imported Airflow at module level; `-m "not airflow"` deselects only after import. A first `importorskip("airflow")` did not skip, because the repo's `airflow/` folder (Dockerfile) on `pythonpath = src .` resolves as a namespace package | `pytest.importorskip("airflow.dag_processing.dagbag")` before the import; python-tests skip the file, dag-import (real Airflow) still runs the 4 tests | `6674b25`, `7222a43` |
 | 29 | Four per-date series derived from licensed prices/VIX were tracked (`results/forecasts.parquet`, `mlp_forecasts.parquet`, `har_inputs.parquet`, `losses.parquet`), against ADR 0003 | Result files committed wholesale from Step 7 on; the boundary was checked for the dashboard only | Found at the Step 14 DoD. Author decision 17 Nov: `git filter-repo --invert-paths` on the four paths, `.gitignore`, hashes from Step 7 on remapped in docs and manifests (`docs/history_rewrite.md`), force-push; `test_drift` skips when `losses.parquet` is absent (at the author's request); charts read `results/loss_summary.json` | `088744f` (remapped `df8e020`) |
-
 | 30 | Independent review (17 Nov): account ID remained in the UTF-16 destroy log after a text-only secret scan; ex-dividend rows remained in `audit.json`; dashboard used the wrong `row.sample` access; two pre-registered items were missing from FINDINGS | UTF-16 log was not decoded by the scan; audit output retained raw rows; pandas `.sample` shadowed the result column; regime and proxy analyses had not been reported | Account/user/bucket/request IDs redacted and logs sanitised; audit stores summary and failing dates only; dashboard fixed and rebuilt; §8 regimes and §9.5 proxy check computed and reported, with a dated DEVIATIONS entry; P12 text and brief labels corrected | Release commit (not yet committed) |
+| 31 | First `terraform destroy` of `infra/eventdriven` removed 6 of 13 resources, then AccessDenied on `lambda:GetEventSourceMapping` | The provider's delete waiter polls the mapping after it is gone; IAM then evaluates the call against `*`, not the mapping ARN | `lambda:GetEventSourceMapping` added to the read-only `*` statement of the deploy user's `vfl-build-eventdriven` policy; second destroy removed the remaining 7; runbook R7 notes it | Step 10d commit |
+| 32 | Sanitiser failed with UnicodeDecodeError on the destroy log | Windows PowerShell 5.1 `Tee-Object` writes UTF-16 | Raw log re-saved as UTF-8 (no BOM) before `--sanitise-file`; `-no-color` on destroy; both in runbook R7 | Step 10d commit |
+| 33 | 13 AI-written plumbing tests (publisher 6, collector 4, Terraform 3) | P14 brief items (allowed by the authorship rule for plumbing) | Kept; reviewed line by line (Claude, 18 Nov 2026) | Step 10d commit |
 
 ## Lessons
 

@@ -1,0 +1,16 @@
+{
+  "phase": "R2",
+  "generated_at": "2026-11-18T10:14:40Z",
+  "window_minutes": 180,
+  "item_count": 266,
+  "main_queue_approximate_number_of_messages": 0,
+  "main_queue_approximate_number_of_messages_not_visible": 0,
+  "dlq_approximate_number_of_messages": 0,
+  "outcome_counts": {
+    "written": 266
+  },
+  "lambda_invocations": 27,
+  "lambda_errors": 0,
+  "end_to_end_latency_p50_ms": 11000.0,
+  "end_to_end_latency_p95_ms": 17000.0
+}

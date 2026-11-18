@@ -39,7 +39,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        root: [infra/budget, infra/terraform]
+        root: [infra/budget, infra/terraform, infra/eventdriven]
     defaults:
       run:
         working-directory: ${{ matrix.root }}

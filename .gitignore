@@ -20,6 +20,8 @@ tfplan
 *.tfvars
 # Step 10c local lake copies (synced from S3) and consumer state
 data/lake/
+infra/eventdriven/build/
+results/text/*_raw.txt
 
 # Per-date series derived from licensed prices/VIX (ADR 0003): local only, never committed
 results/forecasts.parquet

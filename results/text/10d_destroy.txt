@@ -1,0 +1,326 @@
+data.archive_file.registry: Reading...
+data.archive_file.registry: Read complete after 0s [id=e20c280dc33910082f0b7c55a9cf5c650b34b36b]
+aws_cloudwatch_log_group.registry: Refreshing state... [id=/aws/lambda/vfl-doc-registry]
+aws_sqs_queue.dlq: Refreshing state... [id=https://sqs.us-east-1.amazonaws.com/<account>/vfl-doc-registry-dlq]
+aws_dynamodb_table.registry: Refreshing state... [id=vfl-doc-registry]
+aws_iam_role.registry: Refreshing state... [id=vfl-doc-registry-role]
+aws_sqs_queue.main: Refreshing state... [id=https://sqs.us-east-1.amazonaws.com/<account>/vfl-doc-registry]
+aws_iam_role_policy.registry: Refreshing state... [id=vfl-doc-registry-role:vfl-doc-registry-policy]
+aws_lambda_function.registry: Refreshing state... [id=vfl-doc-registry]
+aws_lambda_event_source_mapping.registry: Refreshing state... [id=b216491c-6a0d-433d-be59-bcb72477ca88]
+
+Terraform used the selected providers to generate the following execution
+plan. Resource actions are indicated with the following symbols:
+  - destroy
+
+Terraform will perform the following actions:
+
+  # aws_cloudwatch_log_group.registry will be destroyed
+  - resource "aws_cloudwatch_log_group" "registry" {
+      - arn                         = "arn:aws:logs:us-east-1:<account>:log-group:/aws/lambda/vfl-doc-registry" -> null
+      - deletion_protection_enabled = false -> null
+      - id                          = "/aws/lambda/vfl-doc-registry" -> null
+      - log_group_class             = "STANDARD" -> null
+      - name                        = "/aws/lambda/vfl-doc-registry" -> null
+      - region                      = "us-east-1" -> null
+      - retention_in_days           = 7 -> null
+      - skip_destroy                = false -> null
+      - tags                        = {} -> null
+      - tags_all                    = {
+          - "project" = "vol-forecast-lab"
+          - "step"    = "10d"
+        } -> null
+        # (2 unchanged attributes hidden)
+    }
+
+  # aws_dynamodb_table.registry will be destroyed
+  - resource "aws_dynamodb_table" "registry" {
+      - arn                         = "arn:aws:dynamodb:us-east-1:<account>:table/vfl-doc-registry" -> null
+      - billing_mode                = "PAY_PER_REQUEST" -> null
+      - deletion_protection_enabled = false -> null
+      - hash_key                    = "pk" -> null
+      - id                          = "vfl-doc-registry" -> null
+      - name                        = "vfl-doc-registry" -> null
+      - range_key                   = "sk" -> null
+      - read_capacity               = 0 -> null
+      - region                      = "us-east-1" -> null
+      - stream_enabled              = false -> null
+      - table_class                 = "STANDARD" -> null
+      - tags                        = {} -> null
+      - tags_all                    = {
+          - "project" = "vol-forecast-lab"
+          - "step"    = "10d"
+        } -> null
+      - write_capacity              = 0 -> null
+        # (3 unchanged attributes hidden)
+
+      - attribute {
+          - name = "pk" -> null
+          - type = "S" -> null
+        }
+      - attribute {
+          - name = "sk" -> null
+          - type = "S" -> null
+        }
+
+      - point_in_time_recovery {
+          - enabled                 = false -> null
+          - recovery_period_in_days = 0 -> null
+        }
+
+      - ttl {
+          - enabled        = false -> null
+            # (1 unchanged attribute hidden)
+        }
+    }
+
+  # aws_iam_role.registry will be destroyed
+  - resource "aws_iam_role" "registry" {
+      - arn                   = "arn:aws:iam::<account>:role/vfl-doc-registry-role" -> null
+      - assume_role_policy    = jsonencode(
+            {
+              - Statement = [
+                  - {
+                      - Action    = "sts:AssumeRole"
+                      - Effect    = "Allow"
+                      - Principal = {
+                          - Service = "lambda.amazonaws.com"
+                        }
+                    },
+                ]
+              - Version   = "2012-10-17"
+            }
+        ) -> null
+      - create_date           = "2026-11-18T10:11:21Z" -> null
+      - force_detach_policies = false -> null
+      - id                    = "vfl-doc-registry-role" -> null
+      - managed_policy_arns   = [] -> null
+      - max_session_duration  = 3600 -> null
+      - name                  = "vfl-doc-registry-role" -> null
+      - path                  = "/" -> null
+      - tags                  = {} -> null
+      - tags_all              = {
+          - "project" = "vol-forecast-lab"
+          - "step"    = "10d"
+        } -> null
+      - unique_id             = "AROA5IU7X7FZ5N2TIERG3" -> null
+        # (3 unchanged attributes hidden)
+
+      - inline_policy {
+          - name   = "vfl-doc-registry-policy" -> null
+          - policy = jsonencode(
+                {
+                  - Statement = [
+                      - {
+                          - Action   = [
+                              - "sqs:ReceiveMessage",
+                              - "sqs:DeleteMessage",
+                              - "sqs:GetQueueAttributes",
+                              - "sqs:ChangeMessageVisibility",
+                            ]
+                          - Effect   = "Allow"
+                          - Resource = "arn:aws:sqs:us-east-1:<account>:vfl-doc-registry"
+                        },
+                      - {
+                          - Action   = "dynamodb:PutItem"
+                          - Effect   = "Allow"
+                          - Resource = "arn:aws:dynamodb:us-east-1:<account>:table/vfl-doc-registry"
+                        },
+                      - {
+                          - Action   = [
+                              - "logs:CreateLogStream",
+                              - "logs:PutLogEvents",
+                            ]
+                          - Effect   = "Allow"
+                          - Resource = "arn:aws:logs:us-east-1:<account>:log-group:/aws/lambda/vfl-doc-registry:*"
+                        },
+                    ]
+                  - Version   = "2012-10-17"
+                }
+            ) -> null
+        }
+    }
+
+  # aws_iam_role_policy.registry will be destroyed
+  - resource "aws_iam_role_policy" "registry" {
+      - id          = "vfl-doc-registry-role:vfl-doc-registry-policy" -> null
+      - name        = "vfl-doc-registry-policy" -> null
+      - policy      = jsonencode(
+            {
+              - Statement = [
+                  - {
+                      - Action   = [
+                          - "sqs:ReceiveMessage",
+                          - "sqs:DeleteMessage",
+                          - "sqs:GetQueueAttributes",
+                          - "sqs:ChangeMessageVisibility",
+                        ]
+                      - Effect   = "Allow"
+                      - Resource = "arn:aws:sqs:us-east-1:<account>:vfl-doc-registry"
+                    },
+                  - {
+                      - Action   = "dynamodb:PutItem"
+                      - Effect   = "Allow"
+                      - Resource = "arn:aws:dynamodb:us-east-1:<account>:table/vfl-doc-registry"
+                    },
+                  - {
+                      - Action   = [
+                          - "logs:CreateLogStream",
+                          - "logs:PutLogEvents",
+                        ]
+                      - Effect   = "Allow"
+                      - Resource = "arn:aws:logs:us-east-1:<account>:log-group:/aws/lambda/vfl-doc-registry:*"
+                    },
+                ]
+              - Version   = "2012-10-17"
+            }
+        ) -> null
+      - role        = "vfl-doc-registry-role" -> null
+        # (1 unchanged attribute hidden)
+    }
+
+  # aws_lambda_function.registry will be destroyed
+  - resource "aws_lambda_function" "registry" {
+      - architectures                  = [
+          - "x86_64",
+        ] -> null
+      - arn                            = "arn:aws:lambda:us-east-1:<account>:function:vfl-doc-registry" -> null
+      - code_sha256                    = "BoOn30s/gjrCMTsoZ04PkRBtFFFve0ZabsigNmXCop4=" -> null
+      - filename                       = "./build/doc_registry.zip" -> null
+      - function_name                  = "vfl-doc-registry" -> null
+      - handler                        = "handler.lambda_handler" -> null
+      - id                             = "vfl-doc-registry" -> null
+      - invoke_arn                     = "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:<account>:function:vfl-doc-registry/invocations" -> null
+      - last_modified                  = "2026-11-18T10:44:44.000+0000" -> null
+      - layers                         = [] -> null
+      - memory_size                    = 128 -> null
+      - package_type                   = "Zip" -> null
+      - publish                        = false -> null
+      - qualified_arn                  = "arn:aws:lambda:us-east-1:<account>:function:vfl-doc-registry:$LATEST" -> null
+      - qualified_invoke_arn           = "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:<account>:function:vfl-doc-registry:$LATEST/invocations" -> null
+      - region                         = "us-east-1" -> null
+      - reserved_concurrent_executions = -1 -> null
+      - response_streaming_invoke_arn  = "arn:aws:apigateway:us-east-1:lambda:path/2021-11-15/functions/arn:aws:lambda:us-east-1:<account>:function:vfl-doc-registry/response-streaming-invocations" -> null
+      - role                           = "arn:aws:iam::<account>:role/vfl-doc-registry-role" -> null
+      - runtime                        = "python3.13" -> null
+      - skip_destroy                   = false -> null
+      - source_code_hash               = "BoOn30s/gjrCMTsoZ04PkRBtFFFve0ZabsigNmXCop4=" -> null
+      - source_code_size               = 2730 -> null
+      - tags                           = {} -> null
+      - tags_all                       = {
+          - "project" = "vol-forecast-lab"
+          - "step"    = "10d"
+        } -> null
+      - timeout                        = 10 -> null
+      - version                        = "$LATEST" -> null
+        # (7 unchanged attributes hidden)
+
+      - environment {
+          - variables = {
+              - "ACCEPTED_SCHEMA_VERSIONS" = "1,2"
+              - "TABLE_NAME"               = "vfl-doc-registry"
+            } -> null
+        }
+
+      - ephemeral_storage {
+          - size = 512 -> null
+        }
+
+      - logging_config {
+          - log_format            = "Text" -> null
+          - log_group             = "/aws/lambda/vfl-doc-registry" -> null
+            # (2 unchanged attributes hidden)
+        }
+
+      - tracing_config {
+          - mode = "PassThrough" -> null
+        }
+    }
+
+  # aws_sqs_queue.dlq will be destroyed
+  - resource "aws_sqs_queue" "dlq" {
+      - arn                               = "arn:aws:sqs:us-east-1:<account>:vfl-doc-registry-dlq" -> null
+      - content_based_deduplication       = false -> null
+      - delay_seconds                     = 0 -> null
+      - fifo_queue                        = false -> null
+      - id                                = "https://sqs.us-east-1.amazonaws.com/<account>/vfl-doc-registry-dlq" -> null
+      - kms_data_key_reuse_period_seconds = 300 -> null
+      - max_message_size                  = 262144 -> null
+      - message_retention_seconds         = 1209600 -> null
+      - name                              = "vfl-doc-registry-dlq" -> null
+      - receive_wait_time_seconds         = 0 -> null
+      - region                            = "us-east-1" -> null
+      - sqs_managed_sse_enabled           = true -> null
+      - tags                              = {} -> null
+      - tags_all                          = {
+          - "project" = "vol-forecast-lab"
+          - "step"    = "10d"
+        } -> null
+      - url                               = "https://sqs.us-east-1.amazonaws.com/<account>/vfl-doc-registry-dlq" -> null
+      - visibility_timeout_seconds        = 30 -> null
+        # (7 unchanged attributes hidden)
+    }
+
+  # aws_sqs_queue.main will be destroyed
+  - resource "aws_sqs_queue" "main" {
+      - arn                               = "arn:aws:sqs:us-east-1:<account>:vfl-doc-registry" -> null
+      - content_based_deduplication       = false -> null
+      - delay_seconds                     = 0 -> null
+      - fifo_queue                        = false -> null
+      - id                                = "https://sqs.us-east-1.amazonaws.com/<account>/vfl-doc-registry" -> null
+      - kms_data_key_reuse_period_seconds = 300 -> null
+      - max_message_size                  = 262144 -> null
+      - message_retention_seconds         = 345600 -> null
+      - name                              = "vfl-doc-registry" -> null
+      - receive_wait_time_seconds         = 0 -> null
+      - redrive_policy                    = jsonencode(
+            {
+              - deadLetterTargetArn = "arn:aws:sqs:us-east-1:<account>:vfl-doc-registry-dlq"
+              - maxReceiveCount     = 3
+            }
+        ) -> null
+      - region                            = "us-east-1" -> null
+      - sqs_managed_sse_enabled           = true -> null
+      - tags                              = {} -> null
+      - tags_all                          = {
+          - "project" = "vol-forecast-lab"
+          - "step"    = "10d"
+        } -> null
+      - url                               = "https://sqs.us-east-1.amazonaws.com/<account>/vfl-doc-registry" -> null
+      - visibility_timeout_seconds        = 60 -> null
+        # (6 unchanged attributes hidden)
+    }
+
+Plan: 0 to add, 0 to change, 7 to destroy.
+
+Changes to Outputs:
+  - dlq_arn       = "arn:aws:sqs:us-east-1:<account>:vfl-doc-registry-dlq" -> null
+  - dlq_url       = "https://sqs.us-east-1.amazonaws.com/<account>/vfl-doc-registry-dlq" -> null
+  - function_name = "vfl-doc-registry" -> null
+  - queue_arn     = "arn:aws:sqs:us-east-1:<account>:vfl-doc-registry" -> null
+  - queue_url     = "https://sqs.us-east-1.amazonaws.com/<account>/vfl-doc-registry" -> null
+  - table_name    = "vfl-doc-registry" -> null
+aws_lambda_function.registry: Destroying... [id=vfl-doc-registry]
+aws_lambda_function.registry: Destruction complete after 6s
+aws_iam_role_policy.registry: Destroying... [id=vfl-doc-registry-role:vfl-doc-registry-policy]
+aws_iam_role_policy.registry: Destruction complete after 1s
+aws_cloudwatch_log_group.registry: Destroying... [id=/aws/lambda/vfl-doc-registry]
+aws_iam_role.registry: Destroying... [id=vfl-doc-registry-role]
+aws_sqs_queue.main: Destroying... [id=https://sqs.us-east-1.amazonaws.com/<account>/vfl-doc-registry]
+aws_dynamodb_table.registry: Destroying... [id=vfl-doc-registry]
+aws_iam_role.registry: Destruction complete after 1s
+aws_cloudwatch_log_group.registry: Destruction complete after 1s
+aws_dynamodb_table.registry: Destruction complete after 9s
+aws_sqs_queue.main: Still destroying... [id=https://sqs.us-east-1.amazonaws.com/<account>/vfl-doc-registry, 00m10s elapsed]
+aws_sqs_queue.main: Still destroying... [id=https://sqs.us-east-1.amazonaws.com/<account>/vfl-doc-registry, 00m20s elapsed]
+aws_sqs_queue.main: Still destroying... [id=https://sqs.us-east-1.amazonaws.com/<account>/vfl-doc-registry, 00m30s elapsed]
+aws_sqs_queue.main: Still destroying... [id=https://sqs.us-east-1.amazonaws.com/<account>/vfl-doc-registry, 00m40s elapsed]
+aws_sqs_queue.main: Destruction complete after 47s
+aws_sqs_queue.dlq: Destroying... [id=https://sqs.us-east-1.amazonaws.com/<account>/vfl-doc-registry-dlq]
+aws_sqs_queue.dlq: Still destroying... [id=https://sqs.us-east-1.amazonaws.com/<account>/vfl-doc-registry-dlq, 00m10s elapsed]
+aws_sqs_queue.dlq: Still destroying... [id=https://sqs.us-east-1.amazonaws.com/<account>/vfl-doc-registry-dlq, 00m20s elapsed]
+aws_sqs_queue.dlq: Still destroying... [id=https://sqs.us-east-1.amazonaws.com/<account>/vfl-doc-registry-dlq, 00m30s elapsed]
+aws_sqs_queue.dlq: Still destroying... [id=https://sqs.us-east-1.amazonaws.com/<account>/vfl-doc-registry-dlq, 00m40s elapsed]
+aws_sqs_queue.dlq: Destruction complete after 45s
+
+Destroy complete! Resources: 7 destroyed.

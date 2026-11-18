@@ -1,0 +1,9 @@
+flowchart LR
+  D[(documents.parquet<br/>266 docs)] --> P[publish_doc_events.py]
+  P -->|document.registered v1| T[SNS topic<br/>vfl-doc-events]
+  T -->|raw delivery| Q[SQS queue<br/>vfl-doc-registry]
+  Q -->|event source mapping<br/>batch 10, partial failures| L[Lambda<br/>vfl-doc-registry]
+  L -->|conditional put| DB[(DynamoDB<br/>vfl-doc-registry)]
+  Q -->|after 3 receives| DLQ[SQS DLQ<br/>vfl-doc-registry-dlq]
+  DLQ -.->|redrive| Q
+  L --> CW[CloudWatch Logs<br/>1 JSON line per record]

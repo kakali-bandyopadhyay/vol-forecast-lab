@@ -324,6 +324,35 @@ Result as measured: retrieval is weak on the statement questions, and fusion wit
 - Caveats: rate limit is per IP, so clients behind one NAT share a bucket. Fixed after this run in `d125fb9`: the cache key now includes `VFL_INDEX_VERSION` (results were up to 1 h stale after a reindex) and fakeredis moved to `requirements-dev.txt` (BUILD_GUIDE Issues 18–19).
 - Incident: the first API rate-limit test used the real clock and failed 2/15 runs (a token refilled if 11 requests took > 0.2 s); fixed with an injected clock (15/15).
 
+### Step 10d — Event-driven document registry (AWS run 18 Nov 2026)
+
+- Path: SNS topic → SQS queue (raw delivery; DLQ after 3 receives) → Lambda `vfl-doc-registry`
+  (batch 10, partial batch failures, maximum concurrency 2) → DynamoDB conditional put keyed on
+  content (`doc_id` + `sha256`), not on `event_id`. Handler and its 13 tests author-written; full
+  suite 369 passed, 3 skipped.
+- Counts are cumulative from R2 (collector window 180 min; `results/eventdriven/evidence_R2.json` …
+  `evidence_R6.json`):
+
+| Phase | Action | Table items | Outcomes (cumulative) | DLQ | Lambda errors |
+|---|---|---|---|---|---|
+| R2 | publish 266 events | 266 | written 266 | 0 | 0 |
+| R3 | republish 266 + 1 raw SQS duplicate | 266 | written 266, duplicate 267 | 0 | 0 |
+| R4 | publish 1 poison event (schema v2, not accepted) | 266 | + rejected 3 | 1 | 0 |
+| R5 | accept v1,2 (config change, no code redeploy) + DLQ redrive | 267 | written 267 | 0 | 0 |
+| R6 | republish the same poison content | 267 | duplicate 268 | 0 | 0 |
+
+- Every phase met the target stated before the run (`infra/eventdriven/README.md`, "Phase
+  targets"). Main queue 0 visible / 0 in flight at each collection. Lambda invocations 27 at R2
+  (266 records), 63 by R6; rejections are returned as batch item failures, so Lambda errors stay 0.
+- Latency publish → write (R2, 266 items): p50 11 s, p95 17 s, at 1-second resolution (`written_at`
+  is stamped to the second); set mainly by maximum concurrency 2 and the 1 s batching window – not
+  tuned. Later evidence files repeat the figure because the collector scans the whole table; the
+  replayed R5 item's gap is DLQ dwell time, not pipeline latency.
+- Destroy: the first attempt removed 6 of 13 resources, then stopped on AccessDenied for
+  `lambda:GetEventSourceMapping` (deploy policy fixed – BUILD_GUIDE Issue 31); the second removed
+  the remaining 7, state empty, no `vfl-` tables. `results/text/10d_destroy.txt` holds the second
+  attempt only (account ID redacted). The budget stack (USD 10/month) stays in place.
+
 **Step 11 process note.** The first live run at `0243e03` was invalid: 39 of 45 attempts hit the OpenAI schema error, and no A01–A13 answers were seen. Re-run at the new commit.
 
 **Step 11 A01 smoke note.** A single-question smoke run showed A01 was refused ("could not verify") after two drafts. The draft prompt was changed after the A01 smoke runs; only A01's outcome had been seen at that point, not the full eval. The change forbids model-side arithmetic and tells a retry to remove the rejected item.
