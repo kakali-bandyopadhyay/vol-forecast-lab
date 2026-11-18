@@ -1,0 +1,9 @@
+flowchart TB
+  D[(documents.parquet<br/>266 docs)] --> P[Publisher]
+  P -->|document.registered v1| T[SNS topic]
+  T -->|raw delivery| Q[SQS queue]
+  Q -->|batch 10 · partial failures| L[Lambda consumer]
+  L -->|conditional put<br/>doc_id + sha256| DB[(DynamoDB registry)]
+  Q -->|after 3 receives| DLQ[SQS dead-letter queue]
+  DLQ -.->|redrive| Q
+  L --> CW[CloudWatch Logs<br/>1 JSON line per record]
