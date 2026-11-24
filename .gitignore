@@ -33,3 +33,6 @@ results/forecasts.parquet
 results/mlp_forecasts.parquet
 results/har_inputs.parquet
 results/losses.parquet
+
+# Build B2 agent memory (SQLite checkpointer + preference store): local only
+runs/memory/

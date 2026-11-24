@@ -7,14 +7,24 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from langchain_core.runnables import RunnableConfig
 from langgraph.graph import END, StateGraph
+from langgraph.runtime import Runtime
 
 from agent.graph import CostCapExceeded, PRICES_USD_PER_1M, is_advice
 from agent.schema import Answer
 from agent.tools import RESULTS_DIR
 from agent.v2 import policy
 from agent.v2.contract import Handoff
-from agent.v2.state import SupervisorState
+from agent.v2.memory import (
+    load_user_prefs,
+    memory_context,
+    merge_thread_prefs,
+    parse_preference,
+    save_user_pref,
+    validate_pref,
+)
+from agent.v2.state import RESET, SupervisorState
 from agent.v2.subagents import build_subagent
 from agent.v2.verify_multi import verify_multi
 
@@ -33,6 +43,10 @@ class V2Result:
     stop_reason: str | None
     last_rejection: str | None
     handoffs: list[dict[str, Any]]
+    resolved_question: str
+    memory_reads: list[str]
+    memory_writes: list[dict[str, Any]]
+    turn: int
 
 
 def _cost(usage, model_name: str) -> float:
@@ -82,11 +96,76 @@ def build_supervisor_graph(
         return {"stop_reason": None}
 
     def after_guard(state: SupervisorState) -> str:
-        return END if state.get("answer") is not None else "plan"
+        return "finalize" if state.get("answer") is not None else "memory"
+
+    def memory_node(state: SupervisorState, config: RunnableConfig, runtime: Runtime):
+        store_obj = runtime.store
+        configurable = (config or {}).get("configurable", {})
+        user_id = configurable.get("user_id", state.get("user_id", "default"))
+        turns = list(state.get("turns", []))
+        user_prefs = dict(state.get("user_prefs", {}))
+        thread_prefs = dict(state.get("thread_prefs", {}))
+        if not turns and store_obj is not None:
+            user_prefs = load_user_prefs(store_obj, user_id)
+
+        memory_writes: list[dict[str, Any]] = []
+        write = parse_preference(state["question"])
+        if write is not None and validate_pref(write.key, write.value) is None:
+            if write.scope == "user":
+                if store_obj is not None:
+                    memory_writes.append(save_user_pref(store_obj, user_id, write))
+                    user_prefs = load_user_prefs(store_obj, user_id)
+                else:
+                    user_prefs[write.key] = write.value
+            else:
+                thread_prefs = merge_thread_prefs(thread_prefs, write)
+                memory_writes.append({"scope": write.scope, "key": write.key, "value": write.value})
+
+        context = memory_context(state["question"], turns, thread_prefs, user_prefs)
+        resolved_question = state["question"]
+        memory_reads: list[str] = []
+        delta = 0.0
+        max_call_cost = state.get("max_call_cost_usd", 0.0)
+        metrics["question"] = state["question"]
+        metrics["prior_turns"] = turns
+        metrics["resolved_question"] = resolved_question
+        metrics["memory_reads"] = memory_reads
+        metrics["memory_writes"] = memory_writes
+        # Explicit values already present in a first-turn question need no
+        # rewrite; only remembered turns or reusable stored defaults do.
+        if turns or thread_prefs or user_prefs:
+            projected_cost(state)
+            resolved, usage = llm.contextualize(state["question"], context)
+            resolved_question = resolved.standalone_question
+            delta = _cost(usage, model_name)
+            max_call_cost = max(max_call_cost, delta)
+            turn_ids = {item.get("turn") for item in context["turns"]}
+            memory_reads.extend(
+                f"turn:{turn_id}" for turn_id in resolved.used_turns if turn_id in turn_ids
+            )
+            memory_reads.extend(
+                key for key in resolved.used_defaults if key in context["defaults"]
+            )
+
+        metrics["question"] = state["question"]
+        metrics["prior_turns"] = turns
+        metrics["resolved_question"] = resolved_question
+        metrics["memory_reads"] = memory_reads
+        metrics["memory_writes"] = memory_writes
+        return {
+            "user_id": user_id,
+            "user_prefs": user_prefs,
+            "thread_prefs": thread_prefs,
+            "resolved_question": resolved_question,
+            "memory_reads": memory_reads,
+            "memory_writes": memory_writes,
+            "cost_usd": delta,
+            "max_call_cost_usd": max_call_cost,
+        }
 
     def plan_node(state: SupervisorState):
         projected_cost(state)
-        plan, usage = llm.plan(state["question"])
+        plan, usage = llm.plan(state["resolved_question"])
         delta = _cost(usage, model_name)
         reason = policy.validate_plan(plan)
         if reason is not None:
@@ -117,16 +196,16 @@ def build_supervisor_graph(
             {
                 "agent": agent,
                 "task": subtask,
-                "inputs": {"question": state["question"], "task": subtask},
+                "inputs": {"question": state["resolved_question"], "task": subtask},
                 "hop": hop,
             }
         )
         handoff = subagent_result["handoff"]
         total_cost = state.get("cost_usd", 0.0) + handoff.cost_usd_hop
         handoff = handoff.model_copy(update={"cost_usd_so_far": total_cost})
-        runtime["handoffs"].append(handoff)
-        runtime["hops"] = hop
-        runtime["cost_usd"] = total_cost
+        metrics["handoffs"].append(handoff)
+        metrics["hops"] = hop
+        metrics["cost_usd"] = total_cost
         return {
             "pending": pending,
             "called": [agent],
@@ -141,7 +220,7 @@ def build_supervisor_graph(
 
     def replan_node(state: SupervisorState):
         projected_cost(state)
-        plan, usage = llm.replan(state["question"], list(state.get("handoffs", [])))
+        plan, usage = llm.replan(state["resolved_question"], list(state.get("handoffs", [])))
         delta = _cost(usage, model_name)
         called = list(state.get("called", []))
         replan_reason = policy.validate_replan(plan, called)
@@ -178,10 +257,10 @@ def build_supervisor_graph(
     def draft(state: SupervisorState):
         projected_cost(state)
         answer, usage = llm.draft_v2(
-            state["question"], list(state.get("handoffs", [])), state.get("rejection")
+            state["resolved_question"], list(state.get("handoffs", [])), state.get("rejection")
         )
         delta = _cost(usage, model_name)
-        runtime["cost_usd"] = state.get("cost_usd", 0.0) + delta
+        metrics["cost_usd"] = state.get("cost_usd", 0.0) + delta
         return {
             "answer": answer,
             "attempts": state.get("attempts", 0) + 1,
@@ -200,7 +279,7 @@ def build_supervisor_graph(
                 "stop_reason": "refused" if answer.refused else "answered",
                 "rejection": None,
             }
-        runtime["last_rejection"] = reason
+        metrics["last_rejection"] = reason
         if state.get("attempts", 0) < policy.MAX_DRAFTS:
             return {"answer": None, "rejection": reason}
         return {
@@ -210,7 +289,7 @@ def build_supervisor_graph(
         }
 
     def after_verify(state: SupervisorState) -> str:
-        return "draft" if state.get("answer") is None else END
+        return "draft" if state.get("answer") is None else "finalize"
 
     def refuse(state: SupervisorState):
         existing_answer = state.get("answer")
@@ -224,34 +303,109 @@ def build_supervisor_graph(
             "stop_reason": stop_reason,
         }
 
-    runtime: dict[str, Any] = {"handoffs": [], "hops": 0, "cost_usd": 0.0, "last_rejection": None}
+    def finalize(state: SupervisorState):
+        turns = list(state.get("turns", []))
+        turn_number = len(turns) + 1
+        resolved_question = state.get("resolved_question") or state["question"]
+        tool_args = [
+            {"tool": item.tool, "args": item.args}
+            for handoff in state.get("handoffs", [])
+            for item in handoff.evidence
+        ]
+        turn_record = {
+            "turn": turn_number,
+            "question": state["question"],
+            "resolved": resolved_question,
+            "tool_args": tool_args,
+        }
+        metrics["prior_turns"] = turns
+        metrics["resolved_question"] = resolved_question
+        metrics["memory_reads"] = state.get("memory_reads", [])
+        metrics["memory_writes"] = state.get("memory_writes", [])
+        metrics["turn"] = turn_number
+        return {"turns": [turn_record], "turn": turn_number, "resolved_question": resolved_question}
+
+    metrics: dict[str, Any] = {
+        "handoffs": [], "hops": 0, "cost_usd": 0.0, "last_rejection": None,
+        "question": "", "prior_turns": [], "resolved_question": "",
+        "memory_reads": [], "memory_writes": [], "turn": 0,
+    }
     graph = StateGraph(SupervisorState)
     graph.add_node("guard", guard)
+    graph.add_node("memory", memory_node)
     graph.add_node("plan", plan_node)
     graph.add_node("dispatch", dispatch)
     graph.add_node("replan", replan_node)
     graph.add_node("draft", draft)
     graph.add_node("verify", verify_node)
     graph.add_node("refuse", refuse)
+    graph.add_node("finalize", finalize)
     graph.set_entry_point("guard")
-    graph.add_conditional_edges("guard", after_guard, {"plan": "plan", END: END})
+    graph.add_conditional_edges("guard", after_guard, {"memory": "memory", "finalize": "finalize"})
+    graph.add_edge("memory", "plan")
     graph.add_conditional_edges("plan", lambda s: "refuse" if s.get("answer") else "dispatch", {"dispatch": "dispatch", "refuse": "refuse"})
     graph.add_conditional_edges(
         "dispatch", after_handoff,
         {"dispatch": "dispatch", "replan": "replan", "draft": "draft", "refuse": "refuse"},
     )
     graph.add_conditional_edges("replan", after_replan, {"dispatch": "dispatch", "refuse": "refuse"})
+    graph.add_edge("refuse", "finalize")
     graph.add_edge("draft", "verify")
-    graph.add_conditional_edges("verify", after_verify, {"draft": "draft", END: END})
+    graph.add_conditional_edges("verify", after_verify, {"draft": "draft", "finalize": "finalize"})
+    graph.add_edge("finalize", END)
     compiled = graph.compile(checkpointer=checkpointer, store=store, name="vfl-agent-v2")
 
     class SupervisorGraph:
         def invoke(self, inputs, config=None):
-            result = compiled.invoke(inputs, config=config)
-            return result
+            try:
+                return compiled.invoke(inputs, config=config)
+            except CostCapExceeded as exc:
+                saved = {}
+                if checkpointer is not None and config is not None:
+                    snapshot = compiled.get_state(config)
+                    saved = dict(snapshot.values or {})
+                question = inputs["question"]
+                turns = list(saved.get("turns", metrics.get("prior_turns", [])))
+                turn_number = len(turns) + 1
+                resolved_question = metrics.get("resolved_question") or question
+                turn_record = {
+                    "turn": turn_number,
+                    "question": question,
+                    "resolved": resolved_question,
+                    "tool_args": [
+                        {"tool": evidence.tool, "args": evidence.args}
+                        for handoff in metrics.get("handoffs", [])
+                        for evidence in handoff.evidence
+                    ],
+                }
+                values = {
+                    "answer": Answer(refused=True, refusal_reason="cost cap reached"),
+                    "stop_reason": "cost_cap",
+                    "resolved_question": resolved_question,
+                    "memory_reads": metrics.get("memory_reads", []),
+                    "memory_writes": metrics.get("memory_writes", []),
+                    "turn": turn_number,
+                }
+                if checkpointer is not None and config is not None:
+                    compiled.update_state(config, {**values, "turns": [turn_record]})
+                    return dict(compiled.get_state(config).values or {})
+                return {
+                    **inputs,
+                    **saved,
+                    **values,
+                    "cost_usd": exc.cost_usd,
+                    "handoffs": metrics.get("handoffs", []),
+                    "hops": metrics.get("hops", 0),
+                    "replans": saved.get("replans", 0),
+                    "attempts": saved.get("attempts", 0),
+                    "turns": turns + [turn_record],
+                }
+
+        def get_state(self, config):
+            return compiled.get_state(config)
 
         def _runtime(self):
-            return runtime
+            return metrics
 
     return SupervisorGraph()
 
@@ -267,6 +421,7 @@ def answer_question_v2(
     max_cost_usd=0.25,
     checkpointer=None,
     store=None,
+    user_id="default",
 ) -> V2Result:
     """Run one question and return routing, evidence, cost, and verification metadata."""
     started = time.perf_counter()
@@ -280,9 +435,34 @@ def answer_question_v2(
         store=store,
     )
     runtime = graph._runtime()
-    config = {"configurable": {"thread_id": thread_id}} if thread_id is not None else None
+    runtime["question"] = question
+    config = {"configurable": {"thread_id": thread_id, "user_id": user_id}}
     try:
-        final = graph.invoke({"question": question, "thread_id": thread_id, "cost_usd": 0.0}, config=config)
+        final = graph.invoke(
+            {
+                "question": question,
+                "thread_id": thread_id,
+                "answer": None,
+                "rejection": None,
+                "stop_reason": None,
+                "attempts": 0,
+                "refusal": False,
+                "plan": None,
+                "pending": [],
+                "hops": 0,
+                "replans": 0,
+                "max_call_cost_usd": 0.0,
+                "called": RESET,
+                "handoffs": RESET,
+                "cost_usd": RESET,
+                "user_id": user_id,
+                "resolved_question": None,
+                "memory_reads": [],
+                "memory_writes": [],
+                "turn": None,
+            },
+            config=config,
+        )
     except CostCapExceeded as exc:
         final = {
             "answer": Answer(refused=True, refusal_reason="cost cap reached"),
@@ -293,6 +473,10 @@ def answer_question_v2(
             "hops": runtime["hops"],
             "replans": 0,
             "attempts": 0,
+            "resolved_question": runtime.get("resolved_question") or question,
+            "memory_reads": runtime.get("memory_reads", []),
+            "memory_writes": runtime.get("memory_writes", []),
+            "turn": runtime.get("turn", len(runtime.get("prior_turns", [])) + 1),
         }
     handoffs = list(final.get("handoffs", runtime["handoffs"]))
     evidence = [item for handoff in handoffs for item in handoff.evidence]
@@ -309,4 +493,8 @@ def answer_question_v2(
         stop_reason=final.get("stop_reason"),
         last_rejection=final.get("rejection", runtime["last_rejection"]),
         handoffs=_handoff_dump(handoffs),
+        resolved_question=final.get("resolved_question") or question,
+        memory_reads=list(final.get("memory_reads", [])),
+        memory_writes=list(final.get("memory_writes", [])),
+        turn=int(final.get("turn") or runtime.get("turn") or 1),
     )

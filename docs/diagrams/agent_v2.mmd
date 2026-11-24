@@ -1,7 +1,8 @@
 flowchart TB
     U[User question] --> G[Advice guard]
-    G -->|in scope| S
+    G -->|in scope| MEM
     G -->|advice| R[Refuse]
+    MEM[Memory node<br/>resolve question · parse explicit preferences] -->|resolved question| S
 
     subgraph S[Supervisor]
         P[Plan or replan<br/>max 3 hops<br/>max 1 replan<br/>projected cost cap]
@@ -32,7 +33,7 @@ flowchart TB
     V -->|verified| O[Answer]
     V -->|exhausted / cannot verify| R
 
-    CP[(SQLite checkpointer<br/>thread memory · B2)] -.-> S
-    LS[(Preference store<br/>long-term memory · B2)] -.-> S
+    CP[(SQLite checkpointer<br/>thread turns and preferences)] -.-> S
+    LS[(SQLite preference store<br/>user defaults)] -.->|session read · explicit write| MEM
 
     classDef default font-family:Arial,sans-serif;

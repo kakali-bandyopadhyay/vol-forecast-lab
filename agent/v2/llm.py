@@ -26,6 +26,15 @@ class PlanWire(BaseModel):
     steps: list[PlanStep]
 
 
+class Resolved(BaseModel):
+    """Strict structured result from the memory-aware question rewriter."""
+
+    model_config = ConfigDict(extra="forbid", strict=True)
+    standalone_question: str
+    used_turns: list[int]
+    used_defaults: list[str]
+
+
 def plan_from_wire(wire: PlanWire) -> Plan:
     """Keep duplicate agents in order so policy.validate_plan can reject them."""
     return Plan(
@@ -38,6 +47,8 @@ Choose the smallest ordered set of distinct specialists needed: forecast for for
 model comparisons; event-effect for event-study estimates; FOMC retrieval for Federal Reserve
 statement text. Give each selected specialist a concise, answerable subtask. Use only these names:
 forecast, event-effect, FOMC retrieval. Do not invent evidence or include a final answer."""
+
+CONTEXTUALIZE_INSTRUCTIONS = """Rewrite the current user question as a standalone question. Use the supplied memory context only to fill missing model, metric, date, date window, event, or component details. An explicit mention in the current question wins over defaults. Never add numbers other than dates or date-window values that appear in the context or question. Never answer the question. Return the standalone question plus the turn indexes and default keys actually used; do not claim any context was used unless it appears in the supplied context."""
 
 REPLAN_INSTRUCTIONS = """Existing specialists could not fully answer the task. Return a plan that
 adds exactly one specialist not already called, with a focused subtask. Do not repeat a called
@@ -77,6 +88,17 @@ class OpenAISupervisorLLM(OpenAIAgentLLM):
         if response.output_parsed is None:
             raise ValueError("model returned no structured plan")
         return plan_from_wire(response.output_parsed), _usage(response)
+
+    def contextualize(self, question: str, ctx: dict) -> tuple[Resolved, object]:
+        response = self.client.responses.parse(
+            model=self.model,
+            instructions=CONTEXTUALIZE_INSTRUCTIONS,
+            input=json.dumps({"question": question, "memory_context": ctx}),
+            text_format=Resolved,
+        )
+        if response.output_parsed is None:
+            raise ValueError("model returned no structured question resolution")
+        return response.output_parsed, _usage(response)
 
     def replan(self, question: str, handoffs: list[Handoff]) -> tuple[Plan, object]:
         called = [handoff.agent for handoff in handoffs]
