@@ -9,6 +9,7 @@ import re
 from pathlib import Path
 from types import SimpleNamespace
 
+import numpy as np
 import pandas as pd
 import pytest
 
@@ -451,7 +452,7 @@ def test_v1_regression_rows_include_diagnostics(monkeypatch, tmp_path):
     )
     required = {
         "answer_fields", "answer_text", "citations", "stop_reason", "attempts", "rejections",
-        "last_rejection", "hops", "replans", "evidence_statuses", "tool_attempts", "evidence",
+        "last_rejection", "hops", "replans", "evidence_statuses", "handoff_details", "tool_attempts", "evidence",
     }
     assert required <= rows[0].keys()
     assert rows[0]["answer_fields"]["horizon"] == "30 sessions"
@@ -483,6 +484,8 @@ def test_regression_pack_lists_blocked_row_with_reason(monkeypatch, tmp_path):
     out = tmp_path / "results"
     out.mkdir()
     (out / "regression_v1_on_v2_run1.parquet").touch()
+    run2 = out / "regression_v1_on_v2_run2.parquet"
+    run2.touch()
     monkeypatch.setattr(scorer, "V1_QUESTIONS", tmp_path / "eval_questions.csv")
     scorer.V1_QUESTIONS.write_text(
         "qid,expected_answer\nA06,0.123\n", encoding="utf-8"
@@ -495,14 +498,32 @@ def test_regression_pack_lists_blocked_row_with_reason(monkeypatch, tmp_path):
         "tool_attempts": [{"tool": "event_effect", "args": {"event": "cpi"}}],
         "evidence": [{"tool": "event_effect", "rows": [{"beta": 0.123, "se": 0.04, "t": 3.1, "p": 0.002, "n": 240, "extra": "omit"}]}],
     }])
-    monkeypatch.setattr(scorer.pd, "read_parquet", lambda path: frame)
-    target = scorer.make_regression_pack(out)
+    selected_files = []
+    monkeypatch.setattr(scorer.pd, "read_parquet", lambda path: selected_files.append(path) or frame)
+    assert scorer._latest_regression_path(out) == run2
+    assert scorer.main(["--regression-pack", "--out-dir", str(out), "--file", str(run2)]) == 0
+    assert selected_files == [run2]
+    target = out / "regression_pack.md"
     text = target.read_text(encoding="utf-8")
     assert "A06 · repetition 2" in text
     assert "unsupported beta 0.9" in text
     assert "beta 0.9" in text
     assert '"beta": 0.123' in text
+    assert '"p": 0.002' in text
+    assert '"n": 240' in text
     assert "extra" not in text
+
+
+def test_regression_records_handles_numpy_empty_array_and_dict_rows():
+    scorer_spec = importlib.util.spec_from_file_location(
+        "score_agent_eval_v2_records_under_test", ROOT / "scripts" / "score_agent_eval_v2.py"
+    )
+    scorer = importlib.util.module_from_spec(scorer_spec)
+    assert scorer_spec.loader is not None
+    scorer_spec.loader.exec_module(scorer)
+    assert scorer._records(np.array([], dtype=object)) == []
+    data = [{"attempt": 1, "reason": "bad"}]
+    assert scorer._records(data) == data
 
 
 def test_trace_meta_none_keeps_existing_invoke_config(monkeypatch):

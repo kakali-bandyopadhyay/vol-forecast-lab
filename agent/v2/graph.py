@@ -520,8 +520,9 @@ def answer_question_v2(
             tools_called.extend(item.tool for item in handoff.evidence)
         else:
             tools_called.extend(
-                attempted["tool"]
+                attempted.get("tool")
                 for attempted in handoff.inputs.get("tool_attempts", [])
+                if attempted.get("tool") is not None
             )
     return V2Result(
         answer=final["answer"],

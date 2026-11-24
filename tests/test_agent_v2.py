@@ -8,6 +8,7 @@ import re
 
 import pandas as pd
 import pytest
+import hashlib
 
 from agent.llm import DRAFT_INSTRUCTIONS
 from agent.schema import Answer, Citation, RouteDecision, Usage
@@ -98,6 +99,34 @@ def test_contract_forbids_extra_fields_and_unknown_agent():
         Handoff(agent="forecast", evidence=[{"extra": "not permitted"}], unexpected=True, **common)
     with pytest.raises(Exception):
         Handoff(agent="unknown", **common)
+
+
+def test_v2_draft_prompt_formats_all_numbers_and_keeps_v1_prompt_frozen():
+    assert "Leave as_of null unless the question or a get_forecast row gives the date; never derive a date from snapshot_id." in DRAFT_V2_INSTRUCTIONS
+    assert "Report only the quantities the question asks for; do not add p-values, standard errors, counts or dates that were not asked for." in DRAFT_V2_INSTRUCTIONS
+    assert 'Write every number, p-values included, exactly as Python f"{value:.6g}" (no trailing zeros) and copy it from the typed tool evidence.' in DRAFT_V2_INSTRUCTIONS
+    assert "3 decimal places" not in DRAFT_V2_INSTRUCTIONS
+    # v1 DRAFT_INSTRUCTIONS as of 709a56f (sha256 of the string); a hash, not `git show`,
+    # so the check also works in CI's shallow checkout.
+    assert hashlib.sha256(DRAFT_INSTRUCTIONS.encode("utf-8")).hexdigest() == (
+        "2ca6967d1013531e0c4d9d502c4cfe9919e1d7198b62f7993dd46f07a0f536a1"
+    )
+
+
+def test_invalid_route_error_is_captured_as_tool_attempt(results_dir):
+    class BrokenRoute(FakeLLM):
+        def __init__(self):
+            super().__init__(plans=[_plan("forecast")])
+        def subagent_route(self, *args):
+            raise ValueError("malformed tool arguments")
+
+    result = answer_question_v2("forecast", BrokenRoute(), model_name="fake", results_dir=results_dir)
+    handoff = result.handoffs[0]
+    assert handoff["status"] == "invalid_args"
+    assert handoff["inputs"]["tool_attempts"] == [{
+        "tool": None, "args": None, "error": "malformed tool arguments",
+    }]
+    assert result.tools_called == []
 
 
 def test_single_forecast_route_attaches_verified_source_rows(results_dir):
@@ -321,6 +350,17 @@ def test_tool_schemas_are_scoped_and_fomc_doc_type_is_agent_selected():
 
 def test_v2_draft_prompt_matches_v1_with_only_requested_additions():
     expected = DRAFT_INSTRUCTIONS.replace("tool output", "typed tool evidence")
+    expected = expected.replace(
+        "Use dates only in YYYY-MM-DD form.",
+        "Use dates only in YYYY-MM-DD form.\n"
+        "Leave as_of null unless the question or a get_forecast row gives the date; never derive a date from snapshot_id.\n"
+        "Report only the quantities the question asks for; do not add p-values, standard errors, counts or dates that were not asked for.",
+    )
+    expected = expected.replace("Write p_two_sided and p_holm values to 3 decimal places.\n", "")
+    expected = expected.replace(
+        'Write every other number exactly as Python f"{value:.6g}" (no trailing zeros) and copy it from the typed tool evidence.',
+        'Write every number, p-values included, exactly as Python f"{value:.6g}" (no trailing zeros) and copy it from the typed tool evidence.',
+    )
     expected += (
         "\nLabel forecast variance and event-study quantities as separate measures."
         "\nCite chunk_id only from search_fomc evidence."

@@ -72,8 +72,9 @@ SUBAGENT_INSTRUCTIONS = {
 
 DRAFT_V2_INSTRUCTIONS = """Answer only from the supplied typed tool evidence. Never give investment advice.
 Use dates only in YYYY-MM-DD form.
-Write p_two_sided and p_holm values to 3 decimal places.
-Write every other number exactly as Python f\"{value:.6g}\" (no trailing zeros) and copy it from the typed tool evidence.
+Leave as_of null unless the question or a get_forecast row gives the date; never derive a date from snapshot_id.
+Report only the quantities the question asks for; do not add p-values, standard errors, counts or dates that were not asked for.
+Write every number, p-values included, exactly as Python f\"{value:.6g}\" (no trailing zeros) and copy it from the typed tool evidence.
 Never calculate new numbers (no differences, ratios, percentages or averages). Set implied_variance and
 spread to null unless the typed tool evidence contains those exact values.
 Use horizon \"30 sessions\"; put caveats in limitations.

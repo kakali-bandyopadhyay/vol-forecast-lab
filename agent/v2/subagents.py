@@ -74,7 +74,8 @@ def build_subagent(
             )
         except (TypeError, ValueError) as exc:
             handoff = make_handoff(
-                state, status="invalid_args", detail=str(exc), cost=0.0
+                state, status="invalid_args", detail=str(exc), cost=0.0,
+                tool_attempt={"tool": None, "args": None, "error": str(exc)},
             )
             return {"handoff": handoff}
         if decision is None:

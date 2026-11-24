@@ -28,7 +28,11 @@ def _list(value):
 
 
 def _records(value):
-    if value is None or (not isinstance(value, (list, tuple, dict)) and pd.isna(value)):
+    if hasattr(value, "tolist") and not isinstance(value, (list, tuple, dict)):
+        value = value.tolist()
+    if value is None:
+        return []
+    if not isinstance(value, (list, tuple, dict)) and pd.isna(value):
         return []
     if isinstance(value, str):
         try:
@@ -90,19 +94,17 @@ def make_review_pack(out_dir: Path = DEFAULT_OUT) -> Path:
 
 
 def _latest_regression_path(out_dir: Path) -> Path:
-    base = out_dir / "regression_v1_on_v2.parquet"
-    numbered = []
-    for path in out_dir.glob("regression_v1_on_v2_run*.parquet"):
+    candidates = list(out_dir.glob("regression_v1_on_v2*.parquet"))
+    if not candidates:
+        raise FileNotFoundError(out_dir / "regression_v1_on_v2*.parquet")
+    def newest_key(path):
+        suffix = path.stem.removeprefix("regression_v1_on_v2_run")
         try:
-            index = int(path.stem.removeprefix("regression_v1_on_v2_run"))
+            run_number = int(suffix)
         except ValueError:
-            continue
-        numbered.append((index, path))
-    if numbered:
-        return max(numbered, key=lambda item: item[0])[1]
-    if base.exists():
-        return base
-    raise FileNotFoundError(base)
+            run_number = 0
+        return path.stat().st_mtime_ns, run_number
+    return max(candidates, key=newest_key)
 
 
 def _evidence_row(row) -> tuple[str, dict]:
@@ -122,14 +124,20 @@ def _evidence_row(row) -> tuple[str, dict]:
         return tool, {"detail": "no evidence rows recorded"}
     values = rows[0]
     if tool == "event_effect":
-        allowed = {"beta", "se", "t", "p", "n"}
-        values = {key: value for key, value in values.items() if key in allowed}
+        event_values = {
+            "beta": values.get("beta"),
+            "se": values.get("se"),
+            "t": values.get("t"),
+            "p": values.get("p") if values.get("p") is not None else values.get("p_two_sided"),
+            "n": values.get("n") if values.get("n") is not None else values.get("n_obs"),
+        }
+        values = {key: value for key, value in event_values.items() if value is not None}
     return tool, values
 
 
-def make_regression_pack(out_dir: Path = DEFAULT_OUT) -> Path:
+def make_regression_pack(out_dir: Path = DEFAULT_OUT, file_path: Path | None = None) -> Path:
     """Write concise diagnostics for failed or verifier-blocked regression rows."""
-    frame = pd.read_parquet(_latest_regression_path(out_dir))
+    frame = pd.read_parquet(file_path or _latest_regression_path(out_dir))
     expected = pd.read_csv(V1_QUESTIONS, dtype=str).set_index("qid")["expected_answer"].to_dict()
     lines = ["# v1 Regression on v2 diagnostics", ""]
     selected_count = 0
@@ -333,15 +341,24 @@ def main(argv=None) -> int:
     mode.add_argument("--regression-pack", action="store_true")
     mode.add_argument("--final", action="store_true")
     parser.add_argument("--out-dir", type=Path, default=DEFAULT_OUT)
+    parser.add_argument("--file", type=Path, help="regression parquet input (defaults to the newest regression run)")
     args = parser.parse_args(argv)
     out_dir = args.out_dir if args.out_dir.is_absolute() else REPO_ROOT / args.out_dir
+    if args.file is not None and not args.regression_pack:
+        parser.error("--file is only valid with --regression-pack")
     if args.pack:
         target = make_review_pack(out_dir)
     elif args.regression_pack:
-        target = make_regression_pack(out_dir)
+        file_path = args.file
+        if file_path is not None and not file_path.is_absolute():
+            file_path = REPO_ROOT / file_path
+        target = make_regression_pack(out_dir, file_path=file_path)
     else:
         target = make_final_summary(out_dir)
     print(f"written: {target}")
+    if args.regression_pack:
+        pack_text = target.read_text(encoding="utf-8")
+        print(f"rows: {pack_text.count(chr(10) + '## ')}")
     return 0
 
 

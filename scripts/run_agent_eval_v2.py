@@ -330,6 +330,7 @@ def _regression_diagnostics(result) -> dict:
         "hops": int(getattr(result, "hops", 0) or 0) if result is not None else 0,
         "replans": int(getattr(result, "replans", 0) or 0) if result is not None else 0,
         "evidence_statuses": [handoff.get("status") for handoff in handoffs],
+        "handoff_details": [handoff.get("detail") for handoff in handoffs],
         "tool_attempts": _tool_attempts(result),
         "evidence": evidence,
     }
@@ -380,6 +381,7 @@ def _row_for_turn(eval_run_id, repetition, thread_id, user_id, question, turn, r
         "tool_args_per_evidence": _tool_args(result),
         "tool_attempts": _tool_attempts(result),
         "evidence_statuses": [handoff.get("status") for handoff in handoffs],
+        "handoff_details": [handoff.get("detail") for handoff in handoffs],
         "citations": [citation.model_dump(mode="json") for citation in (answer.citations if answer else [])],
         "answer_fields": answer_fields,
         "answer_text": _answer_text(answer),
