@@ -113,6 +113,10 @@ class OpenAIAgentLLM:
                 os.environ.setdefault("LANGSMITH_PROJECT", tracing["project"])
         self.model = model or os.environ["AGENT_MODEL"]
         self.client = OpenAI()
+        if tracing["tracing"]:
+            from langsmith.wrappers import wrap_openai
+
+            self.client = wrap_openai(self.client)
 
     def route(self, question: str) -> RouteDecision:
         response = self.client.responses.create(

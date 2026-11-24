@@ -42,6 +42,7 @@ class V2Result:
     latency_s: float
     stop_reason: str | None
     last_rejection: str | None
+    rejections: list[dict[str, Any]]
     handoffs: list[dict[str, Any]]
     resolved_question: str
     memory_reads: list[str]
@@ -280,6 +281,28 @@ def build_supervisor_graph(
                 "rejection": None,
             }
         metrics["last_rejection"] = reason
+        answer = state.get("answer")
+        draft_text = " ".join(
+            str(value)
+            for value in (
+                getattr(answer, "as_of", None),
+                getattr(answer, "horizon", None),
+                getattr(answer, "forecast", None),
+                getattr(answer, "implied_variance", None),
+                getattr(answer, "spread", None),
+                getattr(answer, "text", None),
+                getattr(answer, "limitations", None),
+                getattr(answer, "refusal_reason", None),
+            )
+            if value
+        )
+        metrics["rejections"].append(
+            {
+                "attempt": int(state.get("attempts", 0)),
+                "reason": reason,
+                "draft_text": draft_text,
+            }
+        )
         if state.get("attempts", 0) < policy.MAX_DRAFTS:
             return {"answer": None, "rejection": reason}
         return {
@@ -327,6 +350,7 @@ def build_supervisor_graph(
 
     metrics: dict[str, Any] = {
         "handoffs": [], "hops": 0, "cost_usd": 0.0, "last_rejection": None,
+        "rejections": [],
         "question": "", "prior_turns": [], "resolved_question": "",
         "memory_reads": [], "memory_writes": [], "turn": 0,
     }
@@ -422,6 +446,7 @@ def answer_question_v2(
     checkpointer=None,
     store=None,
     user_id="default",
+    trace_meta: dict | None = None,
 ) -> V2Result:
     """Run one question and return routing, evidence, cost, and verification metadata."""
     started = time.perf_counter()
@@ -437,6 +462,14 @@ def answer_question_v2(
     runtime = graph._runtime()
     runtime["question"] = question
     config = {"configurable": {"thread_id": thread_id, "user_id": user_id}}
+    if trace_meta is not None:
+        config.update(
+            {
+                "run_name": trace_meta["run_name"],
+                "tags": list(trace_meta["tags"]),
+                "metadata": dict(trace_meta["metadata"]),
+            }
+        )
     try:
         final = graph.invoke(
             {
@@ -476,14 +509,24 @@ def answer_question_v2(
             "resolved_question": runtime.get("resolved_question") or question,
             "memory_reads": runtime.get("memory_reads", []),
             "memory_writes": runtime.get("memory_writes", []),
+            "rejections": runtime.get("rejections", []),
             "turn": runtime.get("turn", len(runtime.get("prior_turns", [])) + 1),
         }
     handoffs = list(final.get("handoffs", runtime["handoffs"]))
     evidence = [item for handoff in handoffs for item in handoff.evidence]
+    tools_called = []
+    for handoff in handoffs:
+        if handoff.evidence:
+            tools_called.extend(item.tool for item in handoff.evidence)
+        else:
+            tools_called.extend(
+                attempted["tool"]
+                for attempted in handoff.inputs.get("tool_attempts", [])
+            )
     return V2Result(
         answer=final["answer"],
         agents_called=[handoff.agent for handoff in handoffs],
-        tools_called=[item.tool for item in evidence],
+        tools_called=tools_called,
         tool_call_ids=[item.tool_call_id for item in evidence],
         hops=int(final.get("hops", runtime["hops"])),
         replans=int(final.get("replans", 0)),
@@ -492,6 +535,7 @@ def answer_question_v2(
         latency_s=time.perf_counter() - started,
         stop_reason=final.get("stop_reason"),
         last_rejection=final.get("rejection", runtime["last_rejection"]),
+        rejections=list(final.get("rejections", runtime.get("rejections", []))),
         handoffs=_handoff_dump(handoffs),
         resolved_question=final.get("resolved_question") or question,
         memory_reads=list(final.get("memory_reads", [])),

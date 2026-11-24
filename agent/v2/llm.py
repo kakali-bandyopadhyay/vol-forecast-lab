@@ -42,6 +42,15 @@ def plan_from_wire(wire: PlanWire) -> Plan:
         subtasks={step.agent: step.subtask for step in wire.steps},
     )
 
+
+def _handoff_for_llm(handoff: Handoff) -> dict:
+    """Serialize the frozen handoff contract without runner-only telemetry."""
+    payload = handoff.model_dump(mode="json")
+    inputs = dict(payload.get("inputs", {}))
+    inputs.pop("tool_attempts", None)
+    payload["inputs"] = inputs
+    return payload
+
 PLAN_INSTRUCTIONS = """You are a research-assistant supervisor. Return a plan, not an answer.
 Choose the smallest ordered set of distinct specialists needed: forecast for forecast values or
 model comparisons; event-effect for event-study estimates; FOMC retrieval for Federal Reserve
@@ -105,7 +114,7 @@ class OpenAISupervisorLLM(OpenAIAgentLLM):
         payload = {
             "question": question,
             "called_agents": called,
-            "handoffs": [handoff.model_dump(mode="json") for handoff in handoffs],
+            "handoffs": [_handoff_for_llm(handoff) for handoff in handoffs],
         }
         response = self.client.responses.parse(
             model=self.model,
@@ -142,7 +151,7 @@ class OpenAISupervisorLLM(OpenAIAgentLLM):
     ) -> tuple[Answer, object]:
         payload = {
             "question": question,
-            "handoffs": [handoff.model_dump(mode="json") for handoff in handoffs],
+            "handoffs": [_handoff_for_llm(handoff) for handoff in handoffs],
             "rejection": rejection,
         }
         response = self.client.responses.parse(

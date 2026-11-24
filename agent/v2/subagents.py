@@ -47,15 +47,18 @@ def build_subagent(
         or "gpt-5.4-mini"
     )
 
-    def make_handoff(state, *, status, detail=None, evidence=None, cost=None):
+    def make_handoff(state, *, status, detail=None, evidence=None, cost=None, tool_attempt=None):
         usage_cost = cost
         if usage_cost is None:
             usage_cost = _cost(state.get("route_usage"), model_name) if state.get("route_usage") else 0.0
         task = state.get("task", "")
+        inputs = dict(state.get("inputs", {"task": task}))
+        if tool_attempt is not None:
+            inputs["tool_attempts"] = [tool_attempt]
         return Handoff(
             task=task,
             agent=agent,
-            inputs=state.get("inputs", {"task": task}),
+            inputs=inputs,
             evidence=evidence or [],
             status=status,
             detail=detail,
@@ -92,14 +95,16 @@ def build_subagent(
         if not policy.tool_allowed(agent, decision.tool):
             return {
                 "handoff": make_handoff(
-                    state, status="invalid_args", detail="tool outside agent scope", cost=route_cost
+                    state, status="invalid_args", detail="tool outside agent scope", cost=route_cost,
+                    tool_attempt={"tool": decision.tool, "args": dict(decision.args)},
                 )
             }
         fn = TOOLS.get(decision.tool)
         if fn is None:
             return {
                 "handoff": make_handoff(
-                    state, status="invalid_args", detail="unknown tool", cost=route_cost
+                    state, status="invalid_args", detail="unknown tool", cost=route_cost,
+                    tool_attempt={"tool": decision.tool, "args": dict(decision.args)},
                 )
             }
         kwargs = dict(decision.args)
@@ -127,10 +132,14 @@ def build_subagent(
             )
             return {
                 "handoff": make_handoff(
-                    state, status=status, detail=detail, evidence=[evidence], cost=route_cost
+                    state, status=status, detail=detail, evidence=[evidence], cost=route_cost,
+                    tool_attempt={"tool": decision.tool, "args": dict(decision.args)},
                 )
             }
-        return {"handoff": make_handoff(state, status=status, detail=detail, cost=route_cost)}
+        return {"handoff": make_handoff(
+            state, status=status, detail=detail, cost=route_cost,
+            tool_attempt={"tool": decision.tool, "args": dict(decision.args)},
+        )}
 
     graph = StateGraph(SubagentState, output_schema=SubagentOutput)
     graph.add_node("select_tool", select_tool)
