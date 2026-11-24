@@ -229,6 +229,12 @@ class DryRunFakeLLM:
 
 
 def test_dry_run_v2_writes_51_turns_with_isolated_ids_and_memory(tmp_path):
+    # The dry run exercises the real tools, which read per-date series kept local and git-ignored
+    # under the data licence (ADR 0003); a public clone (CI) does not have them. Same rule as
+    # tests/test_drift.py. Skip added 25 Nov 2026 after the first CI run of Build B.
+    missing = [name for name in ("forecasts.parquet", "losses.parquet") if not (ROOT / "results" / name).exists()]
+    if missing:
+        pytest.skip(f"results/{', '.join(missing)} local only (licence, ADR 0003)")
     runner = _load_runner()
     output = tmp_path / "out"
     assert runner.main(["--set", "v2", "--repeats", "3", "--dry-run", "--out-dir", str(output)]) == 0
