@@ -121,6 +121,14 @@ def test_verifier_rejects_unsupported_number_and_accepts_6sf_and_3dp():
     assert verifier.verify(_answer(text="Value 1.23457"), rows, bounds, "get_forecast")[0]
     assert verifier.verify(_answer(text="Value 1.235"), rows, bounds, "get_forecast")[0]
 
+    rounded_small_value = [{"floored_30d": 0.002552}]
+    assert verifier.verify(
+        _answer(forecast="0.00255"), rounded_small_value, bounds, "get_forecast"
+    )[0]
+    assert verifier.verify(
+        _answer(text="Forecast 2.55e-3"), rounded_small_value, bounds, "get_forecast"
+    )[0]
+
 
 def test_verifier_checks_dates_inclusively_at_data_range_boundaries():
     verifier = _verifier()
@@ -176,12 +184,16 @@ def test_tools_select_forecasts_events_and_search_rows_and_compute_comparison(to
 
     captured = {}
 
-    def search_fn(query, *, mode, k):
-        captured.update(query=query, mode=mode, k=k)
+    def search_fn(query, *, mode, k, doc_type=None):
+        captured.update(query=query, mode=mode, k=k, doc_type=doc_type)
         return [{"chunk_id": "chunk-1", "url": "https://example.test", "text": "minutes"}]
 
-    search = tools.search_fomc(query="inflation", search_fn=search_fn, results_dir=toy_results)
-    assert captured == {"query": "inflation", "mode": "hybrid", "k": 5}
+    search = tools.search_fomc(
+        query="inflation", doc_type="statement", search_fn=search_fn, results_dir=toy_results
+    )
+    assert captured == {
+        "query": "inflation", "mode": "hybrid", "k": 5, "doc_type": "statement"
+    }
     assert search["rows"][0]["chunk_id"] == "chunk-1"
     assert search["row_keys"] == ["chunk_id"]
 
@@ -260,7 +272,7 @@ def test_agent_happy_path_routes_calls_tool_and_verifies_once(toy_results: Path)
 
         def draft(self, question, tool_output, rejection=None):
             value = tool_output["rows"][0]["floored_30d"]
-            return _answer(forecast=f"{value:.6g}", text=f"Forecast {value:.6g}"), schema.Usage(1, 1)
+            return _answer(forecast=f"{value:.4f}", text=f"Forecast {value:.4f}"), schema.Usage(1, 1)
 
     result = graph.answer_question("What is the M0 forecast?", FakeLLM(), model_name="fake", results_dir=toy_results)
     assert not result.answer.refused
@@ -284,7 +296,7 @@ def test_agent_retries_one_failed_draft_then_accepts_verified_answer(toy_results
         def draft(self, question, tool_output, rejection=None):
             self.draft_calls += 1
             value = tool_output["rows"][0]["floored_30d"]
-            number = "999" if self.draft_calls == 1 else f"{value:.6g}"
+            number = "999" if self.draft_calls == 1 else f"{value:.4f}"
             return _answer(text=f"Forecast {number}"), schema.Usage(1, 1)
 
     llm = FakeLLM()
@@ -373,7 +385,7 @@ def test_run_eval_repeats_each_question_and_scores_refusal_rows(toy_results: Pat
 
         def draft(self, question, tool_output, rejection=None):
             value = tool_output["rows"][0]["floored_30d"]
-            return _answer(text=f"Forecast {value:.6g}"), schema.Usage(1, 1)
+            return _answer(text=f"Forecast {value:.4f}"), schema.Usage(1, 1)
 
     result = runner.run_eval(questions, FakeLLM(), model_name="fake", results_dir=toy_results, repeats=3)
     assert len(result) == 6
@@ -428,13 +440,17 @@ def test_verifier_accepts_allowed_constant_and_matching_exponent_form():
     verifier = _verifier()
     rows = [{"raw_30d": 1e-6}]
 
-    assert verifier.verify(
+    ok, reason = verifier.verify(
         _answer(text="30-day value 1e-06"), rows, None, "get_forecast"
-    )[0]
+    )
+    assert not ok and "1e-06" in reason
     ok, reason = verifier.verify(
         _answer(text="30-day value 1.0e-06"), rows, None, "get_forecast"
     )
     assert not ok and "1.0e-06" in reason
+    assert verifier.verify(
+        _answer(text="30-day value 1.00e-06"), rows, None, "get_forecast"
+    )[0]
 
 
 def test_score_exact_shares_verifier_number_token_and_ignores_model_digits():

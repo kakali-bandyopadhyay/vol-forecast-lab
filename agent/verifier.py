@@ -37,9 +37,29 @@ def _candidate_strings(tool_output: list[dict[str, Any]]) -> set[str]:
                 continue
             candidates.add(f"{value:.6g}")
             candidates.add(f"{value:.3f}")
+            for significant_figures in range(3, 7):
+                candidates.add(f"{value:.{significant_figures}g}")
             if isinstance(value, numbers.Integral):
                 candidates.add(str(value))
     return candidates
+
+
+def _canonical_numeric(value: str) -> str | None:
+    """Normalize equivalent decimal and scientific notation for comparisons."""
+    try:
+        return f"{float(value):.15g}"
+    except ValueError:
+        return None
+
+
+def _significant_figures(value: str) -> int:
+    """Count reported significant digits, including trailing decimal zeroes."""
+    mantissa = re.split(r"[eE]", value, maxsplit=1)[0].lstrip("+-")
+    digits = mantissa.replace(".", "")
+    nonzero = next((index for index, digit in enumerate(digits) if digit != "0"), None)
+    if nonzero is None:
+        return len(digits)
+    return len(digits) - nonzero
 
 
 def verify(answer, tool_output: list[dict[str, Any]], data_range, tool_name: str) -> tuple[bool, str]:
@@ -62,13 +82,25 @@ def verify(answer, tool_output: list[dict[str, Any]], data_range, tool_name: str
                     return False, f"date {match} is outside data range {first}..{last}"
 
     candidates = _candidate_strings(tool_output)
+    canonical_candidates = {
+        normalized
+        for candidate in candidates
+        if (normalized := _canonical_numeric(candidate)) is not None
+    }
     for name in _NUMBER_FIELDS:
         value = getattr(answer, name, None)
         if value is None:
             continue
         text = ISO_DATE.sub(" ", str(value))
         for token in NUMBER_TOKEN.findall(text):
-            if token not in candidates:
+            exact_integer = token.isdigit() and token in candidates
+            exact_constant = token in ALLOWED_CONSTANTS
+            if not exact_integer and not exact_constant and _significant_figures(token) < 3:
+                return False, f"unsupported number {token}"
+            if (
+                token not in candidates
+                and _canonical_numeric(token) not in canonical_candidates
+            ):
                 return False, f"unsupported number {token}"
 
     for citation in answer.citations:

@@ -152,6 +152,7 @@ def search_fomc(
     date_from: str | None = None,
     date_to: str | None = None,
     *,
+    doc_type: str | None = None,
     search_fn: Callable | None = None,
     results_dir: Path | str = RESULTS_DIR,
 ) -> dict[str, Any]:
@@ -168,6 +169,10 @@ def search_fomc(
         kwargs["date_from"] = date_from
     if date_to is not None:
         kwargs["date_to"] = date_to
+    if doc_type is not None:
+        if doc_type not in {"statement", "minutes"}:
+            raise ValueError("doc_type must be statement or minutes")
+        kwargs["doc_type"] = doc_type
     results = search_fn(query, **kwargs)
     rows = [dict(result) for result in results]
     if not rows:
