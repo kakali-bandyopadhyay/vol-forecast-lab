@@ -1,0 +1,38 @@
+flowchart TB
+    U[User question] --> G[Advice guard]
+    G -->|in scope| S
+    G -->|advice| R[Refuse]
+
+    subgraph S[Supervisor]
+        P[Plan or replan<br/>max 3 hops<br/>max 1 replan<br/>projected cost cap]
+        D[Dispatch next specialist]
+        A[Draft from typed evidence]
+        V{Verifier gate}
+        P --> D
+        A --> V
+        V -->|reject, one retry| A
+    end
+
+    D --> F
+    D --> E
+    D --> M
+    subgraph F[Forecast sub-agent]
+        FT[get_forecast<br/>compare_models]
+    end
+    subgraph E[Event-effect sub-agent]
+        ET[event_effect]
+    end
+    subgraph M[FOMC retrieval sub-agent]
+        MT[search_fomc]
+    end
+    FT --> H[Typed Handoff<br/>task · inputs · evidence · status · cost]
+    ET --> H
+    MT --> H
+    H -->|dispatch · replan · draft| S
+    V -->|verified| O[Answer]
+    V -->|exhausted / cannot verify| R
+
+    CP[(SQLite checkpointer<br/>thread memory · B2)] -.-> S
+    LS[(Preference store<br/>long-term memory · B2)] -.-> S
+
+    classDef default font-family:Arial,sans-serif;
