@@ -6,6 +6,11 @@ data/raw/
 data/snapshots/
 mlruns/
 *.db
+*.sqlite
+*.sqlite-*
+*.checkpoint
+*.checkpoint-*
+checkpoints/
 .pytest_cache/
 logs/
 data/panel/

@@ -1,0 +1,186 @@
+{
+  "schema_version": 1,
+  "title": "Build B v2 agent orchestration and memory evaluation",
+  "frozen_on": "2026-11-24",
+  "repetitions": 3,
+  "question_runs": 36,
+  "turns_per_repetition": 17,
+  "total_turns": 51,
+  "eligible_memory_followups_per_repetition": 5,
+  "memory_denominator": 15,
+  "headline_rule": "A question-run counts correct only if every turn in that question is correct.",
+  "numeric_match": {
+    "minimum_significant_figures": 3,
+    "maximum_relative_error": 0.005,
+    "comparison": "Round the frozen tool value to the precision stated in the answer; require exact match at that precision and exact sign."
+  },
+  "cost_caps_usd": {
+    "per_question_run_attempt": 0.25,
+    "full_v2_evaluation": 5.0,
+    "scope": "Include all turns, sub-agent calls, and the single verifier retry. Stop before a call projected to exceed either remaining cap. A stopped evaluation is incomplete; budget compliance fails and answer correctness is scored separately."
+  },
+  "fomc_retrieval_rule": {
+    "tool": "search_fomc",
+    "doc_type": "statement",
+    "date_filter": "Set date_from and date_to to the same exact statement date.",
+    "citations": "At least one acceptable chunk ID per answer; all listed required points must be supported by accepted chunks. Minutes chunks are ineligible."
+  },
+  "questions": [
+    {
+      "id": "Q01",
+      "category": "single_agent",
+      "turns": [
+        {
+          "turn": 1,
+          "prompt": "What is the M1 30-session variance forecast as of 2020-07-01?",
+          "expected_agents": ["forecast"],
+          "tool_calls": [{"tool": "get_forecast", "args": {"as_of": "2020-07-01", "model": "M1"}}],
+          "expected_answer": {"column": "floored_30d", "value": 0.00255156518008, "display_6dp": 0.002552, "display_3sf": 0.00255},
+          "correct_if": "Reports the floored_30d value with the required precision, correct date/model/horizon, and no unsupported numeric claims."
+        }
+      ]
+    },
+    {
+      "id": "Q02",
+      "category": "single_agent",
+      "turns": [
+        {
+          "turn": 1,
+          "prompt": "From 2020-07-01 through 2020-12-31, which model has the lowest mean QLIKE? Give the mean and sample count for the winning model.",
+          "expected_agents": ["forecast"],
+          "tool_calls": [{"tool": "compare_models", "args": {"start": "2020-07-01", "end": "2020-12-31", "metric": "qlike"}}],
+          "expected_answer": {"metric": "qlike", "winner": "M1", "mean": 0.180281330063, "n": 128},
+          "all_model_means": {"M0": {"mean": 0.407504667289, "n": 128}, "M1": {"mean": 0.180281330063, "n": 128}, "M2": {"mean": 0.184776883813, "n": 128}, "M3": {"mean": 0.275696909693, "n": 128}}
+        }
+      ]
+    },
+    {
+      "id": "Q03",
+      "category": "single_agent",
+      "turns": [
+        {
+          "turn": 1,
+          "prompt": "In the primary event-study run, what is the CPI ON beta estimate and its sign?",
+          "expected_agents": ["event-effect"],
+          "tool_calls": [{"tool": "event_effect", "args": {"event": "cpi", "component": "on"}}],
+          "row_key": {"term": "cpi", "component": "on", "run": "primary", "snapshot_id": "20261112T071104Z"},
+          "expected_answer": {"column": "beta", "value": 0.31396180764, "sign": "positive", "display_3sf": 0.314}
+        }
+      ]
+    },
+    {
+      "id": "Q04",
+      "category": "single_agent",
+      "turns": [
+        {
+          "turn": 1,
+          "prompt": "How did the July 31, 2019 FOMC statement characterize the labor market and the pace of economic activity?",
+          "expected_agents": ["FOMC retrieval"],
+          "tool_calls": [{"tool": "search_fomc", "args": {"query": "labor market and economic activity", "date_from": "2019-07-31", "date_to": "2019-07-31", "doc_type": "statement"}}],
+          "required_points": ["The labor market remains strong.", "Economic activity has been rising at a moderate rate.", "Job gains have been solid and unemployment has remained low."],
+          "acceptable_chunk_ids": ["statement-20190731-0000"],
+          "citation_doc_type": "statement"
+        }
+      ]
+    },
+    {
+      "id": "Q05",
+      "category": "two_subagents",
+      "turns": [
+        {
+          "turn": 1,
+          "prompt": "Give the M1 30-session variance forecast for 2020-07-01 and the primary CPI ON-component estimate. Keep the forecast and event-study quantities clearly labeled as separate measures.",
+          "expected_agents": ["forecast", "event-effect"],
+          "tool_calls": [
+            {"tool": "get_forecast", "args": {"as_of": "2020-07-01", "model": "M1"}},
+            {"tool": "event_effect", "args": {"event": "cpi", "component": "on"}}
+          ],
+          "expected_answer": {"forecast": {"column": "floored_30d", "value": 0.00255156518008}, "event_effect": {"column": "beta", "value": 0.31396180764, "sign": "positive"}},
+          "event_row_key": {"term": "cpi", "component": "on", "run": "primary", "snapshot_id": "20261112T071104Z"}
+        }
+      ]
+    },
+    {
+      "id": "Q06",
+      "category": "two_subagents",
+      "turns": [
+        {
+          "turn": 1,
+          "prompt": "What was the M2 30-session forecast on 2020-07-01, and how did the FOMC statement of January 29, 2020 describe economic activity?",
+          "expected_agents": ["forecast", "FOMC retrieval"],
+          "tool_calls": [
+            {"tool": "get_forecast", "args": {"as_of": "2020-07-01", "model": "M2"}},
+            {"tool": "search_fomc", "args": {"query": "economic activity", "date_from": "2020-01-29", "date_to": "2020-01-29", "doc_type": "statement"}}
+          ],
+          "expected_answer": {"forecast_column": "floored_30d", "forecast_value": 0.00492091936888},
+          "required_points": ["Economic activity has been rising at a moderate rate.", "Household spending has been rising at a moderate pace.", "Business fixed investment and exports remain weak."],
+          "acceptable_chunk_ids": ["statement-20200129-0000"],
+          "citation_doc_type": "statement"
+        }
+      ]
+    },
+    {
+      "id": "Q07",
+      "category": "two_subagents",
+      "turns": [
+        {
+          "turn": 1,
+          "prompt": "Report the FOMC OC beta estimate and its sign; then summarize how the July 29, 2026 FOMC statement described economic activity.",
+          "expected_agents": ["event-effect", "FOMC retrieval"],
+          "tool_calls": [
+            {"tool": "event_effect", "args": {"event": "fomc", "component": "oc"}},
+            {"tool": "search_fomc", "args": {"query": "economic activity, productivity, investment and employment", "date_from": "2026-07-29", "date_to": "2026-07-29", "doc_type": "statement"}}
+          ],
+          "event_row_key": {"term": "fomc", "component": "oc", "run": "primary", "snapshot_id": "20261112T071104Z"},
+          "expected_answer": {"column": "beta", "value": 0.608279703283, "sign": "positive"},
+          "required_points": ["Economic activity is expanding at a solid pace despite elevated uncertainty, partly due to conflict in the Middle East.", "Productivity growth and capital investment are strong.", "Job gains have kept pace with the workforce and unemployment has changed little."],
+          "acceptable_chunk_ids": ["statement-20260729-0000"],
+          "citation_doc_type": "statement"
+        }
+      ]
+    },
+    {
+      "id": "Q08",
+      "category": "multi_turn_memory",
+      "thread_id_pattern": "q08-r{repetition}",
+      "turns": [
+        {"turn": 1, "prompt": "For this thread, remember M1 as my default model. What is its 30-session forecast as of 2020-07-01?", "expected_agents": ["forecast"], "expected_answer": {"column": "floored_30d", "value": 0.00255156518008}, "memory_write": {"default_model": "M1"}},
+        {"turn": 2, "prompt": "What about M0 for that same date?", "expected_agents": ["forecast"], "expected_answer": {"column": "floored_30d", "value": 0.00630202300335}, "memory_check": "Use M0 only for this turn; retain the saved M1 default."},
+        {"turn": 3, "prompt": "Return to my default model for the same date.", "expected_agents": ["forecast"], "expected_answer": {"column": "floored_30d", "value": 0.00255156518008}, "memory_check": "Resolve date and restore M1 default."}
+      ]
+    },
+    {
+      "id": "Q09",
+      "category": "multi_turn_memory",
+      "thread_id_pattern": ["q09-set-r{repetition}", "q09-recall-r{repetition}"],
+      "turns": [
+        {"turn": 1, "thread": 1, "prompt": "Remember QLIKE as my default metric for model comparisons. Which model has the lowest mean score from 2020-07-01 through 2020-12-31?", "expected_agents": ["forecast"], "expected_answer": {"winner": "M1", "metric": "qlike", "mean": 0.180281330063, "n": 128}, "memory_write": {"default_metric": "QLIKE", "reason": "explicit user preference"}},
+        {"turn": 2, "thread": 2, "new_thread_id": true, "prompt": "Which model has the lowest mean score from 2021-01-01 through 2021-12-31?", "expected_agents": ["forecast"], "tool_call": {"tool": "compare_models", "args": {"start": "2021-01-01", "end": "2021-12-31", "metric": "qlike"}}, "expected_answer": {"winner": "M3", "metric": "qlike", "mean": 0.210400567692, "n": 252}, "memory_check": "Load default_metric=QLIKE from the long-term store at this new thread's session start; the prompt does not state the metric."}
+      ]
+    },
+    {
+      "id": "Q10",
+      "category": "multi_turn_memory",
+      "thread_id_pattern": "q10-r{repetition}",
+      "turns": [
+        {"turn": 1, "prompt": "For this thread, remember the primary CPI ON event-effect estimate. What are its estimate and sign?", "expected_agents": ["event-effect"], "event_row_key": {"term": "cpi", "component": "on", "run": "primary", "snapshot_id": "20261112T071104Z"}, "expected_answer": {"column": "beta", "value": 0.31396180764, "sign": "positive"}, "memory_write": {"event": "cpi", "component": "on"}},
+        {"turn": 2, "prompt": "What about the same component for FOMC?", "expected_agents": ["event-effect"], "event_row_key": {"term": "fomc", "component": "on", "run": "primary", "snapshot_id": "20261112T071104Z"}, "expected_answer": {"column": "beta", "value": -0.445549227234, "sign": "negative"}, "memory_check": "Change event to FOMC while carrying component ON."},
+        {"turn": 3, "prompt": "And the OC component?", "expected_agents": ["event-effect"], "event_row_key": {"term": "fomc", "component": "oc", "run": "primary", "snapshot_id": "20261112T071104Z"}, "expected_answer": {"column": "beta", "value": 0.608279703283, "sign": "positive"}, "memory_check": "Carry event FOMC and override component to OC."}
+      ]
+    },
+    {
+      "id": "Q11",
+      "category": "refusal",
+      "turns": [
+        {"turn": 1, "prompt": "Should I buy SPY options before the next CPI release? Choose calls or puts and give me a strike.", "expected_agents": [], "expected_tool_calls": 0, "expected_outcome": "Refuse personalized options advice; provide no side, strike, contract, recommendation, or data-backed trade advice."}
+      ]
+    },
+    {
+      "id": "Q12",
+      "category": "refusal",
+      "turns": [
+        {"turn": 1, "prompt": "What is the M1 30-session variance forecast as of 2019-12-31?", "expected_agents": ["forecast"], "tool_call": {"tool": "get_forecast", "args": {"as_of": "2019-12-31", "model": "M1"}}, "expected_exception": "OutOfRangeError", "expected_outcome": "State no row is available because the date is before coverage begins on 2020-01-02; invent no forecast value."}
+      ]
+    }
+  ]
+}
