@@ -47,6 +47,11 @@ from the repo (AWS rows needed a live account on 16 Nov 2026 and cannot be re-ru
 | A1 | Agent accuracy (15 frozen questions × 3) | 0.844 (38/45); tool choice 45/45; refusals 6/6 | `results/agent/agent_eval.parquet`, `agent_eval_summary.json` | `python scripts/run_agent_eval.py` (OpenAI key; costs ~USD 0.06) | `87a1523`, `376abe5` |
 | A2 | No unverified number reached an answer | 0 of 45 | as A1 | as A1 | `376abe5` |
 | A3 | Agent cost and latency | USD 0.064 total; p50 4.1 s, p95 6.9 s | as A1 | as A1 | `376abe5` |
+| A4 | Agent v2 accuracy (12 pre-registered questions × 3, frozen `1c9922a`) | 20/36 question-runs; 29/51 turns; routing 46/51; memory follow-ups 9/15; refusals 6/6 | `results/agent_v2/eval_v2_summary.json`, `eval_v2_turns.parquet`, `manual_scores.csv` | `python scripts/run_agent_eval_v2.py --set v2 --repeats 3 --trace` then `python scripts/score_agent_eval_v2.py --final` (OpenAI key, Qdrant; ~USD 0.12) | `71b8152` |
+| A5 | Agent v2: no unverified number reached an answer | 0 verifier misses; 18 blocks (2 appropriate, 16 inappropriate – written dates) | as A4 | as A4 | `71b8152` |
+| A6 | Agent v2 cost, latency, hops | USD 0.0023 per turn, 0.119 total; p50 9.5 s, p95 15.7 s; max 2 hops (cap 3) | as A4 | as A4 | `71b8152` |
+| A7 | v1 15 × 3 regression on v2 (v1 numbers unchanged) | 30/45 vs v1 38/45; tool choice 45/45; drop explained by answer format | `results/agent_v2/regression_summary_run3.json`, `regression_v1_on_v2_run3.parquet` | `python scripts/run_agent_eval_v2.py --set v1-regression --repeats 3 --trace` | `71b8152` |
+| A8 | Agent v2 traced with LangSmith | 51 eval traces + 45 regression traces; screenshots | `docs/langsmith/` | open the screenshots / CSV run lists | `71b8152` |
 | M1 | Drift: model degradation rule | 11 of 79 month-ends degraded; latest (2026-10) not | `results/drift_report.parquet`, `drift_summary.json` | `python scripts/run_drift.py` | `e292c9c` |
 | M2 | Drift: PSI cannot separate drift from regime variation (reported limit) | 40–78 of 78 month-ends flagged; 46–100% inside training | as M1 | as M1 | `e292c9c` |
 | O1 | DAG failure rule works | 4 tests passed; forced audit failure → 5 downstream `upstream_failed` | `tests/test_dag_vol_pipeline.py` | `scripts/run_dag_tests.ps1` | `c849f27` |

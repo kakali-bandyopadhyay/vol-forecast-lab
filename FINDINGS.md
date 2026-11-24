@@ -8,7 +8,7 @@ Forecasting core: Q1's headline moves to the ex-window sample; Q1b–Q1d are not
 final Holm adjustment; Q2 and Q3 are reported below. Platform: Step 10b document pipeline, Step 10c
 platform slice (Kafka, AWS lake run on 16 Nov 2026 then destroyed, Spark, OpenSearch, Redis),
 Step 11 agent, Step 12 MLOps and drift, Step 13 Airflow DAG and kind deployment. Claim-by-claim
-evidence: `EVIDENCE.md`.
+evidence: `EVIDENCE.md`. Dated entry 25 Nov 2026: agent v2 (orchestrator + memory), reported separately.
 
 **Charts (Step 14).** `figures/results/fig1–fig4` (forecast comparison, errors over time, implied vs
 realised by year, event variance split), built by `scripts/make_charts.py` from aggregates only
@@ -374,6 +374,102 @@ downstream tasks `upstream_failed`; the document stubs run). kubeconform 4/4 val
 1.37.0). In kind: `/health` 200 on 127.0.0.1:30080; pod runs as uid 10001; a job created from the
 drift CronJob completed with the same 11 degraded month-ends as Step 12. The full snapshot DAG run
 (`use_snapshot=true`) was not executed. Evidence: `docs/step13_evidence.md`.
+
+### Agent v2 – orchestrator + memory (Nov 2026)
+
+_Dated entry, 25 Nov 2026. Branch `feat/agent-v2-orchestrator`. The Step 11 v1 headline (0.844, 38/45) is
+unchanged; v2 is a separate, labelled run on a new question set._
+
+**What changed.** A supervisor plans 1–3 tool-scoped sub-agents (forecast, event-effect, FOMC retrieval),
+each a LangGraph subgraph that may call only its own tools (checked again at run time). Sub-agents return
+a typed `Handoff` (task, agent, inputs, evidence with tool-call ids, status, hop, cost so far), never free
+text. Max 3 hops and 1 replan; cost caps USD 0.25 per attempt and USD 5 per evaluation. The copy-only
+verifier still gates every final answer, now over all evidence from the turn. Memory: a SQLite
+checkpointer keyed by `thread_id` (thread memory) and a SQLite store for user preferences
+(`default_model`, `default_metric`), written only from explicit statements, validated on write and read,
+precedence explicit > thread > user; stored items set tool-argument defaults only and never replace tool
+output. Design: ADR 0011; diagram `docs/diagrams/agent_v2.mmd` → `figures/diagrams/agent_v2.svg`.
+Commits: B1 `bc6378c`, B2 `8d4ba46`, B3 `709a56f`…`71b8152`.
+
+**Pre-registration.** Question set and scoring rules frozen at `1c9922a` (`prereg/PREREGISTRATION_v2.md`,
+`prereg/questions_v2.json`, sha256 `e27f0196…dcdc8`) before any v2 run. 12 questions × 3 repeats:
+4 single-agent routing (Q01–Q04), 3 two-sub-agent (Q05–Q07), 3 multi-turn memory threads (Q08–Q10;
+Q09 turn 2 in a new thread to test the store), 2 refusals (Q11–Q12). A question-run counts as correct
+only if every turn is correct. Scorer clarifications and fixes made before any v2 run are logged as
+DEVIATIONS X and Y; DEVIATIONS Z records that run 1 was invalidated by a Qdrant outage (10 runtime
+errors) and the whole set was re-run with identical code; both outputs are kept
+(`*_run1_qdrant_down.*`).
+
+**Results** (`results/agent_v2/eval_v2_summary.json`, eval_run_id `47e79333…`, run at `9b36bbd`,
+gpt-5.4-mini-2026-03-17, list prices as of 2026-11-17):
+
+| Metric | Result |
+|---|---|
+| Headline (question-runs, every turn correct) | **20/36** |
+| Per turn | 29/51 |
+| Routing (exact expected sub-agent set) | 46/51 |
+| Tool arguments | 43/51 |
+| Memory follow-ups | 9/15 (Q08 6/6, Q09 3/3, Q10 0/6) |
+| Refusals | 6/6 |
+| Verifier blocks | 18 (2 appropriate, 16 inappropriate); 0 unverified numbers reached an answer |
+| Cost | USD 0.0023 per turn (median 0.0021); USD 0.0033 per question-run; USD 0.119 in total; within caps |
+| Latency | p50 9.5 s, p95 15.7 s (n = 51 turns) |
+| Hops | 1 hop × 40 turns, 2 × 8, 0 × 3 (refusals); max 2, no cap violations |
+
+By question: Q01, Q02, Q03, Q08, Q11, Q12 passed all 3 repeats; Q05 2/3; Q04, Q06, Q07, Q09, Q10 0/3.
+
+**Misses (reported, not fixed on this set – a fix would be tuning on the test set):**
+1. _Verifier over-blocks written dates_ (Q04, Q06, Q07: 0/9). Drafts contained the rubric points, but the
+   day number in "July 31, 2019", "January 29, 2020" and "July 29, 2026" was read as an unsupported number;
+   the verifier exempts ISO dates only. 16 of the 18 blocks were of this kind.
+2. _Implicit carry-over_ (Q10, memory 0/6). "What about the same component for FOMC?" was not rewritten as a
+   standalone event-effect question, so it was routed to FOMC retrieval; turn 3 then used the CPI component.
+   Explicit preference memory scored 9/9 (Q08, Q09).
+3. _Q09 answers incomplete_. The store read worked (correct winner, QLIKE applied in a new thread) but no
+   answer gave the mean and count the frozen key requires – likely a side effect of DEVIATIONS Y
+   ("report only what is asked").
+4. _Routing and labels_. Q07 was twice sent to the forecast agent with today's date. One Q07 draft
+   labelled a forecast value as the FOMC beta; it was blocked only because of an unrelated date token. A
+   numbers-in-evidence verifier does not check labels (same limit as ADR 0007).
+5. Q05 repeat 2 reported the effect column instead of beta.
+6. _Robustness_. In the invalidated run 1, a Qdrant connection error escaped the sub-agent as an exception
+   instead of a typed `Handoff` status.
+
+**v1 regression on v2** (original 15 questions × 3, v1 scorer unchanged;
+`results/agent_v2/regression_summary_run1–3.json` and parquet):
+
+| | Run 1 (`709a56f`) | Run 2 (`57cb372`) | Run 3 (`94eb565`, after Y) | v1 (Step 11) |
+|---|---|---|---|---|
+| Headline | 30/45 | 28/45 | 30/45 | 38/45 |
+| Could not verify | 6 | 9 | 0 | – |
+| Tool choice | 43/45 | 43/45 | 45/45 | 45/45 |
+| Refusal flag | 37/45 | 34/45 | 45/45 | 42/45 |
+| Latency p50 / p95 | 7.4 / 11.9 s | 7.4 / 11.7 s | 7.5 / 8.2 s | 4.1 / 6.9 s |
+
+Runs 1–2 were the shakedown that found the draft-prompt/verifier contradiction fixed in DEVIATIONS Y
+(before any v2 run). The run-3 drop is explained: A06–A08 (9 attempts) answer the beta where the v1 key
+expects the effect column; A09–A10 (6) give full-precision p-values where the v1 key expects "0.026" /
+"0.001" strings (by design after Y). Cost per attempt USD 0.0017 vs 0.0014 in v1; the latency rise is the
+extra supervisor planning call.
+
+**Tracing.** All v2 eval turns and regression run 3 were traced live in LangSmith (projects
+`vfl-agent-v2-eval`, 51 traces; `vfl-agent-v2-regression`, 45). Run lists without URLs (organisation id
+removed): `docs/langsmith/*.csv`; screenshots `docs/langsmith/v2_eval_project.png` and
+`v2_trace_Q06.png` (supervisor → forecast + FOMC retrieval sub-agents, LLM spans with tokens).
+
+**Reproduce.** `python scripts/run_agent_eval_v2.py --set v2 --repeats 3 --trace`, then
+`python scripts/score_agent_eval_v2.py --final` (OpenAI key and running Qdrant; ~USD 0.12).
+`--set v1-regression` for the regression (~USD 0.08).
+
+**Authorship.**
+- Question set, scoring rules, state schema and handoff contract: AI-drafted from Kakali's spec; Kakali reviewed and decided each edit (edits 1–6, numeric tolerance, cost cap).
+- Kakali: supervisor routing policy (`agent/v2/policy.py` – plan and replan validation, tool scope, next step, refusal reason); memory read/write logic and rules (`agent/v2/memory.py`, memory fields in `state.py`); scorer functions in `agent/v2/scoring.py`; approval of DEVIATIONS X and Y.
+- Codex (from written guides): sub-agent subgraphs, supervisor graph wiring, multi-evidence verifier wrapper, LLM adapter, persistence base, eval runner, scorer, exporter, regression diagnostics, telemetry, tests, diagram.
+- Claude: guides and reviews, DEVIATIONS text, manual scoring of narrative answers (`results/agent_v2/manual_scores.csv`), strict-schema plan wire format, checkpoint serializer allow-list, exporter fix, this write-up and ADR 0011.
+
+**Open follow-ups (v3, new held-out set):** date-aware verifier (written dates), label-aware checks,
+standalone rewrite for implicit follow-ups, typed `Handoff` status on retrieval-backend errors; move the
+exporter from `client.get_run_url` to the newer runs API before LangSmith removes it.
 
 ---
 
