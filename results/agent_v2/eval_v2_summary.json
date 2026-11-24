@@ -1,0 +1,127 @@
+{
+  "headline_correct_question_runs": 20,
+  "headline_denominator": 36,
+  "per_turn_correct": 29,
+  "per_turn_denominator": 51,
+  "routing_correct": 46,
+  "routing_denominator": 51,
+  "tool_args_correct": 43,
+  "tool_args_denominator": 51,
+  "memory_correct_followups": 9,
+  "memory_denominator": 15,
+  "refusals_correct": 6,
+  "refusals_denominator": 6,
+  "verifier_blocks": 18,
+  "verifier_blocks_appropriate": 2,
+  "verifier_blocks_inappropriate": 16,
+  "verifier_blocks_unclassified": 0,
+  "verifier_misses": 0,
+  "cost_per_turn_usd": {
+    "mean": 0.0023262058823529416,
+    "median": 0.00213075,
+    "total": 0.11863650000000002,
+    "n": 51
+  },
+  "cost_per_question_run_usd": {
+    "mean": 0.003295458333333334,
+    "median": 0.0025451249999999996,
+    "total": 0.11863650000000002,
+    "n": 36
+  },
+  "latency_s": {
+    "p50": 9.486375399981625,
+    "p95": 15.693776999978581,
+    "n": 51
+  },
+  "hops_distribution": {
+    "0": 3,
+    "1": 40,
+    "2": 8
+  },
+  "hops_max": 2,
+  "hops_violations_over_3": 0,
+  "budget_compliance": true,
+  "incomplete": false,
+  "model": "gpt-5.4-mini-2026-03-17",
+  "price_source_date": "2026-11-17",
+  "git_head": "9b36bbde32273e3dd4ada15db3867c6cfe98940c",
+  "prereg_commit": "1c9922a",
+  "questions_sha256": "e27f0196cc0a8132eb685b622a4f612bc43451b4f8f8444fdbccb29c492dcdc8",
+  "eval_run_id": "47e793335ec446778812afdc7d71e76e",
+  "repeats": 3,
+  "n_rows": 51,
+  "per_question": {
+    "Q01": {
+      "correct_question_runs": 3,
+      "question_run_denominator": 3,
+      "correct_turns": 3,
+      "turn_denominator": 3
+    },
+    "Q02": {
+      "correct_question_runs": 3,
+      "question_run_denominator": 3,
+      "correct_turns": 3,
+      "turn_denominator": 3
+    },
+    "Q03": {
+      "correct_question_runs": 3,
+      "question_run_denominator": 3,
+      "correct_turns": 3,
+      "turn_denominator": 3
+    },
+    "Q04": {
+      "correct_question_runs": 0,
+      "question_run_denominator": 3,
+      "correct_turns": 0,
+      "turn_denominator": 3
+    },
+    "Q05": {
+      "correct_question_runs": 2,
+      "question_run_denominator": 3,
+      "correct_turns": 2,
+      "turn_denominator": 3
+    },
+    "Q06": {
+      "correct_question_runs": 0,
+      "question_run_denominator": 3,
+      "correct_turns": 0,
+      "turn_denominator": 3
+    },
+    "Q07": {
+      "correct_question_runs": 0,
+      "question_run_denominator": 3,
+      "correct_turns": 0,
+      "turn_denominator": 3
+    },
+    "Q08": {
+      "correct_question_runs": 3,
+      "question_run_denominator": 3,
+      "correct_turns": 9,
+      "turn_denominator": 9
+    },
+    "Q09": {
+      "correct_question_runs": 0,
+      "question_run_denominator": 3,
+      "correct_turns": 0,
+      "turn_denominator": 6
+    },
+    "Q10": {
+      "correct_question_runs": 0,
+      "question_run_denominator": 3,
+      "correct_turns": 3,
+      "turn_denominator": 9
+    },
+    "Q11": {
+      "correct_question_runs": 3,
+      "question_run_denominator": 3,
+      "correct_turns": 3,
+      "turn_denominator": 3
+    },
+    "Q12": {
+      "correct_question_runs": 3,
+      "question_run_denominator": 3,
+      "correct_turns": 3,
+      "turn_denominator": 3
+    }
+  }
+}

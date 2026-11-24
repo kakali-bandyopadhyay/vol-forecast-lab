@@ -39,7 +39,7 @@ def export_runs(project: str, eval_run_id: str, *, repo_root: Path = REPO_ROOT, 
         rows.append({
             "run_name": getattr(run, "name", None),
             "run_id": str(getattr(run, "id", "")),
-            "url": client.get_run_url(run, project_name=project),
+            "url": client.get_run_url(run=run, project_name=project),
             "latency_s": latency,
             "total_tokens": getattr(run, "total_tokens", None),
             "error": getattr(run, "error", None),

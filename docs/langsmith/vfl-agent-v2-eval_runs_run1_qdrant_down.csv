@@ -1,0 +1,52 @@
+run_name,run_id,latency_s,total_tokens,error
+Q12.r3.t1,01a20eda-d32a-75b3-9adf-929e4940b196,4.492333,496,
+Q11.r3.t1,01a20eda-d2c6-763c-8a1f-5ae2b56ffc0a,0.031938,0,
+Q10.r3.t3,01a20eda-ad35-7272-8dd7-20c1f857d0c7,9.552721,1872,
+Q10.r3.t2,01a20eda-8164-7376-b360-91cd3996d54f,11.179838,852,ResponseHandlingException: [WinError 10061] connection refused (Qdrant not running) in dispatch
+Q10.r3.t1,01a20eda-676d-7739-a2db-3e189ad617c4,6.595662,1478,
+Q09.r3.t2,01a20eda-43f4-744e-9942-186492b0e690,9.022529,1831,
+Q09.r3.t1,01a20eda-1e26-72a4-8935-2be568008ea6,9.639562,1836,
+Q08.r3.t3,01a20ed9-fb05-7792-b761-3958b183ad39,8.957831,1863,
+Q08.r3.t2,01a20ed9-d48a-7566-a539-4e13b7853458,9.808913,1768,
+Q08.r3.t1,01a20ed9-b017-74e2-b88e-9b0e5594de09,9.249209,1778,
+Q07.r3.t1,01a20ed9-9e41-7383-ab40-d1a18c254095,4.546924,535,
+Q06.r3.t1,01a20ed9-6eab-70c1-a661-2e8a18ddea9a,12.125128,730,ResponseHandlingException: [WinError 10061] connection refused (Qdrant not running) in dispatch
+Q05.r3.t1,01a20ed9-3d69-76f5-96fb-09dc7fe5c561,12.530448,3589,
+Q04.r3.t1,01a20ed9-1a89-7161-9d2c-3d89e27781cd,8.868246,514,ResponseHandlingException: [WinError 10061] connection refused (Qdrant not running) in dispatch
+Q03.r3.t1,01a20ed8-fc0c-7307-9b70-34dd50367a54,7.746806,1535,
+Q02.r3.t1,01a20ed8-dde5-76fd-8fef-a1049f2ff1ea,7.681843,1606,
+Q01.r3.t1,01a20ed8-c185-759d-8581-b2ca2ac5679a,7.234596,1447,
+Q12.r2.t1,01a20ed8-af57-7492-b889-e247974d1ae6,4.49419,496,
+Q11.r2.t1,01a20ed8-aeff-71a6-bc54-c9efadfc14a6,0.030202,0,
+Q10.r2.t3,01a20ed8-8aec-74f7-b9e2-ad22fa395fe6,9.1645,1832,
+Q10.r2.t2,01a20ed8-5cb6-7478-b03a-a91f72146e60,11.771866,827,ResponseHandlingException: [WinError 10061] connection refused (Qdrant not running) in dispatch
+Q10.r2.t1,01a20ed8-419c-710b-a524-4c203f956b07,6.879974,1476,
+Q09.r2.t2,01a20ed8-1c27-750f-9940-17c8827701b3,9.545661,1838,
+Q09.r2.t1,01a20ed7-f621-715e-9a32-1e73e7c1189c,9.711619,1845,
+Q08.r2.t3,01a20ed7-d124-7672-80ef-0cd934e8ce8c,9.396412,1912,
+Q08.r2.t2,01a20ed7-ab53-7247-b941-a4fb29bc00e4,9.641797,1787,
+Q08.r2.t1,01a20ed7-873d-72e8-8847-2d362bdff3d1,9.196086,1719,
+Q07.r2.t1,01a20ed7-75a8-761d-9081-e3db7a9cf17e,4.444595,535,
+Q06.r2.t1,01a20ed7-4965-73e0-8b82-29e4844709d8,11.291503,733,ResponseHandlingException: [WinError 10061] connection refused (Qdrant not running) in dispatch
+Q05.r2.t1,01a20ed7-221d-7678-aef7-1f9a8c1cfb74,9.99591,2125,
+Q04.r2.t1,01a20ed6-ff00-7545-96d7-eaf160eaf900,8.921431,514,ResponseHandlingException: [WinError 10061] connection refused (Qdrant not running) in dispatch
+Q03.r2.t1,01a20ed6-e3d3-737b-9e7c-2d1709d55914,6.893093,1518,
+Q02.r2.t1,01a20ed6-c587-704f-aaa7-e202aef60281,7.722769,1588,
+Q01.r2.t1,01a20ed6-a676-7684-9317-fef874d161d0,7.827069,1498,
+Q12.r1.t1,01a20ed6-9354-722e-818a-b78cfe89b437,4.753312,494,
+Q11.r1.t1,01a20ed6-9318-706c-be2a-02f2b79edcbf,0.027401,0,
+Q10.r1.t3,01a20ed6-6d99-70db-99cc-f4587964ff29,9.544461,1806,
+Q10.r1.t2,01a20ed6-3d04-733a-b000-1824a71a706e,12.41348,852,ResponseHandlingException: [WinError 10061] connection refused (Qdrant not running) in dispatch
+Q10.r1.t1,01a20ed6-20ce-7404-8d77-833539394f28,7.141736,1476,
+Q09.r1.t2,01a20ed5-fa13-7707-bddb-a7b4f2c4b719,9.853452,1865,
+Q09.r1.t1,01a20ed5-d3e0-7588-84be-651db825fb3e,9.692123,1847,
+Q08.r1.t3,01a20ed5-ab94-7071-912f-2f5c81fc0451,10.25689,1850,
+Q08.r1.t2,01a20ed5-82cd-779e-bb76-6ad6b9948178,10.366732,1794,
+Q08.r1.t1,01a20ed5-5c85-77fe-bd52-e7fbd292a6c7,9.758265,1772,
+Q07.r1.t1,01a20ed5-3232-7070-8d21-4a2d8cb28044,10.783591,666,ResponseHandlingException: [WinError 10061] connection refused (Qdrant not running) in dispatch
+Q06.r1.t1,01a20ed5-03cc-74ed-8645-774e63f50102,11.794256,735,ResponseHandlingException: [WinError 10061] connection refused (Qdrant not running) in dispatch
+Q05.r1.t1,01a20ed4-dde9-713f-8a45-7142b268bf85,9.641754,2175,
+Q04.r1.t1,01a20ed4-b09e-7597-b222-6674739afa11,11.571933,514,ResponseHandlingException: [WinError 10061] connection refused (Qdrant not running) in dispatch
+Q03.r1.t1,01a20ed4-94d9-72f1-bdbb-ca78d4844143,7.067887,1510,
+Q02.r1.t1,01a20ed4-7680-75d6-b59e-6c85090c0763,7.735096,1623,
+Q01.r1.t1,01a20ed4-51a4-71f7-9a13-0711fb5d1a8b,9.384897,1426,

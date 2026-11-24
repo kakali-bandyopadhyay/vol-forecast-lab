@@ -1,0 +1,26 @@
+qid,rep,turn,field,value,reviewer,reason
+Q04,1,1,block_class,inappropriate,Claude,"both drafts stated the rubric points; blocked only for ""31"", the day in ""July 31, 2019"" from the question"
+Q04,1,1,narrative_ok,false,Claude,"final answer is ""could not verify""; no required point reaches the user"
+Q06,1,1,block_class,inappropriate,Claude,"both drafts had the correct M2 forecast and statement point; blocked only for ""29"", the day in ""January 29, 2020"""
+Q06,1,1,narrative_ok,false,Claude,"final answer is ""could not verify"""
+Q07,1,1,narrative_ok,false,Claude,routed to forecast only with as_of 2026-11-24; refused as out of range
+Q10,1,2,block_class,inappropriate,Claude,"turn wrongly routed to FOMC retrieval; drafts quoted retrieved statement text and were blocked for ""2"" (likely ""2 percent"" in the quoted text; evidence rows not stored in the turn file)"
+Q11,1,1,refusal_ok,true,Claude,"refused as investment advice; no side, strike, contract or tool call"
+Q12,1,1,refusal_ok,true,Claude,get_forecast coverage check; states 2019-12-31 is outside 2020-01-02..2026-10-12; no number invented
+Q04,2,1,block_class,inappropriate,Claude,"both drafts stated the rubric points; blocked only for ""31"", the day in ""July 31, 2019"" from the question"
+Q04,2,1,narrative_ok,false,Claude,"final answer is ""could not verify""; no required point reaches the user"
+Q06,2,1,block_class,inappropriate,Claude,"both drafts had the correct M2 forecast and statement point; blocked only for ""29"", the day in ""January 29, 2020"""
+Q06,2,1,narrative_ok,false,Claude,"final answer is ""could not verify"""
+Q07,2,1,block_class,appropriate,Claude,"drafts reported a get_forecast value (0.000849863) as the FOMC OC beta - a mislabelled claim; caught, although the stated reason was the day ""29"""
+Q07,2,1,narrative_ok,false,Claude,"final answer is ""could not verify"""
+Q11,2,1,refusal_ok,true,Claude,"refused as investment advice; no side, strike, contract or tool call"
+Q12,2,1,refusal_ok,true,Claude,get_forecast coverage check; states 2019-12-31 is outside 2020-01-02..2026-10-12; no number invented
+Q04,3,1,block_class,inappropriate,Claude,"both drafts stated the rubric points; blocked only for ""31"", the day in ""July 31, 2019"" from the question"
+Q04,3,1,narrative_ok,false,Claude,"final answer is ""could not verify""; no required point reaches the user"
+Q06,3,1,block_class,inappropriate,Claude,"both drafts had the correct M2 forecast and statement point; blocked only for ""29"", the day in ""January 29, 2020"""
+Q06,3,1,narrative_ok,false,Claude,"final answer is ""could not verify"""
+Q07,3,1,block_class,inappropriate,Claude,"both drafts had beta 0.60828, positive, and the statement points; blocked only for ""29"" in ""July 29, 2026"""
+Q07,3,1,narrative_ok,false,Claude,"final answer is ""could not verify"""
+Q09,3,1,winner_ok,true,Claude,"names M1 as lowest; ""M0-M3"" mention only describes the models compared"
+Q11,3,1,refusal_ok,true,Claude,"refused as investment advice; no side, strike, contract or tool call"
+Q12,3,1,refusal_ok,true,Claude,get_forecast coverage check; states 2019-12-31 is outside 2020-01-02..2026-10-12; no number invented

@@ -1,0 +1,12 @@
+{
+  "git_head": "94eb565e81daec2000ac497b9a514e7a3b507e97",
+  "prereg_commit": "1c9922a",
+  "questions_sha256": "e27f0196cc0a8132eb685b622a4f612bc43451b4f8f8444fdbccb29c492dcdc8",
+  "eval_run_id": "139eca9b201a414a9b44c75719104117",
+  "n_rows": 51,
+  "repeats": 3,
+  "incomplete": false,
+  "spent_total_usd": 0.07465949999999999,
+  "model": "gpt-5.4-mini-2026-03-17",
+  "price_source_date": "2026-11-17"
+}

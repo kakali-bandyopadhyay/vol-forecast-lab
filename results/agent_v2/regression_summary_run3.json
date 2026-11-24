@@ -1,0 +1,121 @@
+{
+  "git_head": "94eb565e81daec2000ac497b9a514e7a3b507e97",
+  "prereg_commit": "1c9922a",
+  "questions_sha256": "e27f0196cc0a8132eb685b622a4f612bc43451b4f8f8444fdbccb29c492dcdc8",
+  "eval_run_id": "3143ab1268cd4b8c9fb8cccfa389686c",
+  "n_rows": 45,
+  "repeats": 3,
+  "incomplete": false,
+  "spent_total_usd": 0.075039,
+  "model": "gpt-5.4-mini-2026-03-17",
+  "price_source_date": "2026-11-17",
+  "v1_baseline": {
+    "n_questions": 15,
+    "repeats": 3,
+    "n_errors": 0,
+    "n_cost_cap": 0,
+    "tool_accuracy": 1.0,
+    "exact_accuracy": 0.9111111111111111,
+    "refusal_accuracy": 0.9333333333333333,
+    "headline_accuracy": 0.8444444444444444,
+    "total_cost_usd": 0.06353025000000002,
+    "mean_cost_usd": 0.0014117833333333338,
+    "latency_p50_s": 4.142916599987075,
+    "latency_p95_s": 6.945189120003487,
+    "model": "gpt-5.4-mini-2026-03-17",
+    "price_source_date": "2026-11-17",
+    "git_head": "87a1523fac7d00934f50f68e58abf9b7ce73047b"
+  },
+  "headline_correct": 30,
+  "headline_count": 30,
+  "headline_denominator": 45,
+  "headline_accuracy": 0.6666666666666666,
+  "mean_cost_usd": 0.0016675333333333333,
+  "latency_p50_s": 7.476483599981293,
+  "latency_p95_s": 8.242922920011916,
+  "n_could_not_verify": 0,
+  "n_verifier_blocks": 0,
+  "hops_max": 1,
+  "per_question": {
+    "A01": {
+      "v2_ok": 3,
+      "v1_ok": 3,
+      "drop": 0
+    },
+    "A02": {
+      "v2_ok": 3,
+      "v1_ok": 3,
+      "drop": 0
+    },
+    "A03": {
+      "v2_ok": 3,
+      "v1_ok": 3,
+      "drop": 0
+    },
+    "A04": {
+      "v2_ok": 3,
+      "v1_ok": 3,
+      "drop": 0
+    },
+    "A05": {
+      "v2_ok": 3,
+      "v1_ok": 3,
+      "drop": 0
+    },
+    "A06": {
+      "v2_ok": 0,
+      "v1_ok": 2,
+      "drop": 2
+    },
+    "A07": {
+      "v2_ok": 0,
+      "v1_ok": 3,
+      "drop": 3
+    },
+    "A08": {
+      "v2_ok": 0,
+      "v1_ok": 2,
+      "drop": 2
+    },
+    "A09": {
+      "v2_ok": 0,
+      "v1_ok": 0,
+      "drop": 0
+    },
+    "A10": {
+      "v2_ok": 0,
+      "v1_ok": 1,
+      "drop": 1
+    },
+    "A11": {
+      "v2_ok": 3,
+      "v1_ok": 3,
+      "drop": 0
+    },
+    "A12": {
+      "v2_ok": 3,
+      "v1_ok": 3,
+      "drop": 0
+    },
+    "A13": {
+      "v2_ok": 3,
+      "v1_ok": 3,
+      "drop": 0
+    },
+    "A14": {
+      "v2_ok": 3,
+      "v1_ok": 3,
+      "drop": 0
+    },
+    "A15": {
+      "v2_ok": 3,
+      "v1_ok": 3,
+      "drop": 0
+    }
+  },
+  "n_errors": 0,
+  "tool_accuracy": 1.0,
+  "exact_accuracy": 0.6666666666666666,
+  "refusal_accuracy": 1.0,
+  "total_cost_usd": 0.075039
+}
