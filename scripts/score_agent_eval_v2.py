@@ -15,6 +15,7 @@ import pandas as pd
 DEFAULT_OUT = REPO_ROOT / "results" / "agent_v2"
 MANUAL_FIELDS = {"narrative_ok", "winner_ok", "refusal_ok", "block_class"}
 BLOCK_CLASSES = {"appropriate", "inappropriate", "miss"}
+V1_QUESTIONS = REPO_ROOT / "data" / "agent" / "eval_questions.csv"
 
 
 def _list(value):
@@ -24,6 +25,19 @@ def _list(value):
         converted = value.tolist()
         return converted if isinstance(converted, list) else [converted]
     return list(value) if isinstance(value, tuple) else value
+
+
+def _records(value):
+    if value is None or (not isinstance(value, (list, tuple, dict)) and pd.isna(value)):
+        return []
+    if isinstance(value, str):
+        try:
+            value = json.loads(value)
+        except (TypeError, json.JSONDecodeError):
+            return []
+    if isinstance(value, dict):
+        return [value]
+    return list(value) if isinstance(value, (list, tuple)) else []
 
 
 def _bool(value) -> bool:
@@ -70,6 +84,88 @@ def make_review_pack(out_dir: Path = DEFAULT_OUT) -> Path:
             lines.append(f"  - Rejected draft: {rejection.get('draft_text')}")
         lines.extend(["", "Suggested manual fields: " + ", ".join(_list(row.review_fields)), ""])
     target = out_dir / "review_pack.md"
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text("\n".join(lines), encoding="utf-8")
+    return target
+
+
+def _latest_regression_path(out_dir: Path) -> Path:
+    base = out_dir / "regression_v1_on_v2.parquet"
+    numbered = []
+    for path in out_dir.glob("regression_v1_on_v2_run*.parquet"):
+        try:
+            index = int(path.stem.removeprefix("regression_v1_on_v2_run"))
+        except ValueError:
+            continue
+        numbered.append((index, path))
+    if numbered:
+        return max(numbered, key=lambda item: item[0])[1]
+    if base.exists():
+        return base
+    raise FileNotFoundError(base)
+
+
+def _evidence_row(row) -> tuple[str, dict]:
+    evidence = _records(row.get("evidence"))
+    attempts = _records(row.get("tool_attempts"))
+    preferred = [item.get("tool") for item in attempts if isinstance(item, dict)]
+    preferred.extend(item.get("tool") for item in evidence if isinstance(item, dict))
+    selected = next(
+        (item for tool in preferred for item in evidence if isinstance(item, dict) and item.get("tool") == tool),
+        evidence[0] if evidence else {},
+    )
+    if not selected:
+        return "unknown", {"detail": "no evidence row recorded"}
+    tool = str(selected.get("tool", "unknown"))
+    rows = _records(selected.get("rows"))
+    if not rows:
+        return tool, {"detail": "no evidence rows recorded"}
+    values = rows[0]
+    if tool == "event_effect":
+        allowed = {"beta", "se", "t", "p", "n"}
+        values = {key: value for key, value in values.items() if key in allowed}
+    return tool, values
+
+
+def make_regression_pack(out_dir: Path = DEFAULT_OUT) -> Path:
+    """Write concise diagnostics for failed or verifier-blocked regression rows."""
+    frame = pd.read_parquet(_latest_regression_path(out_dir))
+    expected = pd.read_csv(V1_QUESTIONS, dtype=str).set_index("qid")["expected_answer"].to_dict()
+    lines = ["# v1 Regression on v2 diagnostics", ""]
+    selected_count = 0
+    for _, row in frame.iterrows():
+        rejections = _records(row.get("rejections"))
+        ok = all(_bool(row.get(field)) for field in ("correct_tool", "exact_match", "refusal_correct"))
+        if ok and not rejections:
+            continue
+        selected_count += 1
+        answer_fields = row.get("answer_fields")
+        if isinstance(answer_fields, str):
+            try:
+                answer_fields = json.loads(answer_fields)
+            except json.JSONDecodeError:
+                answer_fields = {}
+        answer_text = row.get("answer_text")
+        if not answer_text and isinstance(answer_fields, dict):
+            answer_text = answer_fields.get("text", "")
+        tool, evidence_row = _evidence_row(row)
+        lines.extend([
+            f"## {row.get('qid')} · repetition {row.get('rep')}",
+            "",
+            f"- Prompt: {row.get('prompt', '')}",
+            f"- Expected answer: {expected.get(str(row.get('qid')), '')}",
+            f"- Final answer: {answer_text or ''}",
+        ])
+        for rejection in rejections:
+            lines.append(f"- Verifier rejection (attempt {rejection.get('attempt')}): {rejection.get('reason', '')}")
+            lines.append(f"  - Rejected draft: {rejection.get('draft_text', '')}")
+        lines.extend([
+            f"- Evidence row ({tool}): {json.dumps(evidence_row, ensure_ascii=False, default=str)}",
+            "",
+        ])
+    if selected_count == 0:
+        lines.append("No failed or verifier-blocked regression rows.")
+    target = out_dir / "regression_pack.md"
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text("\n".join(lines), encoding="utf-8")
     return target
@@ -234,11 +330,17 @@ def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     mode = parser.add_mutually_exclusive_group(required=True)
     mode.add_argument("--pack", action="store_true")
+    mode.add_argument("--regression-pack", action="store_true")
     mode.add_argument("--final", action="store_true")
     parser.add_argument("--out-dir", type=Path, default=DEFAULT_OUT)
     args = parser.parse_args(argv)
     out_dir = args.out_dir if args.out_dir.is_absolute() else REPO_ROOT / args.out_dir
-    target = make_review_pack(out_dir) if args.pack else make_final_summary(out_dir)
+    if args.pack:
+        target = make_review_pack(out_dir)
+    elif args.regression_pack:
+        target = make_regression_pack(out_dir)
+    else:
+        target = make_final_summary(out_dir)
     print(f"written: {target}")
     return 0
 

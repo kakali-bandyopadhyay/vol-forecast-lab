@@ -442,6 +442,69 @@ def test_v1_regression_respects_two_dollar_total_cap(monkeypatch, tmp_path):
     assert summary["incomplete"]
 
 
+def test_v1_regression_rows_include_diagnostics(monkeypatch, tmp_path):
+    runner = _load_runner()
+    monkeypatch.setattr(runner, "answer_question_v2", lambda *a, **k: _result_with_cost(0.001))
+    rows, summary = runner._run_v1_regression(
+        DryRunFakeLLM(), repeats=1, out_dir=tmp_path / "out", eval_run_id="diag",
+        trace=False, provenance={}, search_fn=dry_search_fn,
+    )
+    required = {
+        "answer_fields", "answer_text", "citations", "stop_reason", "attempts", "rejections",
+        "last_rejection", "hops", "replans", "evidence_statuses", "tool_attempts", "evidence",
+    }
+    assert required <= rows[0].keys()
+    assert rows[0]["answer_fields"]["horizon"] == "30 sessions"
+    assert rows[0]["rejections"] == []
+    assert summary["headline_denominator"] == 45
+    assert "A01" in summary["per_question"]
+
+
+def test_regression_outputs_choose_next_free_number(tmp_path):
+    runner = _load_runner()
+    output = tmp_path / "results"
+    output.mkdir()
+    (output / "regression_v1_on_v2.parquet").touch()
+    (output / "regression_summary.json").touch()
+    (output / "regression_v1_on_v2_run1.parquet").touch()
+    (output / "regression_summary_run1.json").touch()
+    data_path, summary_path = runner._regression_output_paths(output)
+    assert data_path.name == "regression_v1_on_v2_run2.parquet"
+    assert summary_path.name == "regression_summary_run2.json"
+
+
+def test_regression_pack_lists_blocked_row_with_reason(monkeypatch, tmp_path):
+    scorer_spec = importlib.util.spec_from_file_location(
+        "score_agent_eval_v2_regression_under_test", ROOT / "scripts" / "score_agent_eval_v2.py"
+    )
+    scorer = importlib.util.module_from_spec(scorer_spec)
+    assert scorer_spec.loader is not None
+    scorer_spec.loader.exec_module(scorer)
+    out = tmp_path / "results"
+    out.mkdir()
+    (out / "regression_v1_on_v2_run1.parquet").touch()
+    monkeypatch.setattr(scorer, "V1_QUESTIONS", tmp_path / "eval_questions.csv")
+    scorer.V1_QUESTIONS.write_text(
+        "qid,expected_answer\nA06,0.123\n", encoding="utf-8"
+    )
+    frame = pd.DataFrame([{
+        "qid": "A06", "rep": 2, "prompt": "What is the CPI beta?",
+        "correct_tool": True, "exact_match": False, "refusal_correct": False,
+        "answer_text": "could not verify", "answer_fields": {"text": "could not verify"},
+        "rejections": [{"attempt": 1, "reason": "unsupported beta 0.9", "draft_text": "beta 0.9"}],
+        "tool_attempts": [{"tool": "event_effect", "args": {"event": "cpi"}}],
+        "evidence": [{"tool": "event_effect", "rows": [{"beta": 0.123, "se": 0.04, "t": 3.1, "p": 0.002, "n": 240, "extra": "omit"}]}],
+    }])
+    monkeypatch.setattr(scorer.pd, "read_parquet", lambda path: frame)
+    target = scorer.make_regression_pack(out)
+    text = target.read_text(encoding="utf-8")
+    assert "A06 · repetition 2" in text
+    assert "unsupported beta 0.9" in text
+    assert "beta 0.9" in text
+    assert '"beta": 0.123' in text
+    assert "extra" not in text
+
+
 def test_trace_meta_none_keeps_existing_invoke_config(monkeypatch):
     runner = _load_runner()
     from agent.v2 import graph as graph_module

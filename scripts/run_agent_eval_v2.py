@@ -30,6 +30,7 @@ QUESTIONS_PATH = REPO_ROOT / "prereg" / "questions_v2.json"
 FROZEN_COMMIT = "1c9922a"
 DEFAULT_OUT = REPO_ROOT / "results" / "agent_v2"
 V1_QUESTIONS = REPO_ROOT / "data" / "agent" / "eval_questions.csv"
+V1_RESULTS = REPO_ROOT / "results" / "agent" / "agent_eval.parquet"
 V1_SUMMARY = REPO_ROOT / "results" / "agent" / "agent_eval_summary.json"
 V2_TOTAL_CAP = 5.00
 V2_ATTEMPT_CAP = 0.25
@@ -308,6 +309,32 @@ def _tool_attempts(result) -> list[dict]:
     return attempted
 
 
+def _regression_diagnostics(result) -> dict:
+    answer = getattr(result, "answer", None) if result is not None else None
+    handoffs = getattr(result, "handoffs", []) if result is not None else []
+    citations = [
+        citation.model_dump(mode="json") if hasattr(citation, "model_dump") else dict(citation)
+        for citation in (getattr(answer, "citations", []) if answer else [])
+    ]
+    evidence = []
+    for handoff in handoffs:
+        evidence.extend(handoff.get("evidence", []))
+    return {
+        "answer_fields": answer.model_dump(mode="json", exclude={"source_rows"}) if answer else {},
+        "answer_text": _answer_text(answer),
+        "citations": citations,
+        "stop_reason": getattr(result, "stop_reason", None) if result is not None else None,
+        "attempts": int(getattr(result, "attempts", 0) or 0) if result is not None else 0,
+        "rejections": list(getattr(result, "rejections", []) or []) if result is not None else [],
+        "last_rejection": getattr(result, "last_rejection", None) if result is not None else None,
+        "hops": int(getattr(result, "hops", 0) or 0) if result is not None else 0,
+        "replans": int(getattr(result, "replans", 0) or 0) if result is not None else 0,
+        "evidence_statuses": [handoff.get("status") for handoff in handoffs],
+        "tool_attempts": _tool_attempts(result),
+        "evidence": evidence,
+    }
+
+
 def _expected_tool_calls(turn: dict) -> list[dict]:
     calls = turn.get("tool_calls")
     if calls is None and turn.get("tool_call"):
@@ -403,6 +430,23 @@ def _save_rows(rows: list[dict], out_dir: Path, name: str) -> Path:
     path = out_dir / name
     pd.DataFrame(rows).to_parquet(path, index=False)
     return path
+
+
+def _regression_output_paths(out_dir: Path) -> tuple[Path, Path]:
+    data_path = out_dir / "regression_v1_on_v2.parquet"
+    summary_path = out_dir / "regression_summary.json"
+    numbered = list(out_dir.glob("regression_v1_on_v2_run*.parquet")) + list(
+        out_dir.glob("regression_summary_run*.json")
+    )
+    if not data_path.exists() and not summary_path.exists() and not numbered:
+        return data_path, summary_path
+    index = 1
+    while True:
+        candidate_data = out_dir / f"regression_v1_on_v2_run{index}.parquet"
+        candidate_summary = out_dir / f"regression_summary_run{index}.json"
+        if not candidate_data.exists() and not candidate_summary.exists():
+            return candidate_data, candidate_summary
+        index += 1
 
 
 def _run_v2(llm, *, repeats: int, out_dir: Path, eval_run_id: str, trace: bool, provenance: dict, search_fn=None, memory_base: Path | None = None) -> tuple[list[dict], dict]:
@@ -574,6 +618,7 @@ def _run_v1_regression(llm, *, repeats: int, out_dir: Path, eval_run_id: str, tr
                     "cost_usd": result.cost_usd, "latency_s": result.latency_s,
                     "error": None,
                 }
+                row.update(_regression_diagnostics(result))
                 spent_total += result.cost_usd
             except Exception as exc:
                 row = {
@@ -586,6 +631,7 @@ def _run_v1_regression(llm, *, repeats: int, out_dir: Path, eval_run_id: str, tr
                     "cost_usd": getattr(exc, "cost_usd", None), "latency_s": None,
                     "error": f"{type(exc).__name__}: {exc}",
                 }
+                row.update(_regression_diagnostics(None))
                 if row["cost_usd"] is not None:
                     spent_total += float(row["cost_usd"])
             rows.append(row)
@@ -603,6 +649,40 @@ def _run_v1_regression(llm, *, repeats: int, out_dir: Path, eval_run_id: str, tr
     }
     if V1_SUMMARY.exists():
         summary["v1_baseline"] = json.loads(V1_SUMMARY.read_text(encoding="utf-8"))
+    frame = pd.DataFrame(rows)
+    headline = frame["exact_match"].fillna(False).astype(bool) & frame["refusal_correct"].fillna(False).astype(bool)
+    costs = pd.to_numeric(frame["cost_usd"], errors="coerce")
+    latencies = pd.to_numeric(frame["latency_s"], errors="coerce").dropna()
+    def could_not_verify(row):
+        fields = [row.get("stop_reason"), row.get("refusal_reason"), row.get("last_rejection")]
+        return any("could not verify" in str(value).lower() for value in fields if value is not None)
+    summary.update({
+        "headline_correct": int(headline.sum()),
+        "headline_count": int(headline.sum()),
+        "headline_denominator": 45,
+        "headline_accuracy": None if frame.empty else float(headline.mean()),
+        "mean_cost_usd": None if costs.dropna().empty else float(costs.mean()),
+        "latency_p50_s": None if latencies.empty else float(latencies.quantile(0.50)),
+        "latency_p95_s": None if latencies.empty else float(latencies.quantile(0.95)),
+        "n_could_not_verify": int(frame.apply(could_not_verify, axis=1).sum()),
+        "n_verifier_blocks": int(sum(len(value or []) for value in frame["rejections"])),
+        "hops_max": None if frame.empty else int(pd.to_numeric(frame["hops"], errors="coerce").fillna(0).max()),
+    })
+
+    baseline = pd.read_parquet(V1_RESULTS)
+    baseline_headline = baseline["exact_match"].fillna(False).astype(bool) & baseline["refusal_correct"].fillna(False).astype(bool)
+    baseline = baseline.assign(_headline=baseline_headline)
+    current_by_question = frame.assign(_headline=headline).groupby("qid")["_headline"].sum()
+    baseline_by_question = baseline.groupby("qid")["_headline"].sum()
+    all_qids = sorted(set(current_by_question.index) | set(baseline_by_question.index))
+    summary["per_question"] = {
+        qid: {
+            "v2_ok": int(current_by_question.get(qid, 0)),
+            "v1_ok": int(baseline_by_question.get(qid, 0)),
+            "drop": int(baseline_by_question.get(qid, 0) - current_by_question.get(qid, 0)),
+        }
+        for qid in all_qids
+    }
     return rows, summary
 
 
@@ -682,7 +762,8 @@ def main(argv=None) -> int:
             eval_run_id=eval_run_id, trace=args.trace, provenance=provenance,
             search_fn=search_fn,
         )
-        path = _save_rows(rows, out_dir, "regression_v1_on_v2.parquet")
+        path, summary_path = _regression_output_paths(out_dir)
+        path = _save_rows(rows, out_dir, path.name)
         # Include v1-on-v2 metrics beside the immutable v1 baseline.
         frame = pd.DataFrame(rows)
         summary.update({
@@ -692,7 +773,6 @@ def main(argv=None) -> int:
             "refusal_accuracy": float(frame["refusal_correct"].mean()) if len(frame) else None,
             "total_cost_usd": float(frame["cost_usd"].dropna().sum()) if len(frame) else None,
         })
-        summary_path = out_dir / "regression_summary.json"
 
     summary_path.parent.mkdir(parents=True, exist_ok=True)
     summary_path.write_text(json.dumps(summary, indent=2, default=str) + "\n", encoding="utf-8")
