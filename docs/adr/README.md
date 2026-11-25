@@ -18,3 +18,4 @@ and `FINDINGS.md`. Numbers come from committed result files only.
 | [0009](0009-orchestration-airflow-kind.md) | Airflow DAG with an audit gate; local Kubernetes (kind) with hardened pods | Accepted |
 | [0010](0010-cache-and-rate-limit.md) | Redis search cache and token-bucket limiter, failing open | Accepted |
 | [0011](0011-supervisor-subagents-and-memory.md) | Supervisor + tool-scoped sub-agents, typed handoffs, explicit-only scoped memory | Accepted, known limits |
+| [0012](0012-agent-sdk-port.md) | Lean Claude Agent SDK port of the pre-registered supervisor eval | Accepted, evaluation limits reported |

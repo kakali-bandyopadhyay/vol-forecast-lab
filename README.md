@@ -21,6 +21,7 @@ Research prototype on public data. Not investment advice; not a trading system.
 | Retrieval (15 frozen questions) | Fused BM25 + dense recall@5 0.589 vs dense 0.389; cloud path equal to local (266/266 documents, 6,620/6,620 chunks) | FINDINGS 10b–10c |
 | Agent (15 frozen questions × 3) | 0.844 (38/45); no unverified number in any answer; USD 0.064 in total | FINDINGS Step 11 |
 | Agent v2 – supervisor + 3 sub-agents + memory (12 pre-registered questions × 3) | 20/36; routing 46/51; memory follow-ups 9/15; refusals 6/6; no unverified number in any answer; USD 0.0023 per turn | FINDINGS Agent v2 |
+| Agent v3 – Claude Agent SDK port (12 first turns, one run) | 2/12 correct; routing 12/12; six verifier blocks; 1 guardrail denial; USD 0.02013895 median per turn. v2 first-turn runs: 8/12, 7/12, 8/12 | FINDINGS Agent v3; results/agent_v3/ |
 
 Misses are reported as results: hybrid retrieval lost to dense in Step 10b; the MLP did not beat
 HAR-X; the PSI drift rule cannot separate drift from regime variation; two agent-verifier limits are

@@ -500,3 +500,55 @@ recorded before results.
 ---
 
 _Final for the Step 14 release (17 Nov 2026). Later changes are dated entries._
+### Agent v3 – Claude Agent SDK port (lean, Nov 2026)
+
+**Design and registration.** Commit 1eece83 contains the v3 code and the preregistration, committed before the scored run. The port uses claude-agent-sdk 0.2.189 with claude-haiku-4-5-20251001 and the SDK temperature default. An orchestrator dispatches forecast, event-effect and FOMC retrieval specialists; in-process VFL tools are scoped by each AgentDefinition and checked again by the PreToolUse hook. The existing v2 copy-only verifier and v2 scoring helpers are reused unchanged. The scored set is the first turn of Q01–Q12, one run.
+
+The SDK registers in-process MCP tools at session scope, so the domain tools remain visible to the orchestrator even though its tool list is restricted. The PreToolUse hook denies orchestrator domain calls and cross-scope specialist calls; the scored run logged one denial.
+
+**Results: v3 scored run against the v2 first-turn baseline.** V2 runs are shown separately, not averaged. Latency values are seconds; cost per turn is the per-run median.
+
+| Evaluation | Correct | Routing | Args | Verifier blocks | Refusals | Guardrail denials | Median USD/turn | Total USD | Latency p50/p95 (s) |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| v3 scored run | 2/12 | 12/12 | 6/12 | 6 | 8 | 1 | 0.02013895 | 0.25069815 | 13.47 / 21.26 |
+| v2 first-turn run 1 | 8/12 | 11/12 | 11/12 | 2 | 5 | 0 | 0.00189825 | 0.02505375 | 8.48 / 15.46 |
+| v2 first-turn run 2 | 7/12 | 11/12 | 11/12 | 3 | 5 | 0 | 0.0020295 | 0.0291435 | 9.41 / 15.97 |
+| v2 first-turn run 3 | 8/12 | 12/12 | 12/12 | 3 | 5 | 0 | 0.00205275 | 0.0290475 | 8.91 / 14.95 |
+| v3 run 1, Qdrant outage (invalidated; reported separately) | 2/12 | 12/12 | 5/12 | 5 | 9 | 4 | 0.019920975 | 0.2786406 | 13.46 / 41.41 |
+
+**Per-question scored-run results.**
+
+| Question | Agents called | args_ok | Verifier | Refusal reason | Correct |
+|---|---|---:|---|---|---:|
+| Q01 | forecast | yes | pass | — | yes |
+| Q02 | forecast | yes | block | could not verify | no |
+| Q03 | event-effect | yes | block | could not verify | no |
+| Q04 | FOMC retrieval | no | block | could not verify | no |
+| Q05 | forecast, event-effect | yes | pass | — | no |
+| Q06 | forecast, FOMC retrieval | yes | block | could not verify | no |
+| Q07 | event-effect, FOMC retrieval | no | block | could not verify | no |
+| Q08 | forecast | no | block | could not verify | no |
+| Q09 | forecast | no | pass | — | no |
+| Q10 | event-effect | no | pass | — | no |
+| Q11 | — | yes | pass | investment-advice scope | yes |
+| Q12 | forecast | no | pass | requested date outside forecast range | no |
+
+Routing was 12/12; six verifier blocks were unsupported numbers that the copy-only verifier could not match verbatim to evidence. The lean port has no redraft loop, unlike v2's MAX_DRAFTS=2; argument mismatches occurred on Q04, Q07, Q08–Q10 and Q12, and one orchestrator domain-tool call was denied.
+
+**Outage and rerun.** The first v3 attempt ran while Docker/Qdrant was down; search_fomc returned connection refused. Per DEVIATIONS AA, the whole set was rerun from scratch with identical code after Qdrant started and the fomc_chunks collection was confirmed at 6,620 points. Both outputs are retained: eval_v3_summary_run1_qdrant_down.json / eval_v3_turns_run1_qdrant_down.parquet and the scored eval_v3_summary.json / eval_v3_turns.parquet. Only the Qdrant-ready run is the scored v3 result.
+
+**What the eight pre-registration plumbing smokes fixed.** These Q01 calls were unscored and their results were not used for evaluation.
+1. The initial plumbing run was explicitly recorded as not scored/not used in the preregistration.
+2. A null agent_type caused a valid specialist MCP call to be denied; agent_id attribution was mapped through SubagentStart/SubagentStop.
+3. Pending tool rows and direct root calls exposed missing result capture and excessive root access; the wrapper records results by tool_use_id and the orchestrator is limited to specialist dispatch.
+4. A background specialist, a per-agent MCP reference rejected under strict config, and loaded settings led to foreground dispatch, session-level MCP registration, and empty settings/skills/plugins.
+5. A permission request showed that allowed_tools must pre-approve specialist MCP calls; the four VFL tools were added while permission_mode stayed at its default.
+6. MCP text blocks and a fenced answer led to parsing JSON from text content, stripping one JSON fence, and preserving raw unparseable text.
+7. An answer with limitations as a list and no source_rows led to the SDK Answer schema and only the two registered safe coercions; other type mismatches remain refusals.
+8. The hook denied the SDK's StructuredOutput call; that exact tool is now allowed to the orchestrator and remains denied to specialists.
+
+**Framework and model caveat.** V2 used OpenAI models and v3 uses Claude. This is a combined framework-and-model comparison, not a framework benchmark.
+
+**Limits.** This is one run over 12 first turns; no memory or memory follow-ups were ported, and LangSmith tracing was not used. It is a research prototype rather than a production comparison. SDK 0.2.189 keeps session-level in-process MCP tools visible to the orchestrator; the hook is the runtime control for those calls.
+
+**Authorship.** Designed and run by Kakali Bandyopadhyay; built by Codex from her spec; AI assistance: Claude.

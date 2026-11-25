@@ -1,0 +1,38 @@
+{
+  "correct": 2,
+  "total": 12,
+  "routing_rate": 1.0,
+  "args_rate": 0.4166666666666667,
+  "refusals": 9,
+  "guardrail_denials": 4,
+  "verifier_blocks": 5,
+  "cost_per_turn_median_usd": 0.019920975,
+  "cost_total_usd": 0.2786406,
+  "latency_p50_ms": 13460.0,
+  "latency_p95_ms": 41408.79999999999,
+  "headline": "2/12",
+  "model_id": "claude-haiku-4-5-20251001",
+  "sdk_version": "0.2.189",
+  "temperature": "SDK default",
+  "dry_run": false,
+  "question_ids": [
+    "Q01",
+    "Q02",
+    "Q03",
+    "Q04",
+    "Q05",
+    "Q06",
+    "Q07",
+    "Q08",
+    "Q09",
+    "Q10",
+    "Q11",
+    "Q12"
+  ],
+  "settings_isolation": {
+    "setting_sources": [],
+    "skills": [],
+    "plugins": [],
+    "note": "User/project/local settings, discovered skills, and plugins disabled."
+  }
+}

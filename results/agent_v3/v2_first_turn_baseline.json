@@ -1,0 +1,51 @@
+{
+  "source": "results\\agent_v2\\eval_v2_turns.parquet",
+  "turns_per_run": 12,
+  "runs": [
+    {
+      "rep": 1,
+      "eval_run_id": "47e793335ec446778812afdc7d71e76e",
+      "correct": 8,
+      "total": 12,
+      "routing_rate": 0.9166666666666666,
+      "args_rate": 0.9166666666666666,
+      "refusals": 5,
+      "guardrail_denials": 0,
+      "verifier_blocks": 2,
+      "cost_per_turn_median_usd": 0.0018982500000000002,
+      "cost_total_usd": 0.02505375,
+      "latency_p50_ms": 8483.008150011301,
+      "latency_p95_ms": 15457.030929962639
+    },
+    {
+      "rep": 2,
+      "eval_run_id": "47e793335ec446778812afdc7d71e76e",
+      "correct": 7,
+      "total": 12,
+      "routing_rate": 0.9166666666666666,
+      "args_rate": 0.9166666666666666,
+      "refusals": 5,
+      "guardrail_denials": 0,
+      "verifier_blocks": 3,
+      "cost_per_turn_median_usd": 0.0020295,
+      "cost_total_usd": 0.0291435,
+      "latency_p50_ms": 9412.788849993376,
+      "latency_p95_ms": 15973.61550500791
+    },
+    {
+      "rep": 3,
+      "eval_run_id": "47e793335ec446778812afdc7d71e76e",
+      "correct": 8,
+      "total": 12,
+      "routing_rate": 1.0,
+      "args_rate": 1.0,
+      "refusals": 5,
+      "guardrail_denials": 0,
+      "verifier_blocks": 3,
+      "cost_per_turn_median_usd": 0.00205275,
+      "cost_total_usd": 0.0290475,
+      "latency_p50_ms": 8906.860599992797,
+      "latency_p95_ms": 14954.046869988088
+    }
+  ]
+}

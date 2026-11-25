@@ -1,0 +1,17 @@
+{
+  "label": "smoke \u2013 not scored",
+  "rows": 1,
+  "question_ids": [
+    "Q01"
+  ],
+  "model_id": "claude-haiku-4-5-20251001",
+  "sdk_version": "0.2.189",
+  "temperature": "SDK default",
+  "dry_run": false,
+  "settings_isolation": {
+    "setting_sources": [],
+    "skills": [],
+    "plugins": [],
+    "note": "User/project/local settings, discovered skills, and plugins disabled."
+  }
+}
